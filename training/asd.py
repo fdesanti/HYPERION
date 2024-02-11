@@ -1,0 +1,105 @@
+"""Random ASD generator. Implementation adapted from gwskysim gwcolorednoise"""
+
+import torch
+import numpy as np
+
+from scipy.interpolate import interp1d
+from ..core.fft import rfftfreq
+
+
+
+class ASD_sampler():
+    """
+    Class that samples a new ASD from a reference one by generating random amplitude and phase for each frequency bin.
+
+    Args:
+    -----
+        asd_file : str 
+            Path to asd (.txt) file specifying the reference asd
+        
+        fs : float
+            Sampling frequency of output generated ASD. (Default: 2048 Hz)
+
+        device: str
+            Device on which perform the computation. Either 'cpu' or 'cuda:n' (Default: 'cpu')
+    
+    Methods:
+    --------
+        - sample:
+            Args:
+            -----
+                batch_size : int
+                    Batch size for output sampled ASDs
+
+            Returns:
+            --------
+                sampled_asd : torch.tensor
+                    sampled ASD of shape [batch_size, fs//2+1]
+        
+        - __call__:
+            wrapper to sample method
+
+    """
+
+    def __init__(self, asd_file, fs = 2048, device = 'cpu'):
+
+        #read reference Asd
+        asd_f, asd = np.loadtxt(asd_file, unpack=True)
+
+        #generate frequency array
+        self.f = rfftfreq(fs, d=1/fs, device = self.device)
+        self.df = torch.abs(self.f[1] - self.f[2])
+
+        #reference ASD from interpolation
+        self.asd_reference = torch.from_numpy(np.interp(self.f.cpu().numpy(), asd_f, asd)).to(device)
+
+        #other attributes
+        self.fs = fs
+        self.device = device
+        return
+
+    @property
+    def device(self):
+        return self._device
+    @device.setter
+    def device(self, device_name):
+        self._device = device_name
+
+    @property
+    def fs(self):
+        return self._fs
+    @fs.setter
+    def fs(self, value):
+        self._fs = value
+
+    @property
+    def asd_std(self):
+        if not hasattr(self, '_asd_std'):
+            self._asd_std = (0.5)* self.asd_reference * self.df ** 0.5
+        return self._asd_std
+
+
+    def sample(self, batch_size):
+
+        out_asd_shape = (batch_size, len(self.f))
+        
+        # Generate scaled random power + phase
+ 
+        mean = torch.zeros(out_asd_shape)
+        out_asd_real = torch.normal(mean = mean, std=self.asd_std)
+        out_asd_imag = torch.normal(mean = mean, std=self.asd_std)
+    
+        # If the signal length is even, frequencies +/- 0.5 are equal
+        # so the coefficient must be real.
+            #if not (samples % 2): si[..., -1] = 0
+
+        # Regardless of signal length, the DC component must be real
+        out_asd_imag[..., 0] = 0
+
+        # Combine power + corrected phase to Fourier components
+        out_asd = torch.abs(out_asd_real + 1J * out_asd_imag)
+
+        return out_asd
+
+    def __call__(self, batch_size = 512):
+        return self.sample(batch_size)

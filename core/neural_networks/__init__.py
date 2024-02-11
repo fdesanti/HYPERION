@@ -1,0 +1,2 @@
+from flow_model.neural_network.network_architecture import FlowResidualNet
+from flow_model.neural_network.strain_resnet import StrainResNet

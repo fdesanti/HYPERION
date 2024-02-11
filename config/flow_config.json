@@ -1,0 +1,37 @@
+{
+    "description": "Configuration file for Flow and Neural Network parameters.", 
+
+    "flow":{
+        "num_coupling_layers"   :32
+
+    },
+    "coupling_layers": {
+        "num_features"          :8,
+        "num_identity"          :4,
+        "num_transformed"       :4
+    },
+
+
+    "prior":{
+        "shape"      :8,
+        "trainable"  :false
+    },
+
+    "flow_network": {
+                "in_features"           :4,
+                "out_features"          :4,
+                "num_bins"              :8,
+                "hidden_features"       :512,
+                "strain_features"       :256,
+                "dropout_probability"   :0.2
+    },
+
+    "embedding_network":{
+                 "strain_shape"         : [3, 4096],
+                 "num_blocks"           : 3,
+                 "block_dims"           :[2048, 1024, 512,256],
+                 "use_batch_norm"       : false,
+                 "dropout_probability"  : 0.2
+    }
+
+}
