@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import Dataset
+from torch.distributions import Normal #as torchNormal
 
 from ..core.fft import *
 
@@ -16,9 +17,10 @@ class DatasetGenerator(Dataset):
 
     def __init__(self, 
                  waveform_generator, 
+                 asd_generators, 
                  prior, 
                  duration       = 1, 
-                 noise_duration = 8, 
+                 noise_duration = 2, 
                  batch_size     = 512
                  ):
         """
@@ -29,6 +31,9 @@ class DatasetGenerator(Dataset):
         waveform_generator: object
             GWskysim Waveform generator object istance. (Example: the EffectiveFlyByTemplate generator)
 
+        asd_generators: dict of ASD_sampler objects
+            Dictionary with hyperion's ASD_sampler object instances for each interferometer to simulate            
+
         prior: object 
             hyperion's MultivariatePrior object instance defining the prior on the population parameters
 
@@ -37,7 +42,7 @@ class DatasetGenerator(Dataset):
 
         noise_duration : float
             Duration (seconds) of noise to simulate. Setting it higher than duration helps to avoid
-            border discontinuity issues when performing whitening. (Default: 8)
+            border discontinuity issues when performing whitening. (Default: 2)
         
         batch_size : int
             Batch size dimension. (Default: 512)
@@ -46,10 +51,17 @@ class DatasetGenerator(Dataset):
         super(DatasetGenerator, self).__init__()
 
         self.waveform_generator  = waveform_generator
+        self.asd_generator       = asd_generators
         self.prior               = prior
         self.batch_size          = batch_size
         self.duration            = duration
         self.noise_duration      = noise_duration
+
+        #self.window_len          = self.fs//16
+
+        assert sorted(waveform_generator.det_names) == sorted(asd_generators.keys()), f"Mismatch between ifos in waveform generator\
+                                                                                       and asd_generator. Got {sorted(waveform_generator.det_names)}\
+                                                                                       and {sorted(asd_generators.keys())}, respectively "
         return
 
     @property
@@ -57,36 +69,129 @@ class DatasetGenerator(Dataset):
         return self.waveform_generator.fs
     
     @property
+    def delta_t(self):
+        return torch.tensor(1/self.fs)
+    
+    @property
     def det_names(self):
         return self.waveform_generator.det_names
 
+    @property
+    def frequencies(self):
+        if not hasattr(self, '_frequencies'):
+            n = (self.noise_duration) * self.fs
+            self._frequencies = rfftfreq(n, d=1/self.fs)
+        return self._frequencies
+    
+    @property
+    def noise_std(self):
+        return 1 / torch.sqrt(2*self.delta_t)
+    
 
-    def __len__(self):
-        return int(1e8) #set it very high
+    @property
+    def means(self):
+        if not hasattr(self, '_means'):
+            self._means = dict()
+            
+
+        return
+
+    @property
+    def inference_parameters(self):
+        return ['M', 'q', 'e0', 'p_0', 'distance', 'time_shift', 'pol', 'incl', 'ra', 'dec']
 
     
+    def __len__(self):
+        return int(1e8) #set it very high. It matters only when torch DataLoaders are used
+    
+    
+    def _compute_M_and_q(self, prior_samples):
+
+        #sorting m1 and m2 so that m2 <= m1
+        m1 = prior_samples['m1'].T.squeeze()
+        m2 = prior_samples['m2'].T.squeeze()
+
+        m, _ = torch.sort(torch.stack([m1, m2]).T)
+        
+        m1 = m.T[1]
+        m2 = m.T[0]
+        
+        prior_samples['M'] = m1+m2
+        prior_samples['q'] = m2/m1
+
+        return prior_samples
+
+
+    def _apply_time_shifts_and_whiten(self, h):
+
+        out_h = []
+        pad   = (self.noise_duration - self.duration)*self.fs // 2
+        
+        for ifo in self.det_names:
+                        
+            dt = h[f"{ifo}_delay"] #time delay from Earth center + central time shift 
+            
+            #apply hann window to cancel border offsets
+            h[ifo]*= torch.hann_window(h[ifo].shape[-1])
+        
+            #pad template with left/right last values adding points up to noise_duration
+            h_tmp  = torch.nn.functional.pad(h[ifo], (pad, pad ), mode='replicate')  
+
+            #apply time shifts to templates in the frequency domain
+            h_tmp = rfft(h_tmp, n = h_tmp.shape[-1], fs=self.fs) * torch.exp(-1j * 2 * torch.pi * self.frequencies * dt)
+
+            #sample asd from generator
+            asd = self.asd_generator[ifo](batch_size = self.batch_size)
+            
+            #divide frequency domain template with the ASD
+            h_tmp /= asd
+            
+            #revert back to time domain
+            h_tmp = irfft(h_tmp, fs = self.fs)
+    
+            #crop to desired output duration
+            central_time = h_tmp.shape[-1]//2
+            d = self.duration * self.fs // 2 
+            out_h.append(h_tmp[:, central_time-d : central_time+d])
+
+        out_h = torch.stack(out_h, dim=1)
+        
+        return out_h / self.noise_std
+    
+    
+    def _add_noise(self, h):
+        noise = Normal(loc = 0, scale = self.noise_std).sample(h.shape)
+        #noise = torch.randn(h.shape)
+        return (h + noise)/self.noise_std
+    
+    
+
+
 
     def __getitem__(self, idx=None):
 
         #sampling prior
         prior_samples = self.prior.sample((self.batch_size, 1))
-
         prior_samples['t0_p'] = prior_samples['t0_p'][0]
+
+        prior_samples = self._compute_M_and_q(prior_samples)
+        print(prior_samples)
+        
+        #generate projected waveform strain
         h = self.waveform_generator(**prior_samples)
 
-        n = self.noise_duration//2
-        for ifo in self.det_names:
-            dt = h[f"{ifo}_delay"]
-            h_tmp  = torch.nn.functional.pad(h[ifo], (n*self.fs, n*self.fs), mode='replicate')  
-            f = rfftfreq(h_tmp.shape[-1], d=1/self.fs)
-            h_tmp = irfft(rfft(h_tmp, n = h_tmp.shape[-1], fs=self.fs) * torch.exp(-1j * 2 * torch.pi * f * dt), fs = self.fs)
+        #apply time shift and whiten
+        whitened = self._apply_time_shifts_and_whiten(h)
+        
+        #add gaussian noise
+        whitened = self._add_noise(whitened)
 
-            middle = h_tmp.shape[-1]//2
+        #standardize parameters
+        print(prior_samples)
+
+        
 
             
-            h[ifo] = h_tmp[:, middle-self.fs//2:middle+self.fs//2]
-
-            
-        return h
+        return whitened
     
 

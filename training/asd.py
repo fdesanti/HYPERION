@@ -6,6 +6,8 @@ import numpy as np
 from scipy.interpolate import interp1d
 from ..core.fft import rfftfreq
 
+from ..config import CONF_DIR
+
 
 
 class ASD_sampler():
@@ -14,11 +16,18 @@ class ASD_sampler():
 
     Args:
     -----
+        ifo : str
+            Detector identifier (e.g. L1, H1 or V1). If given it will use the default O3 asd stored in the config dir.
+            Mutually exclusive with asd_file
+
         asd_file : str 
-            Path to asd (.txt) file specifying the reference asd
+            Path to asd (.txt) file specifying the reference asd.
         
         fs : float
             Sampling frequency of output generated ASD. (Default: 2048 Hz)
+
+        duration : float
+            Duration of strain timeseries (seconds). Used to compute the proper frequency array. (Default: 2)
 
         device: str
             Device on which perform the computation. Either 'cpu' or 'cuda:n' (Default: 'cpu')
@@ -41,13 +50,18 @@ class ASD_sampler():
 
     """
 
-    def __init__(self, asd_file, fs = 2048, device = 'cpu'):
+    def __init__(self, ifo, asd_file=None, fs = 2048, duration=2, device = 'cpu'):
 
         #read reference Asd
-        asd_f, asd = np.loadtxt(asd_file, unpack=True)
+        if asd_file is not None:
+            file = asd_file
+        else:
+            file = f"{CONF_DIR}/ASD_{ifo}_O3.txt"
+
+        asd_f, asd = np.loadtxt(file, unpack=True)
 
         #generate frequency array
-        self.f = rfftfreq(fs, d=1/fs, device = self.device)
+        self.f = rfftfreq(fs*duration, d=1/fs, device = device)
         self.df = torch.abs(self.f[1] - self.f[2])
 
         #reference ASD from interpolation
@@ -61,6 +75,7 @@ class ASD_sampler():
     @property
     def device(self):
         return self._device
+    
     @device.setter
     def device(self, device_name):
         self._device = device_name
@@ -76,6 +91,7 @@ class ASD_sampler():
     def asd_std(self):
         if not hasattr(self, '_asd_std'):
             self._asd_std = (0.5)* self.asd_reference * self.df ** 0.5
+            #self._asd_std = self.asd_reference 
         return self._asd_std
 
 
@@ -98,6 +114,9 @@ class ASD_sampler():
 
         # Combine power + corrected phase to Fourier components
         out_asd = torch.abs(out_asd_real + 1J * out_asd_imag)
+
+        #out_asd = torch.stack([self.asd_reference for _ in range(batch_size)])
+        #out_asd = torch.mean(out_asd, axis = 0)
 
         return out_asd
 

@@ -19,13 +19,13 @@ class BasePrior(object):
     def mean(self):
         #print('default')
         if not hasattr(self, '_mean'):
-            self._mean = self.sample((10_000)).mean()
+            self._mean = self.sample((100_000)).mean()
         return self._mean
     
     @property
     def std(self):
         if not hasattr(self, '_std'):
-            self._std = self.sample((10_000)).std()
+            self._std = self.sample((100_000)).std()
         return self._std
     
     def is_in_prior_range(self, samples):
