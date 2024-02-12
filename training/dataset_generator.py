@@ -230,8 +230,6 @@ class DatasetGenerator(Dataset):
         for parameter in self.inference_parameters:
             standardized = self.prior[parameter].standardize_samples(prior_samples[parameter])
             out_prior_samples.append(standardized)
-            if parameter == 'dec':
-                print(standardized)
             
         out_prior_samples = torch.cat(out_prior_samples, dim=-1)
         return out_prior_samples
