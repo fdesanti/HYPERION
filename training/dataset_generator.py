@@ -134,6 +134,7 @@ class DatasetGenerator(Dataset):
         prior_file = CONF_DIR + '/BHBH-CE_population.json'
         with open(prior_file) as json_file:
             prior_kwargs = json.load(json_file)['parameters']
+            self._prior_metadata = prior_kwargs
             
         for parameter in prior_kwargs.keys():
             dist = prior_kwargs[parameter]['distribution']
@@ -147,16 +148,21 @@ class DatasetGenerator(Dataset):
         
         self.multivariate_prior = MultivariatePrior(self.prior)
         
-        self.prior['M'] = prior_dict_['M'](self.prior['m1'], self.prior['m2'])
-        self.prior['q'] = prior_dict_['q'](self.prior['m1'], self.prior['m2'])
-        
+        #add M and q to prior        
+        if ('M' in self.inference_parameters) and ('q' in self.inference_parameters):
+            for p in ['M', 'q']:
+                self.prior[p] = prior_dict_[p](self.prior['m1'], self.prior['m2'])
+                min, max = float(self.prior[p].minimum), float(self.prior[p].maximum)
+                metadata = {'distribution':p , 'min': min, 'max': max}
+                self._prior_metadata[p] = metadata
+            
         return 
     
     def __len__(self):
         return int(1e8) #set it very high. It matters only when torch DataLoaders are used
     
-    @staticmethod
-    def _compute_M_and_q(prior_samples):
+    
+    def _compute_M_and_q(self, prior_samples):
 
         #sorting m1 and m2 so that m2 <= m1
         m1 = prior_samples['m1'].T.squeeze()
@@ -167,8 +173,9 @@ class DatasetGenerator(Dataset):
         m1 = m.T[1]
         m2 = m.T[0]
         
-        prior_samples['M'] = m1+m2
-        prior_samples['q'] = m2/m1
+        #m1 and m2 have shape [Nbatch]
+        prior_samples['M'] = (m1+m2).reshape((self.batch_size, 1))
+        prior_samples['q'] = (m2/m1).reshape((self.batch_size, 1))
 
         return prior_samples
 
@@ -216,14 +223,24 @@ class DatasetGenerator(Dataset):
         return (h + noise)/self.noise_std
     
     
-
+    def standardize_parameters(self, prior_samples):
+        """Standardize prior samples to zero mean and unit variance"""
+        
+        out_prior_samples = []
+        for parameter in self.inference_parameters:
+            standardized = self.prior[parameter].standardize_samples(prior_samples[parameter])
+            out_prior_samples.append(standardized)
+            
+        out_prior_samples = torch.cat(out_prior_samples, dim=-1)
+        return out_prior_samples
+    
 
 
     def __getitem__(self, idx=None):
 
         #sampling prior
         prior_samples = self.multivariate_prior.sample((self.batch_size, 1))
-        prior_samples['t0_p'] = prior_samples['t0_p'][0]
+        #prior_samples['t0_p'] = prior_samples['t0_p'][0]
 
         out_prior_samples = self._compute_M_and_q(prior_samples.copy())
         
@@ -231,17 +248,15 @@ class DatasetGenerator(Dataset):
         h = self.waveform_generator(**prior_samples)
 
         #apply time shift and whiten
-        whitened = self._apply_time_shifts_and_whiten(h)
+        whitened_template = self._apply_time_shifts_and_whiten(h)
         
         #add gaussian noise
-        whitened = self._add_noise(whitened)
+        whitened_strain = self._add_noise(whitened_template)
 
         #standardize parameters
-        
-
-        
-
-            
-        return whitened
+        out_prior_samples = self.standardize_parameters(out_prior_samples)
+    
+    
+        return out_prior_samples, whitened_strain
     
 

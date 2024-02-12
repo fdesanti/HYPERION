@@ -308,7 +308,7 @@ class q_uniform_in_components(BasePrior):
         self.m1 = m1
         self.m2 = m2
         minimum = float(m2.minimum / m1.maximum)
-        maximum = float(m2.maximum / m1.minimum)
+        maximum = float(m2.maximum / m1.maximum)
         super(q_uniform_in_components, self).__init__(minimum, maximum, m1.device)
         return
     
