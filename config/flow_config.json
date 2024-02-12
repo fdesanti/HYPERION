@@ -6,28 +6,18 @@
 
     },
     "coupling_layers": {
-        "num_features"          :8,
-        "num_identity"          :4,
-        "num_transformed"       :4
+        "num_features"          :10,
+        "num_identity"          :5,
+        "num_transformed"       :5
     },
 
-
-    "prior":{
-        "shape"      :8,
+    "base_distribution":{
+        "dim"        :10,
         "trainable"  :false
     },
 
-    "flow_network": {
-                "in_features"           :4,
-                "out_features"          :4,
-                "num_bins"              :8,
-                "hidden_features"       :512,
-                "strain_features"       :256,
-                "dropout_probability"   :0.2
-    },
-
     "embedding_network":{
-                 "strain_shape"         : [3, 4096],
+                 "strain_shape"         : [3, 2048],
                  "num_blocks"           : 3,
                  "block_dims"           :[2048, 1024, 512,256],
                  "use_batch_norm"       : false,

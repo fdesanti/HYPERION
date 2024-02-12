@@ -5,12 +5,13 @@ import torch
 import torch.nn as nn
 
 
-from flow_model import Flow
-from flow_model import VonMisesNormal, MultivariateNormalPrior
-from flow_model import StrainResNet, FlowResidualNet
-from flow_model import CouplingTransform, SplineCouplingLayer, AffineConditionalLayer, LULinear, RandomPermutation
+from . import Flow
+from . import CouplingTransform, AffineCouplingLayer, RandomPermutation
+from ..distributions   import MultivariateNormalBase
+from ..neural_networks import EmbeddingNetwork
 
 
+from ...config import CONF_DIR
 
 def build_flow( model_hyperparams           :dict = None,
                 flow_kwargs                 :dict = None,
@@ -32,7 +33,8 @@ def build_flow( model_hyperparams           :dict = None,
         assert model_hyperparams is not None, 'Unable to build Flow since no hyperparams are passed'
     
         # First, read the JSON
-        with open(os.path.abspath('flow_model/config/flow_config.json')) as json_file:
+        default_config_file = CONF_DIR + '/flow_config.json'
+        with open(default_config_file) as json_file:
             kwargs = json.load(json_file)
 
         if flow_kwargs is not None:
@@ -54,10 +56,10 @@ def build_flow( model_hyperparams           :dict = None,
     
 
     #NEURAL NETWORK ---------------------------------------    
-    embedding_network   = StrainResNet(**embedding_network_kwargs).float()
+    embedding_network   = EmbeddingNetwork(**embedding_network_kwargs).float()
        
-    #PRIOR ----------------------------------------------------------------------------
-    prior = MultivariateNormalPrior(**prior_kwargs)
+    #BASE DIST ----------------------------------------------------------------------------
+    base = MultivariateNormalBase(**prior_kwargs)
     
 
     #COUPLING TRANSFORM ----------------------------------------------------------------
@@ -66,12 +68,15 @@ def build_flow( model_hyperparams           :dict = None,
         
         coupling_layers += [RandomPermutation(num_features=coupling_layers_kwargs['num_features'])]
 
-        coupling_layers += [AffineConditionalLayer(coupling_layers_kwargs['num_features'], flow_network_kwargs['strain_features'], coupling_layers_kwargs['num_identity'], coupling_layers_kwargs['num_transformed'])]
+        coupling_layers += [AffineCouplingLayer(coupling_layers_kwargs['num_features'], flow_network_kwargs['strain_features'], coupling_layers_kwargs['num_identity'], coupling_layers_kwargs['num_transformed'])]
         
     coupling_transform = CouplingTransform(coupling_layers)
 
     #FLOW --------------------------------------------------------------------------------------
-    flow = Flow(prior, coupling_transform, model_hyperparams, kwargs, embedding_network).float()
+    flow = Flow(base_distribution = base, 
+                transformation    = coupling_transform, 
+                embedding_network = embedding_network, 
+                model_hyperparams = model_hyperparams).float()
     
     """loading (eventual) weights"""
     if checkpoint_path is not None:
@@ -79,20 +84,7 @@ def build_flow( model_hyperparams           :dict = None,
         print('----> Model weights loaded!\n')
         model_parameters = filter(lambda p: p.requires_grad, flow.parameters())
         params = sum([np.prod(p.size()) for p in model_parameters])
-        print('----> Flow has %.1f M trained parameters' %(params/1e6))
-
-    
+        print(f'----> Flow has {params/1e6:.1f} M trained parameters')
+        
     return flow
 
-
-if __name__ == '__main__':
-    with open('flow_config.json') as json_file:
-        flow_config = json.load(json_file)
-    flow_kwargs = flow_config['flow']
-    prior_kwargs = flow_config['prior']
-    flow_network_kwargs = flow_config['flow_network']
-    embedding_network_kwargs = flow_config['embedding_network'] 
-    print(flow_kwargs)
-    print(prior_kwargs)
-    print(flow_network_kwargs)
-    print(embedding_network_kwargs)
