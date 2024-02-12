@@ -1,10 +1,12 @@
 import torch
 from torch.utils.data import Dataset
-from torch.distributions import Normal #as torchNormal
+from torch.distributions import Normal 
 
 from ..core.fft import *
+from ..core.distributions.prior_distributions import *
+from ..config import CONF_DIR
 
-
+import json
 
 class DatasetGenerator(Dataset):
     """
@@ -18,10 +20,11 @@ class DatasetGenerator(Dataset):
     def __init__(self, 
                  waveform_generator, 
                  asd_generators, 
-                 prior, 
+                 prior          = None, 
                  duration       = 1, 
                  noise_duration = 2, 
-                 batch_size     = 512
+                 batch_size     = 512,
+                 device         = 'cpu'
                  ):
         """
         Constructor.
@@ -52,16 +55,23 @@ class DatasetGenerator(Dataset):
 
         self.waveform_generator  = waveform_generator
         self.asd_generator       = asd_generators
-        self.prior               = prior
         self.batch_size          = batch_size
         self.duration            = duration
         self.noise_duration      = noise_duration
+        self.device              = device
 
         #self.window_len          = self.fs//16
 
         assert sorted(waveform_generator.det_names) == sorted(asd_generators.keys()), f"Mismatch between ifos in waveform generator\
                                                                                        and asd_generator. Got {sorted(waveform_generator.det_names)}\
                                                                                        and {sorted(asd_generators.keys())}, respectively "
+        
+        if prior is None:
+            print("---> No prior was given: loading default prior...")
+            self._load_default_prior()     
+        else:
+            self.prior = prior
+        
         return
 
     @property
@@ -100,6 +110,29 @@ class DatasetGenerator(Dataset):
     def inference_parameters(self):
         return ['M', 'q', 'e0', 'p_0', 'distance', 'time_shift', 'pol', 'incl', 'ra', 'dec']
 
+
+    def _load_default_prior(self):
+        
+        self.prior = dict()
+        
+        prior_file = CONF_DIR + '/BHBH-CE_population.json'
+        with open(prior_file) as json_file:
+            prior_kwargs = json.load(json_file)['parameters']
+            
+        for parameter in prior_kwargs.keys():
+            dist = prior_kwargs[parameter]['distribution']
+            if dist == 'delta':
+                val = prior_kwargs[parameter]['value']
+                self.prior[parameter] = prior_dict_[dist](val, self.device)
+            else:
+                min, max = prior_kwargs[parameter]['min'], prior_kwargs[parameter]['max']
+                self.prior[parameter] = prior_dict_[dist](min, max, self.device)
+        
+        self.prior['M'] = prior_dict_['M'](self.prior['m1'], self.prior['m2'])
+        self.prior['q'] = prior_dict_['M'](self.prior['m1'], self.prior['m2'])
+        
+        print(self.prior)
+        return 
     
     def __len__(self):
         return int(1e8) #set it very high. It matters only when torch DataLoaders are used

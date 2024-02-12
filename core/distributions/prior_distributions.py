@@ -1,8 +1,5 @@
 import torch
 
-__all__ = ['UniformPrior', 'DeltaPrior', 'CosinePrior', 'SinePrior', 'PowerLawPrior', 'M_uniform_in_components', 'q_uniform_in_components' ,'MultivariatePrior']
-
-
 class BasePrior(object):
     """Base class for Prior Distributions"""
     
@@ -59,6 +56,10 @@ class UniformPrior(BasePrior):
         return
     
     @property
+    def name(self):
+        return 'uniform'
+    
+    @property
     def mean(self):
         if not hasattr(self, '_mean'):
             self._mean = (self.minimum + self.maximum) / 2
@@ -92,8 +93,12 @@ class DeltaPrior(BasePrior):
     def __init__(self, value, device = 'cpu'):
         """Dirac delta function prior, this always returns value. """
         super(DeltaPrior, self).__init__(value, value, device)
-        self.value = value
+        self.value = value 
         return
+        
+    @property
+    def name(self):
+        return 'delta'
         
     @property
     def mean(self):
@@ -130,6 +135,9 @@ class CosinePrior(BasePrior):
         super(CosinePrior, self).__init__(minimum, maximum, device)
         return
     
+    @property
+    def name(self):
+        return 'cos'
 
     def rescale(self, samples):
         """
@@ -164,6 +172,10 @@ class SinePrior(BasePrior):
         """
         super(SinePrior, self).__init__(minimum, maximum, device)
         return
+    
+    @property
+    def name(self):
+        return 'sin'
 
     def rescale(self, samples):
         """
@@ -195,6 +207,10 @@ class PowerLawPrior(BasePrior):
         
         self.alpha = alpha
         return
+    
+    @property
+    def name(self):
+        return 'power-law'
     
     def rescale(self, samples):
         """--- adapted from Bilby ---"""
@@ -256,6 +272,10 @@ class M_uniform_in_components(BasePrior):
         return
     
     @property
+    def name(self):
+        return 'M'
+    
+    @property
     def mean(self):
         if not hasattr(self, '_mean'):
             self._mean = self.sample(100_000).mean()
@@ -289,6 +309,10 @@ class q_uniform_in_components(BasePrior):
         maximum = float(m2.maximum / m1.minimum)
         super(q_uniform_in_components, self).__init__(minimum, maximum, m1.device)
         return
+    
+    @property
+    def name(self):
+        return 'q'
     
     @property
     def mean(self):
@@ -356,10 +380,14 @@ class MultivariatePrior():
         return samples
             
         
-
         
-    
-    
+prior_dict_ = {'uniform'  : UniformPrior, 
+               'delta'    : DeltaPrior, 
+               'cos'      : CosinePrior,
+               'sin'      : SinePrior, 
+               'power-law': PowerLawPrior, 
+               'M' : M_uniform_in_components, 
+               'q' : q_uniform_in_components}
 
    
 
