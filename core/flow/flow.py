@@ -5,34 +5,30 @@ import numpy as np
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-import pandas as pd
+
 from astropy.time import Time
 from astropy.units.si import sday
 
-#torch.backends.cudnn.allow_tf32 = False
 
 class Flow(nn.Module):
     """Class that manages the flow model"""
     
     
     def __init__(self,
-                 prior,
-                 transform,
+                 base_distribution,
+                 transformation,
                  model_hyperparams : dict = None,
-                 configuration     : dict = None,
                  embedding_network : nn.Module = None):
         super(Flow, self).__init__()
         
-        self._prior     = prior
+        self.base_distribution = base_distribution
         
+        self.transformation    = transformation
         
-        self._transform = transform
+        self.embedding_network = embedding_network
         
-        self._embedding_network = embedding_network
-        
-
         self.model_hyperparams = model_hyperparams
-        self.configuration = configuration
+        
            
         return
 
@@ -41,21 +37,47 @@ class Flow(nn.Module):
         'e0', 'p_0', 'distance', 'time_shift', 'polarization', 'inclination', 'dec', 'ra'
         converter = {'m1':'$m_1$', 'm2':'$m_2$', 'M_tot':'$M$ $[M_{\odot}]$', 'q':'$q$','M_chirp':'$\mathcal{M}$' ,'e0':'$e_0$', 'p_0':'$p_0$', 'distance':'$d_L$ [Mpc]',
                      'time_shift':'$\delta t_p$ [s]', 'polarization':'$\psi$', 'inclination':'$\iota$', 'dec': '$\delta$', 'ra':'$\\alpha$'}
-        return [converter[par_name] for par_name in self.model_hyperparams['parameters_names'] ]
+        return [converter[par_name] for par_name in self.inference_parameters ]
 
+    @property
+    def inference_parameters(self):
+        return self._inference_parameters
+    @inference_parameters.setter
+    def inference_parameters(self, model_hyperparams):
+        self._inference_parameters = model_hyperparams['inference_parameters']
+    
+    
+    @property
+    def priors(self):
+        return self._priors
+    @priors.setter
+    def priors(self, model_hyperparams):
+        self._priors = model_hyperparams['priors']
+    
+    
+    @property
+    def reference_time(self):
+        return self._reference_time
+    @reference_time.setter
+    def reference_time(self, model_hyperparams):
+        self._reference_time = model_hyperparams['reference_time']
+    
+    
+    
+    
 
     def log_prob(self, inputs, strain, evidence=False):
         """computes the loss function"""
         
         
-        embedded_strain = self._embedding_network(strain)
+        embedded_strain = self.embedding_network(strain)
         
         if evidence:
             embedded_strain = torch.cat([embedded_strain for _ in range(inputs.shape[0])], dim = 0)
 
-        transformed_samples, logabsdet = self._transform(inputs, embedded_strain)  #makes the forward pass 
+        transformed_samples, logabsdet = self.transformation(inputs, embedded_strain)  #makes the forward pass 
         
-        log_prob = self._prior.log_prob(transformed_samples)
+        log_prob = self.base_distribution.log_prob(transformed_samples)
         
         return log_prob + logabsdet 
     
@@ -67,29 +89,29 @@ class Flow(nn.Module):
         
         samples = []
         
-        embedded_strain = self._embedding_network(strain)
+        embedded_strain = self.embedding_network(strain)
         nsteps = num_samples//batch_size if num_samples>=batch_size else 1
         batch_samples = batch_size if num_samples>batch_size else num_samples
         
         for _ in tqdm(range(nsteps), disable=False if verbose else True):
     
-            prior_samples = self._prior.sample(batch_samples)
+            prior_samples = self.base_distribution.sample(batch_samples)
 
-            flow_samples, inverse_logabsdet = self._transform.inverse(prior_samples, embedded_strain)
+            flow_samples, inverse_logabsdet = self.transformation.inverse(prior_samples, embedded_strain)
             
             samples.append(flow_samples)
         samples = torch.cat(samples, dim = 0)
         
         if return_log_prob:
-            log_posterior = self._prior.log_prob(samples) - inverse_logabsdet 
+            log_posterior = self.base_distribution.log_prob(samples) - inverse_logabsdet 
             #log_posterior = self.log_prob(samples, strain, evidence=True) 
             
             std = self.model_hyperparams['stds']
-            log_std = torch.sum(torch.log(torch.tensor([std[p][0] for p in self.model_hyperparams['parameters_names']])))
+            log_std = torch.sum(torch.log(torch.tensor([std[p][0] for p in self.inference_parameters])))
             log_posterior -= log_std
             
 
-        processed_samples_dict = self._post_process_samples(samples.T, restrict_to_bounds, event_time) #flow_samples must be transposed to have shape [N posterior parameters, N samples]
+        processed_samples_dict = self._post_process_samples(samples, restrict_to_bounds, event_time) 
 
         #processed_samples_df = pd.DataFrame.from_dict(processed_samples_dict)
 
@@ -101,17 +123,19 @@ class Flow(nn.Module):
         return processed_samples_dict, log_posterior
     
     
-    def _post_process_samples(self, samples, restrict_to_bounds, event_time = None):
+    def _post_process_samples(self, flow_samples, restrict_to_bounds, event_time = None):
+        #flow_samples must be transposed to have shape [N posterior parameters, N samples]
+        flow_samples = flow_samples.T
         
         processed_samples_dict = dict()
         
-        for i, name in enumerate(self.model_hyperparams['parameters_names']):
-            mean = self.model_hyperparams['means'][name][0]
-            std  = self.model_hyperparams['stds'][name][0]
-            processed_samples = (samples[i]*std + mean)
+        #de-standardize samples
+        for i, name in enumerate(self.inference_parameters):
+            processed_samples = self.priors[name].de_standardize(flow_samples[i])
             
             processed_samples_dict[name] = processed_samples.unsqueeze(1)#.cpu().numpy()
 
+        #correct right ascension
         if event_time is not None:
             ra = processed_samples_dict['ra']
             ra_corrected = self._ra_shift_correction(ra, event_time)
@@ -121,13 +145,7 @@ class Flow(nn.Module):
             num_samples = samples.shape[1]
             processed_samples_dict = self.restrict_samples_to_bounds(processed_samples_dict, num_samples)
 
-        
-        if 'distance' in self.model_hyperparams['parameters_names']:
-            processed_samples_dict['distance'] /= 1e6
-        
-
-        processed_samples_dict['time_shift'] /= 2
-
+    
 
         return processed_samples_dict
 
@@ -138,25 +156,25 @@ class Flow(nn.Module):
         bounds = self.model_hyperparams['parameters_bounds']
 
         #for name in ['dec']:
-        for name in self.model_hyperparams['parameters_names']:
+        for name in self.inference_parameters:
             #print(name, bounds[name]['min'], bounds[name]['max'])
             total_mask *= ((processed_samples_dict[name]<=bounds[name]['max']) * (processed_samples_dict[name]>=bounds[name]['min']))
 
-        for name in self.model_hyperparams['parameters_names']:
+        for name in self.inference_parameters:
             restricted_samples_dict [name] = processed_samples_dict[name][total_mask]
         return restricted_samples_dict, total_mask
 
 
 
-    def _ra_shift_correction(self, ra_samples, event_time, reference_time=1370692818.0):
+    def _ra_shift_correction(self, ra_samples, event_time):
         """corrects ra shift due to Earth rotation with GMST (from pycbc.detector code)"""
         
         
-        reference_Time = Time(reference_time, format="gps", scale="utc")
+        reference_Time = Time(self.reference_time, format="gps", scale="utc")
         #event_Time     = Time(event_time, format="gps", scale="utc")
         GMST_reference = reference_Time.sidereal_time("mean", "greenwich").rad
         
-        dphase = (event_time - reference_time) / sday.si.scale * (2.0 * torch.pi)
+        dphase = (event_time - self.reference_time) / sday.si.scale * (2.0 * torch.pi)
         correction = (-GMST_reference + dphase) % (2.0 * torch.pi)
                 
         return (ra_samples + correction) % (2*torch.pi)

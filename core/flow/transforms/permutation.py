@@ -3,6 +3,7 @@ import torch.nn as nn
 
 
 class RandomPermutation(nn.Module):
+    """Implementation of Random Permutation transformation that shuffles parameters along the coupling transformation"""
     
     def __init__(self, num_features:int = 10):
         

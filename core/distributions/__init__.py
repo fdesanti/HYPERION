@@ -1,2 +1,2 @@
-from .prior_distributions import *
 from .flow_base import *
+from .prior_distributions import *
