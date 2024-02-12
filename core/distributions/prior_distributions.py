@@ -1,5 +1,7 @@
 import torch
 
+N_ = int(1e6)
+
 class BasePrior(object):
     """Base class for Prior Distributions"""
     
@@ -16,13 +18,13 @@ class BasePrior(object):
     def mean(self):
         #print('default')
         if not hasattr(self, '_mean'):
-            self._mean = self.sample((100_000)).mean()
+            self._mean = self.sample((N_)).mean()
         return self._mean
     
     @property
     def std(self):
         if not hasattr(self, '_std'):
-            self._std = self.sample((100_000)).std()
+            self._std = self.sample((N_)).std()
         return self._std
     
     def is_in_prior_range(self, samples):
@@ -278,13 +280,13 @@ class M_uniform_in_components(BasePrior):
     @property
     def mean(self):
         if not hasattr(self, '_mean'):
-            self._mean = self.sample(100_000).mean()
+            self._mean = self.sample(N_).mean()
         return self._mean
     
     @property
     def std(self):
         if not hasattr(self, '_std'):
-            self._std = self.sample(100_000).std()
+            self._std = self.sample(N_).std()
         return self._std
     
     def sample(self, sample_shape, standardize = False):
@@ -317,13 +319,13 @@ class q_uniform_in_components(BasePrior):
     @property
     def mean(self):
         if not hasattr(self, '_mean'):
-            self._mean = self.sample(100_000).mean()
+            self._mean = self.sample(N_).mean()
         return self._mean
     
     @property
     def std(self):
         if not hasattr(self, '_std'):
-            self._std = self.sample(100_000).std()
+            self._std = self.sample(N_).std()
         return self._std
     
     @staticmethod

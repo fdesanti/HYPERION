@@ -49,6 +49,9 @@ class DatasetGenerator(Dataset):
         
         batch_size : int
             Batch size dimension. (Default: 512)
+            
+        device : str
+            Device to be used to generate the dataset. Either 'cpu' or 'cuda:n'. (Default: 'cpu')
         
         """
         super(DatasetGenerator, self).__init__()
@@ -102,17 +105,30 @@ class DatasetGenerator(Dataset):
     def means(self):
         if not hasattr(self, '_means'):
             self._means = dict()
-            
-
-        return
+            for parameter in self.inference_parameters:
+                self._means[parameter] = float(self.prior[parameter].mean)
+        return self._means
+    
+    @property
+    def stds(self):
+        if not hasattr(self, '_stds'):
+            self._stds = dict()
+            for parameter in self.inference_parameters:
+                self._stds[parameter] = float(self.prior[parameter].std)
+        return self._stds
 
     @property
     def inference_parameters(self):
-        return ['M', 'q', 'e0', 'p_0', 'distance', 'time_shift', 'pol', 'incl', 'ra', 'dec']
+        if not hasattr(self, '_inference_parameters'):
+            self._inference_parameters = ['M', 'q', 'e0', 'p_0', 'distance', 'time_shift', 'polarization', 'inclination', 'ra', 'dec'] #default
+        return self._inference_parameters
+    
+    @inference_parameters.setter
+    def inference_parameters(self, name_list):
+        self._inference_parameters = name_list
 
 
     def _load_default_prior(self):
-        
         self.prior = dict()
         
         prior_file = CONF_DIR + '/BHBH-CE_population.json'
@@ -128,17 +144,19 @@ class DatasetGenerator(Dataset):
                 min, max = prior_kwargs[parameter]['min'], prior_kwargs[parameter]['max']
                 self.prior[parameter] = prior_dict_[dist](min, max, self.device)
         
-        self.prior['M'] = prior_dict_['M'](self.prior['m1'], self.prior['m2'])
-        self.prior['q'] = prior_dict_['M'](self.prior['m1'], self.prior['m2'])
         
-        print(self.prior)
+        self.multivariate_prior = MultivariatePrior(self.prior)
+        
+        self.prior['M'] = prior_dict_['M'](self.prior['m1'], self.prior['m2'])
+        self.prior['q'] = prior_dict_['q'](self.prior['m1'], self.prior['m2'])
+        
         return 
     
     def __len__(self):
         return int(1e8) #set it very high. It matters only when torch DataLoaders are used
     
-    
-    def _compute_M_and_q(self, prior_samples):
+    @staticmethod
+    def _compute_M_and_q(prior_samples):
 
         #sorting m1 and m2 so that m2 <= m1
         m1 = prior_samples['m1'].T.squeeze()
@@ -204,11 +222,10 @@ class DatasetGenerator(Dataset):
     def __getitem__(self, idx=None):
 
         #sampling prior
-        prior_samples = self.prior.sample((self.batch_size, 1))
+        prior_samples = self.multivariate_prior.sample((self.batch_size, 1))
         prior_samples['t0_p'] = prior_samples['t0_p'][0]
 
-        prior_samples = self._compute_M_and_q(prior_samples)
-        print(prior_samples)
+        out_prior_samples = self._compute_M_and_q(prior_samples.copy())
         
         #generate projected waveform strain
         h = self.waveform_generator(**prior_samples)
@@ -220,7 +237,7 @@ class DatasetGenerator(Dataset):
         whitened = self._add_noise(whitened)
 
         #standardize parameters
-        print(prior_samples)
+        
 
         
 
