@@ -1,6 +1,6 @@
 import torch
 
-__all__ = ['UniformPrior', 'DeltaPrior', 'CosinePrior', 'SinePrior', 'PowerLawPrior', 'MultivariatePrior']
+__all__ = ['UniformPrior', 'DeltaPrior', 'CosinePrior', 'SinePrior', 'PowerLawPrior', 'M_uniform_in_components', 'q_uniform_in_components' ,'MultivariatePrior']
 
 
 class BasePrior(object):
@@ -241,6 +241,90 @@ class PowerLawPrior(BasePrior):
         return samples
     
     
+class M_uniform_in_components(BasePrior):
+    """Class that manages total Mass M prior from uniform distributed masses"""
+    
+    def __init__(self, m1, m2):
+        assert isinstance(m1, UniformPrior), "m1 is not an instance of UniformPrior"
+        assert isinstance(m2, UniformPrior), "m2 is not an instance of UniformPrior"
+        
+        self.m1 = m1
+        self.m2 = m2
+        minimum = float(m1.minimum + m2.minimum)
+        maximum = float(m1.maximum + m2.maximum)
+        super(M_uniform_in_components, self).__init__(minimum, maximum, m1.device)
+        return
+    
+    @property
+    def mean(self):
+        if not hasattr(self, '_mean'):
+            self._mean = self.sample(100_000).mean()
+        return self._mean
+    
+    @property
+    def std(self):
+        if not hasattr(self, '_std'):
+            self._std = self.sample(100_000).std()
+        return self._std
+    
+    def sample(self, sample_shape, standardize = False):
+        m1 = self.m1.sample(sample_shape)
+        m2 = self.m2.sample(sample_shape)
+        M = m1+m2
+        if standardize:
+            M = self.standardize_samples(M)
+        return M
+        
+        
+class q_uniform_in_components(BasePrior):
+    """Class that manages total Mass M prior from uniform distributed masses"""
+    
+    def __init__(self, m1, m2):
+        assert isinstance(m1, UniformPrior), "m1 is not an instance of UniformPrior"
+        assert isinstance(m2, UniformPrior), "m2 is not an instance of UniformPrior"
+        
+        self.m1 = m1
+        self.m2 = m2
+        minimum = float(m2.minimum / m1.maximum)
+        maximum = float(m2.maximum / m1.minimum)
+        super(q_uniform_in_components, self).__init__(minimum, maximum, m1.device)
+        return
+    
+    @property
+    def mean(self):
+        if not hasattr(self, '_mean'):
+            self._mean = self.sample(100_000).mean()
+        return self._mean
+    
+    @property
+    def std(self):
+        if not hasattr(self, '_std'):
+            self._std = self.sample(100_000).std()
+        return self._std
+    
+    @staticmethod
+    def _sort_masses(m1_samp, m2_samp):
+        """Sort m1 and m2 masses so that m2 <= m1"""
+        m = torch.stack([m1_samp, m2_samp]).T
+        sorted, _ = torch.sort(m)
+        sorted_m1 = sorted.T[1]
+        sorted_m2 = sorted.T[0]
+        return sorted_m1, sorted_m2
+    
+    def sample(self, sample_shape, standardize = False):
+        m1 = self.m1.sample(sample_shape)
+        m2 = self.m2.sample(sample_shape)
+        
+        m1, m2 = self._sort_masses(m1, m2)
+
+        q = m2/m1
+        
+        if standardize:
+            q = self.standardize_samples(q)
+        return q
+        
+      
+    
 class MultivariatePrior():
     """
     Class that manages a multivariate (i.e. multiparameter) Prior
@@ -262,12 +346,6 @@ class MultivariatePrior():
     
     def log_prob(self, samples):
         """Samples must be a dictionary containing a set of parameter samples of shape [Nbatch, 1]"""
-        '''
-        for name in samples.keys():
-            logP = self.priors[name].log_prob(samples[name])
-            print(name, logP)
-            print(name, self.priors[name], self.priors[name].minimum, self.priors[name].maximum)
-        '''
         logP = torch.cat([self.priors[name].log_prob(samples[name]) for name in samples.keys()], dim = 1)
         return logP.sum(-1)
     
