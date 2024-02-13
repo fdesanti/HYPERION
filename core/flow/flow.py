@@ -17,8 +17,9 @@ class Flow(nn.Module):
     def __init__(self,
                  base_distribution,
                  transformation,
-                 model_hyperparams : dict = None,
+                 prior_metadata : dict = None,
                  embedding_network : nn.Module = None):
+        
         super(Flow, self).__init__()
         
         self.base_distribution = base_distribution
@@ -27,7 +28,7 @@ class Flow(nn.Module):
         
         self.embedding_network = embedding_network
         
-        self.model_hyperparams = model_hyperparams
+        self.prior_metadata = prior_metadata
         
            
         return
@@ -43,24 +44,24 @@ class Flow(nn.Module):
     def inference_parameters(self):
         return self._inference_parameters
     @inference_parameters.setter
-    def inference_parameters(self, model_hyperparams):
-        self._inference_parameters = model_hyperparams['inference_parameters']
+    def inference_parameters(self, prior_metadata):
+        self._inference_parameters = prior_metadata['inference_parameters']
     
     
     @property
     def priors(self):
         return self._priors
     @priors.setter
-    def priors(self, model_hyperparams):
-        self._priors = model_hyperparams['priors']
+    def priors(self, prior_metadata):
+        self._priors = prior_metadata['priors']
     
     
     @property
     def reference_time(self):
         return self._reference_time
     @reference_time.setter
-    def reference_time(self, model_hyperparams):
-        self._reference_time = model_hyperparams['reference_time']
+    def reference_time(self, prior_metadata):
+        self._reference_time = prior_metadata['reference_gps_time']
     
     
     
@@ -106,7 +107,7 @@ class Flow(nn.Module):
             log_posterior = self.base_distribution.log_prob(samples) - inverse_logabsdet 
             #log_posterior = self.log_prob(samples, strain, evidence=True) 
             
-            std = self.model_hyperparams['stds']
+            std = self.prior_metadata['stds']
             log_std = torch.sum(torch.log(torch.tensor([std[p][0] for p in self.inference_parameters])))
             log_posterior -= log_std
             
@@ -153,7 +154,7 @@ class Flow(nn.Module):
     def restrict_samples_to_bounds(self, processed_samples_dict, num_samples):
         restricted_samples_dict = dict()
         total_mask = np.ones(num_samples, dtype='bool')
-        bounds = self.model_hyperparams['parameters_bounds']
+        bounds = self.prior_metadata['parameters_bounds']
 
         #for name in ['dec']:
         for name in self.inference_parameters:

@@ -20,11 +20,11 @@ class DatasetGenerator(Dataset):
     def __init__(self, 
                  waveform_generator, 
                  asd_generators, 
-                 prior          = None, 
-                 duration       = 1, 
-                 noise_duration = 2, 
-                 batch_size     = 512,
-                 device         = 'cpu'
+                 prior_filepath      = None, 
+                 signal_duration = 1, 
+                 noise_duration  = 2, 
+                 batch_size      = 512,
+                 device          = 'cpu'
                  ):
         """
         Constructor.
@@ -37,10 +37,10 @@ class DatasetGenerator(Dataset):
         asd_generators: dict of ASD_sampler objects
             Dictionary with hyperion's ASD_sampler object instances for each interferometer to simulate            
 
-        prior: object 
-            hyperion's MultivariatePrior object instance defining the prior on the population parameters
+        prior_filepath: str or Path
+            Path to a json file specifying the prior distributions over the simulation's parameters
 
-        duration: float
+        signal_duration: float
             Duration (seconds) of the output strain. (Default: 1)
 
         noise_duration : float
@@ -59,7 +59,7 @@ class DatasetGenerator(Dataset):
         self.waveform_generator  = waveform_generator
         self.asd_generator       = asd_generators
         self.batch_size          = batch_size
-        self.duration            = duration
+        self.signal_duration     = signal_duration
         self.noise_duration      = noise_duration
         self.device              = device
 
@@ -69,11 +69,11 @@ class DatasetGenerator(Dataset):
                                                                                        and asd_generator. Got {sorted(waveform_generator.det_names)}\
                                                                                        and {sorted(asd_generators.keys())}, respectively "
         
-        if prior is None:
-            print("---> No prior was given: loading default prior...")
-            self._load_default_prior()     
-        else:
-            self.prior = prior
+        if prior_filepath is None:
+            print("----> No prior was given: loading default prior...")
+        
+        self._load_prior(prior_filepath)     
+        
         
         return
 
@@ -122,40 +122,61 @@ class DatasetGenerator(Dataset):
         if not hasattr(self, '_inference_parameters'):
             self._inference_parameters = ['M', 'q', 'e0', 'p_0', 'distance', 'time_shift', 'polarization', 'inclination', 'ra', 'dec'] #default
         return self._inference_parameters
-    
     @inference_parameters.setter
     def inference_parameters(self, name_list):
         self._inference_parameters = name_list
 
 
-    def _load_default_prior(self):
-        self.prior = dict()
+    def _load_prior(self, prior_filepath=None):
+        """
+        Load the prior distributions specified in the json prior_filepath:
+        if no filepath is given, the default one stored in the config dir will be used
         
-        prior_file = CONF_DIR + '/BHBH-CE_population.json'
-        with open(prior_file) as json_file:
-            prior_kwargs = json.load(json_file)['parameters']
+        This function first reads the json file, then store the prior as a hyperion's MultivariatePrior instance. 
+        Prior's metadata are stored as well. 
+        The reference_time of the GWDetector instances is finally updated to the value set in the prior
+
+        """
+
+        #load the json file
+        if prior_filepath is None:
+            prior_filepath = CONF_DIR + '/BHBH-CE_population.json'
+
+        with open(prior_filepath) as json_file:
+            prior_kwargs = json.load(json_file)
             self._prior_metadata = prior_kwargs
-            
-        for parameter in prior_kwargs.keys():
-            dist = prior_kwargs[parameter]['distribution']
+        
+        #load single priors as dictionary: each key is a parameter
+        self.prior = dict()
+        for p in prior_kwargs['parameters'].keys():
+            dist = prior_kwargs['parameters'][p]['distribution']
             if dist == 'delta':
-                val = prior_kwargs[parameter]['value']
-                self.prior[parameter] = prior_dict_[dist](val, self.device)
+                val = prior_kwargs['parameters'][p]['value']
+                self.prior[p] = prior_dict_[dist](val, self.device)
             else:
-                min, max = prior_kwargs[parameter]['min'], prior_kwargs[parameter]['max']
-                self.prior[parameter] = prior_dict_[dist](min, max, self.device)
+                min, max = prior_kwargs['parameters'][p]['min'], prior_kwargs['parameters'][p]['max']
+                self.prior[p] = prior_dict_[dist](min, max, self.device)
         
-        
+        #convert prior dictionary to MultivariatePrior
         self.multivariate_prior = MultivariatePrior(self.prior)
         
-        #add M and q to prior        
+        #add M and q to prior dictionary
+        #NB: they are not added to MultivariatePrior to avoid conflict with the waveform_generator 
+        #    this is intended when the inference parameters contain parameters that are combination of the default's one
+        #    (Eg. the total mass M =m1+m2 or q=m2/m1 that have no simple joint distribution) 
+        #    In this way we store however the metadata (eg. min and max values) without compromising the simulation 
+             
         if ('M' in self.inference_parameters) and ('q' in self.inference_parameters):
             for p in ['M', 'q']:
                 self.prior[p] = prior_dict_[p](self.prior['m1'], self.prior['m2'])
                 min, max = float(self.prior[p].minimum), float(self.prior[p].maximum)
                 metadata = {'distribution':p , 'min': min, 'max': max}
                 self._prior_metadata[p] = metadata
-            
+        
+        #update reference gps time in detectors
+        for det in self.det_names:
+            self.waveform_generator.detectors[det].reference_time = prior_kwargs['reference_gps_time']
+
         return 
     
     def __len__(self):
@@ -183,7 +204,7 @@ class DatasetGenerator(Dataset):
     def _apply_time_shifts_and_whiten(self, h):
 
         out_h = []
-        pad   = (self.noise_duration - self.duration)*self.fs // 2
+        pad   = (self.noise_duration - self.signal_duration)*self.fs // 2
         
         for ifo in self.det_names:
                         
@@ -209,7 +230,7 @@ class DatasetGenerator(Dataset):
     
             #crop to desired output duration
             central_time = h_tmp.shape[-1]//2
-            d = self.duration * self.fs // 2 
+            d = self.signal_duration * self.fs // 2 
             out_h.append(h_tmp[:, central_time-d : central_time+d])
 
         out_h = torch.stack(out_h, dim=1)
