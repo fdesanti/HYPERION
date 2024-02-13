@@ -20,11 +20,12 @@ class DatasetGenerator(Dataset):
     def __init__(self, 
                  waveform_generator, 
                  asd_generators, 
-                 prior_filepath      = None, 
+                 prior_filepath  = None, 
                  signal_duration = 1, 
                  noise_duration  = 2, 
                  batch_size      = 512,
-                 device          = 'cpu'
+                 device          = 'cpu',
+                 inference_parameters = None,
                  ):
         """
         Constructor.
@@ -52,16 +53,21 @@ class DatasetGenerator(Dataset):
             
         device : str
             Device to be used to generate the dataset. Either 'cpu' or 'cuda:n'. (Default: 'cpu')
+
+        inference_parameters : list of strings
+            List of inference parameter names (e.g. ['m1', 'm2', 'ra', 'dec', ...]). (Default: 
+            ['M', 'q', 'e0', 'p_0', 'distance', 'time_shift', 'polarization', 'inclination', 'ra', 'dec'])
         
         """
         super(DatasetGenerator, self).__init__()
 
-        self.waveform_generator  = waveform_generator
-        self.asd_generator       = asd_generators
-        self.batch_size          = batch_size
-        self.signal_duration     = signal_duration
-        self.noise_duration      = noise_duration
-        self.device              = device
+        self.waveform_generator   = waveform_generator
+        self.asd_generator        = asd_generators
+        self.batch_size           = batch_size
+        self.signal_duration      = signal_duration
+        self.noise_duration       = noise_duration
+        self.device               = device
+        self.inference_parameters = inference_parameters
 
         #self.window_len          = self.fs//16
 
@@ -119,11 +125,12 @@ class DatasetGenerator(Dataset):
 
     @property
     def inference_parameters(self):
-        if not hasattr(self, '_inference_parameters'):
-            self._inference_parameters = ['M', 'q', 'e0', 'p_0', 'distance', 'time_shift', 'polarization', 'inclination', 'ra', 'dec'] #default
         return self._inference_parameters
+    
     @inference_parameters.setter
     def inference_parameters(self, name_list):
+        if name_list is None:
+            name_list = ['M', 'q', 'e0', 'p_0', 'distance', 'time_shift', 'polarization', 'inclination', 'ra', 'dec'] #default
         self._inference_parameters = name_list
 
 
@@ -133,7 +140,7 @@ class DatasetGenerator(Dataset):
         if no filepath is given, the default one stored in the config dir will be used
         
         This function first reads the json file, then store the prior as a hyperion's MultivariatePrior instance. 
-        Prior's metadata are stored as well. 
+        Prior's metadata are stored as well. Metadata also contains the list of the inference parameters 
         The reference_time of the GWDetector instances is finally updated to the value set in the prior
 
         """
@@ -145,7 +152,7 @@ class DatasetGenerator(Dataset):
         with open(prior_filepath) as json_file:
             prior_kwargs = json.load(json_file)
             self._prior_metadata = prior_kwargs
-        
+                    
         #load single priors as dictionary: each key is a parameter
         self.prior = dict()
         for p in prior_kwargs['parameters'].keys():
@@ -176,6 +183,9 @@ class DatasetGenerator(Dataset):
         #update reference gps time in detectors
         for det in self.det_names:
             self.waveform_generator.detectors[det].reference_time = prior_kwargs['reference_gps_time']
+
+        #add inference parameters to metadata
+        self._prior_metadata['inference_parameters'] = self.inference_parameters
 
         return 
     

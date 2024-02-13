@@ -3,9 +3,7 @@
 import torch
 import numpy as np
 
-from scipy.interpolate import interp1d
 from ..core.fft import rfftfreq
-
 from ..config import CONF_DIR
 
 
@@ -122,3 +120,6 @@ class ASD_sampler():
 
     def __call__(self, batch_size = 512):
         return self.sample(batch_size)
+    
+    def _test(self):
+        return 
