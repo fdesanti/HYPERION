@@ -218,13 +218,13 @@ class DatasetGenerator(Dataset):
         
         for ifo in self.det_names:
                         
-            dt = h[f"{ifo}_delay"] #time delay from Earth center + central time shift 
+            dt = h['time_delay'][ifo] #time delay from Earth center + central time shift 
             
             #apply hann window to cancel border offsets
-            h[ifo]*= torch.hann_window(h[ifo].shape[-1])
+            h['strain'][ifo]*= torch.hann_window(h['strain'][ifo].shape[-1])
         
             #pad template with left/right last values adding points up to noise_duration
-            h_tmp  = torch.nn.functional.pad(h[ifo], (pad, pad ), mode='replicate')  
+            h_tmp  = torch.nn.functional.pad(h['strain'][ifo], (pad, pad ), mode='replicate')  
 
             #apply time shifts to templates in the frequency domain
             h_tmp = rfft(h_tmp, n = h_tmp.shape[-1], fs=self.fs) * torch.exp(-1j * 2 * torch.pi * self.frequencies * dt)
