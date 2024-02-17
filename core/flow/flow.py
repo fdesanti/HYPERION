@@ -1,10 +1,11 @@
 """ Normalizing Flow implementation """
 
-from time import time
-import numpy as np
+
+
 import torch
 import torch.nn as nn
 from tqdm import tqdm
+from time import time
 
 from astropy.time import Time
 from astropy.units.si import sday
@@ -153,7 +154,7 @@ class Flow(nn.Module):
 
     def restrict_samples_to_bounds(self, processed_samples_dict, num_samples):
         restricted_samples_dict = dict()
-        total_mask = np.ones(num_samples, dtype='bool')
+        total_mask = torch.ones(num_samples, dtype=torch.bool)
         bounds = self.prior_metadata['parameters_bounds']
 
         #for name in ['dec']:
