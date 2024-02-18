@@ -8,9 +8,14 @@ class Rand():
     Wrapper class to torch.rand to explot a random generator with a fixed seed
     for reproducibility
     """
-    def __init__(self, rng = None):
-        self.rng = rng
-        return
+    def __init__(self, seed = None, device = 'cpu'):
+        
+        if seed is not None:
+            self.rng = torch.Generator(device)
+            self.rng.manual_seed(seed)
+        else:
+            self.rng = None
+        
 
     def __call__(self, sample_shape, device):
         return torch.rand(sample_shape, generator = self.rng, device = device)
@@ -19,17 +24,14 @@ class Rand():
 class BasePrior():
     """Base class for Prior Distributions"""
     
-    def __init__(self, minimum=None, maximum=None , device = 'cpu', rng = None):
+    def __init__(self, minimum=None, maximum=None , device = 'cpu', seed = None):
 
         assert maximum >= minimum, f"high must be >= than low, given {maximum} and {minimum} respectively"
-        if rng is not None:
-            assert rng.device == torch.device(device), \
-            f"Mismatch between given random generator's device and device argument. Got {rng.device} and {torch.device(device)}, respectively."
-            
+        
         self.device  = device
         self.minimum = torch.tensor(minimum).to(device)
         self.maximum = torch.tensor(maximum).to(device)
-        self.rand = Rand(rng)
+        self.rand = Rand(seed, device)
         return
     
     @property
@@ -71,8 +73,8 @@ class BasePrior():
 
 class UniformPrior(BasePrior):
 
-    def __init__(self, minimum, maximum, device = 'cpu', rng = None):
-        super(UniformPrior, self).__init__(minimum, maximum, device, rng)
+    def __init__(self, minimum, maximum, device = 'cpu', seed = None):
+        super(UniformPrior, self).__init__(minimum, maximum, device, seed)
         return
     
     @property
@@ -149,10 +151,10 @@ class DeltaPrior(BasePrior):
 class CosinePrior(BasePrior):
     """Uniform in Cosine Prior distribution"""
     
-    def __init__(self, minimum=-torch.pi / 2, maximum=torch.pi / 2, device = 'cpu', rng = None):
+    def __init__(self, minimum=-torch.pi / 2, maximum=torch.pi / 2, device = 'cpu', seed = None):
         """Cosine prior with bounds
         """
-        super(CosinePrior, self).__init__(minimum, maximum, device, rng)
+        super(CosinePrior, self).__init__(minimum, maximum, device, seed)
         return
     
     @property
@@ -187,10 +189,10 @@ class CosinePrior(BasePrior):
 class SinePrior(BasePrior):
     """Uniform in Sine Prior distribution"""
     
-    def __init__(self, minimum=0, maximum=torch.pi , device = 'cpu', rng = None):
+    def __init__(self, minimum=0, maximum=torch.pi , device = 'cpu', seed = None):
         """Cosine prior with bounds
         """
-        super(SinePrior, self).__init__(minimum, maximum, device, rng)
+        super(SinePrior, self).__init__(minimum, maximum, device, seed)
         return
     
     @property
@@ -222,8 +224,8 @@ class SinePrior(BasePrior):
     
 class PowerLawPrior(BasePrior):
     
-    def __init__(self, minimum, maximum, alpha, device = 'cpu', rng = None):
-        super(PowerLawPrior, self).__init__(minimum, maximum, device, rng)
+    def __init__(self, minimum, maximum, alpha, device = 'cpu', seed = None):
+        super(PowerLawPrior, self).__init__(minimum, maximum, device, seed)
         
         self.alpha = alpha
         return

@@ -1,12 +1,11 @@
+import json
 import torch
 from torch.utils.data import Dataset
-from torch.distributions import Normal 
 
 from ..core.fft import *
 from ..core.distributions.prior_distributions import *
 from ..config import CONF_DIR
 
-import json
 
 class DatasetGenerator(Dataset):
     """
@@ -73,10 +72,10 @@ class DatasetGenerator(Dataset):
         self.device               = device
         self.inference_parameters = inference_parameters
 
-        #set up the random number generator
-        self.rng = torch.Generator(device)
+        #set up self random number generator
+        self.rng  = torch.Generator(device)
         self.rng.manual_seed(random_seed)
-
+        self.seed = random_seed
 
         assert sorted(waveform_generator.det_names) == sorted(asd_generators.keys()), f"Mismatch between ifos in waveform generator\
                                                                                        and asd_generator. Got {sorted(waveform_generator.det_names)}\
@@ -169,7 +168,7 @@ class DatasetGenerator(Dataset):
                 self.prior[p] = prior_dict_[dist](val, self.device)
             else:
                 min, max = prior_kwargs['parameters'][p]['min'], prior_kwargs['parameters'][p]['max']
-                self.prior[p] = prior_dict_[dist](min, max, self.device, self.rng)
+                self.prior[p] = prior_dict_[dist](min, max, self.device, self.seed)
         
         #convert prior dictionary to MultivariatePrior
         self.multivariate_prior = MultivariatePrior(self.prior)
@@ -256,11 +255,11 @@ class DatasetGenerator(Dataset):
     
     
     def _add_noise(self, h):
+        """Adds gaussian white noise to whitened templates."""
         
-        #noise = Normal(loc = 0, scale = self.noise_std).sample(h.shape)
         mean = torch.zeros(h.shape)
         noise = torch.normal(mean, self.noise_std, generator=self.rng)
-        #noise = torch.randn(h.shape)
+        
         return (h + noise)/self.noise_std
     
     
@@ -296,7 +295,6 @@ class DatasetGenerator(Dataset):
 
         #standardize parameters
         out_prior_samples = self.standardize_parameters(out_prior_samples)
-    
     
         return out_prior_samples, whitened_strain
     

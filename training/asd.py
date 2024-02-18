@@ -29,6 +29,9 @@ class ASD_sampler():
 
         device: str
             Device on which perform the computation. Either 'cpu' or 'cuda:n' (Default: 'cpu')
+
+        random_seed : int
+            Random seed to set the random number generator for reproducibility. (Default: 123)
     
     Methods:
     --------
@@ -48,7 +51,7 @@ class ASD_sampler():
 
     """
 
-    def __init__(self, ifo, asd_file=None, fs = 2048, duration=2, device = 'cpu'):
+    def __init__(self, ifo, asd_file=None, fs = 2048, duration=2, device = 'cpu', random_seed = 123):
 
         #read reference Asd
         if asd_file is not None:
@@ -68,6 +71,10 @@ class ASD_sampler():
         #other attributes
         self.fs = fs
         self.device = device
+
+        #set up random number generator
+        self.rng = torch.Generator(device)
+        self.rng.manual_seed(random_seed)
         return
 
     @property
@@ -100,8 +107,8 @@ class ASD_sampler():
         # Generate scaled random power + phase
  
         mean = torch.zeros(out_asd_shape)
-        out_asd_real = torch.normal(mean = mean, std=self.asd_std)
-        out_asd_imag = torch.normal(mean = mean, std=self.asd_std)
+        out_asd_real = torch.normal(mean=mean, std=self.asd_std, generator=self.rng)
+        out_asd_imag = torch.normal(mean=mean, std=self.asd_std, generator=self.rng)
     
         # If the signal length is even, frequencies +/- 0.5 are equal
         # so the coefficient must be real.
