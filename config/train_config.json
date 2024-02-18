@@ -11,8 +11,8 @@
 
     "initial_learning_rate": 1e-4,
 
-    "steps_per_epoch": 12, 
-    "val_steps_per_epoch": 12,
+    "steps_per_epoch": 1000, 
+    "val_steps_per_epoch": 250,
 
     "lr_schedule": {
         "scheduler": "ReduceLROnPlateau", 
