@@ -2,16 +2,34 @@ import torch
 
 N_ = int(1e6)
 
-class BasePrior(object):
+
+class Rand():
+    """
+    Wrapper class to torch.rand to explot a random generator with a fixed seed
+    for reproducibility
+    """
+    def __init__(self, rng = None):
+        self.rng = rng
+        return
+
+    def __call__(self, sample_shape, device):
+        return torch.rand(sample_shape, generator = self.rng, device = device)
+
+
+class BasePrior():
     """Base class for Prior Distributions"""
     
-    def __init__(self, minimum=None, maximum=None , device = 'cpu'):
+    def __init__(self, minimum=None, maximum=None , device = 'cpu', rng = None):
 
-        assert maximum >= minimum, f" high must be >= than low, given {maximum} and {minimum} respectively"
-
+        assert maximum >= minimum, f"high must be >= than low, given {maximum} and {minimum} respectively"
+        if rng is not None:
+            assert rng.device == torch.device(device), \
+            f"Mismatch between given random generator's device and device argument. Got {rng.device} and {torch.device(device)}, respectively."
+            
         self.device  = device
         self.minimum = torch.tensor(minimum).to(device)
         self.maximum = torch.tensor(maximum).to(device)
+        self.rand = Rand(rng)
         return
     
     @property
@@ -53,8 +71,8 @@ class BasePrior(object):
 
 class UniformPrior(BasePrior):
 
-    def __init__(self, minimum, maximum, device = 'cpu'):
-        super(UniformPrior, self).__init__(minimum, maximum, device)
+    def __init__(self, minimum, maximum, device = 'cpu', rng = None):
+        super(UniformPrior, self).__init__(minimum, maximum, device, rng)
         return
     
     @property
@@ -82,7 +100,7 @@ class UniformPrior(BasePrior):
         return self.minimum + samples * delta
     
     def sample(self, sample_shape, standardize=False):
-        samples = torch.rand(sample_shape, device = self.device)
+        samples = self.rand(sample_shape, device = self.device)
         samples = self.rescale(samples)
         if standardize:
             samples = self.standardize_samples(samples)
@@ -131,10 +149,10 @@ class DeltaPrior(BasePrior):
 class CosinePrior(BasePrior):
     """Uniform in Cosine Prior distribution"""
     
-    def __init__(self, minimum=-torch.pi / 2, maximum=torch.pi / 2, device = 'cpu'):
+    def __init__(self, minimum=-torch.pi / 2, maximum=torch.pi / 2, device = 'cpu', rng = None):
         """Cosine prior with bounds
         """
-        super(CosinePrior, self).__init__(minimum, maximum, device)
+        super(CosinePrior, self).__init__(minimum, maximum, device, rng)
         return
     
     @property
@@ -157,7 +175,7 @@ class CosinePrior(BasePrior):
         return torch.log(prob)
     
     def sample(self, sample_shape, standardize=False):
-        samples = torch.rand(sample_shape, device = self.device)
+        samples = self.rand(sample_shape, device = self.device)
         samples = self.rescale(samples)
         if standardize:
             samples = self.standardize_samples(samples)
@@ -169,10 +187,10 @@ class CosinePrior(BasePrior):
 class SinePrior(BasePrior):
     """Uniform in Sine Prior distribution"""
     
-    def __init__(self, minimum=0, maximum=torch.pi , device = 'cpu'):
+    def __init__(self, minimum=0, maximum=torch.pi , device = 'cpu', rng = None):
         """Cosine prior with bounds
         """
-        super(SinePrior, self).__init__(minimum, maximum, device)
+        super(SinePrior, self).__init__(minimum, maximum, device, rng)
         return
     
     @property
@@ -194,7 +212,7 @@ class SinePrior(BasePrior):
         return torch.log(prob)
     
     def sample(self, sample_shape, standardize=False):
-        samples = torch.rand(sample_shape, device = self.device)
+        samples = self.rand(sample_shape, device = self.device)
         samples = self.rescale(samples)
         if standardize:
             samples = self.standardize_samples(samples)
@@ -204,8 +222,8 @@ class SinePrior(BasePrior):
     
 class PowerLawPrior(BasePrior):
     
-    def __init__(self, minimum, maximum, alpha, device = 'cpu'):
-        super(PowerLawPrior, self).__init__(minimum, maximum, device)
+    def __init__(self, minimum, maximum, alpha, device = 'cpu', rng = None):
+        super(PowerLawPrior, self).__init__(minimum, maximum, device, rng)
         
         self.alpha = alpha
         return
@@ -252,7 +270,7 @@ class PowerLawPrior(BasePrior):
 
     
     def sample(self, sample_shape, standardize=False):
-        samples = torch.rand(sample_shape, device = self.device)
+        samples = self.rand(sample_shape, device = self.device)
         samples = self.rescale(samples)
         if standardize:
             samples = self.standardize_samples(samples)
@@ -391,37 +409,4 @@ prior_dict_ = {'uniform'  : UniformPrior,
                'M' : M_uniform_in_components, 
                'q' : q_uniform_in_components}
 
-   
-
-
-    
-    
-
-
-
-
-
-
-
-if __name__=='__main__':
-    
-    import matplotlib.pyplot as plt
-    
-    
-    u = UniformPrior(minimum=10, maximum=100)
-    u = CosinePrior()
-    u = PowerLawPrior(minimum=100, maximum=6000, alpha=2)
-    #u = DeltaPrior(123)
-    #print(u.mean)
-        
-    s = u.sample((100,1), standardize=False)
-    #plt.hist(s.numpy(), 100);
-    #plt.show()
-    
-    
-    x = UniformPrior(1, 8000).sample(s.shape)
-    log_prob = u.log_prob(x)
-    
-    
-    print(log_prob, log_prob.shape)
     

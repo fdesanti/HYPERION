@@ -1,46 +1,41 @@
+"""This file contains the Trainer class which is used to handle the
+    training procedure of HYPERION
+"""
+
 import os
-
-
-import numpy as np
-from tqdm import tqdm
-
-
 import torch
-
-
-import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
-sns.set_theme()
-sns.set_context("talk")
+import matplotlib.pyplot as plt
 
+from tqdm import tqdm
 from gwskysim.gwskysim.utilities.gwlogger import GWLogger
 
+sns.set_theme()
+sns.set_context("talk")
 
 
 class Trainer:
     def __init__(self,
                 flow:           torch.nn.Module,
-                train_loader:   torch.utils.data.DataLoader,
-                val_loader  :   torch.utils.data.DataLoader,
+                training_dataset:   torch.utils.data.DataLoader,
+                validation_dataset  :   torch.utils.data.DataLoader,
                 optimizer:      torch.optim.Optimizer,
                 scheduler:      torch.optim.lr_scheduler,
                 device:         str,
                 checkpoint_filepath: str,
-                train_dataset       = None,
-                data_loader_kwargs   = None,
+               
+                
                 steps_per_epoch     = None,
                 val_steps_per_epoch = None,
                 verbose = True,
-                Nsubs = int(1e6),
+                
                 ):
         
         self.device     = device
         self.flow       = flow.to(device)
-        self.train_ds   = train_loader
-        #self.train_dataset = train_dataset
-        self.data_loader_kwargs = data_loader_kwargs
-        self.Nsubs      = Nsubs
-        self.val_ds     = val_loader
+        self.train_ds   = training_dataset
+        self.val_ds     = validation_dataset
         self.optimizer  = optimizer
         self.scheduler  = scheduler
         

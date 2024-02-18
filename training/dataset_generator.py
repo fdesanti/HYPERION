@@ -26,6 +26,7 @@ class DatasetGenerator(Dataset):
                  batch_size      = 512,
                  device          = 'cpu',
                  inference_parameters = None,
+                 random_seed     = 123,
                  ):
         """
         Constructor.
@@ -57,6 +58,9 @@ class DatasetGenerator(Dataset):
         inference_parameters : list of strings
             List of inference parameter names (e.g. ['m1', 'm2', 'ra', 'dec', ...]). (Default: 
             ['M', 'q', 'e0', 'p_0', 'distance', 'time_shift', 'polarization', 'inclination', 'ra', 'dec'])
+
+        random_seed : int
+            Random seed to set the random number generator for reproducibility. (Default: 123)
         
         """
         super(DatasetGenerator, self).__init__()
@@ -69,7 +73,10 @@ class DatasetGenerator(Dataset):
         self.device               = device
         self.inference_parameters = inference_parameters
 
-        #self.window_len          = self.fs//16
+        #set up the random number generator
+        self.rng = torch.Generator(device)
+        self.rng.manual_seed(random_seed)
+
 
         assert sorted(waveform_generator.det_names) == sorted(asd_generators.keys()), f"Mismatch between ifos in waveform generator\
                                                                                        and asd_generator. Got {sorted(waveform_generator.det_names)}\
@@ -162,7 +169,7 @@ class DatasetGenerator(Dataset):
                 self.prior[p] = prior_dict_[dist](val, self.device)
             else:
                 min, max = prior_kwargs['parameters'][p]['min'], prior_kwargs['parameters'][p]['max']
-                self.prior[p] = prior_dict_[dist](min, max, self.device)
+                self.prior[p] = prior_dict_[dist](min, max, self.device, self.rng)
         
         #convert prior dictionary to MultivariatePrior
         self.multivariate_prior = MultivariatePrior(self.prior)
@@ -249,7 +256,10 @@ class DatasetGenerator(Dataset):
     
     
     def _add_noise(self, h):
-        noise = Normal(loc = 0, scale = self.noise_std).sample(h.shape)
+        
+        #noise = Normal(loc = 0, scale = self.noise_std).sample(h.shape)
+        mean = torch.zeros(h.shape)
+        noise = torch.normal(mean, self.noise_std, generator=self.rng)
         #noise = torch.randn(h.shape)
         return (h + noise)/self.noise_std
     
