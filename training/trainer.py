@@ -30,7 +30,7 @@ class Trainer:
                 ):
         
         self.device     = device
-        self.flow       = flow
+        self.flow       = flow.float()
         self.train_ds   = training_dataset
         self.val_ds     = validation_dataset
         self.optimizer  = optimizer
@@ -65,10 +65,10 @@ class Trainer:
 
         #main loop over the epoch's batches
         for step in range(self.steps_per_epoch):
-            
             #getting the trainig batch
             parameters, strains = self.train_ds.__getitem__()
-                       
+
+            
             #training step
             self.optimizer.zero_grad()
             
@@ -97,7 +97,7 @@ class Trainer:
             return np.nan
        
         #compute the mean loss
-        avg_train_loss /= self.total
+        avg_train_loss /= self.steps_per_epoch
     
         return avg_train_loss
    
@@ -118,11 +118,13 @@ class Trainer:
             parameters, strains = self.val_ds.__getitem__()
             
             #computing loss
-            log_p = - self.flow.log_prob(parameters, strains)
+            log_p = -self.flow.log_prob(parameters, strains)
             loss  = torch.mean(log_p)
             
             if torch.isnan(loss) or torch.isinf(loss):
                 fail_counter += 1
+                print(f'Epoch = {epoch}  |  Validation Step = {step+1} / {self.val_steps_per_epoch}  |  Loss = {loss.item():.3f}', end='\r')
+            
             else:
                 avg_val_loss += loss.item() #item() returns loss as a number instead of a tensor
                 if self.verbose:
@@ -139,7 +141,7 @@ class Trainer:
         
         checkpoints = {
             'configuration': self.flow.configuration,
-            'model_hyperparams': self.flow.model_hyperparams,
+            'prior_metadata': self.flow.prior_metadata,
             'model_state_dict': self.flow.state_dict(),
             #'optimizer_state_dict': self.optimizer.state_dict(),
             #'epoch': epoch,
@@ -173,7 +175,7 @@ class Trainer:
         plt.ylabel('$\eta$')
         plt.savefig(self.checkpoint_dir+'/history_plot.jpg', dpi=200, bbox_inches='tight')
         plt.close()
-     
+    
 	
     def train(self, num_epochs, overwrite_history=True):
         self.log = GWLogger('training_logger')
@@ -182,6 +184,7 @@ class Trainer:
         best_train_loss = np.inf
         best_val_loss   = np.inf
         
+
         self.history_fpath = os.path.join(self.checkpoint_dir, 'history.txt')
         
         if not overwrite_history:
@@ -191,7 +194,7 @@ class Trainer:
             f.write('#training loss, validation loss, learning rate\n')
             f.flush()
         
-
+        print('\n')
         self.log.info('Starting Training...\n')
         
         #main training loop over the epochs
@@ -220,24 +223,35 @@ class Trainer:
                 print(f"best train loss = {best_train_loss:.3f} at epoch {epoch}")
                 print(f"best val   loss = {best_val_loss:.3f} at epoch {epoch}\n")
            
-           
-            #make lr scheduler step and get current lr
-            if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                lr = self.optimizer.param_groups[0]['lr']
-                self.scheduler.step(val_loss) #for ReduceLrOnPlateau
+            
+            #get current learning rate
+            if epoch > 1:
+                current_lr = self.scheduler.get_last_lr()[0]
             else:
-                lr = self.scheduler.get_last_lr()[0]
-                self.scheduler.step() #for CosineAnnealingLr
-                
+                current_lr = self.optimizer.param_groups[0]["lr"]
+            
             #write history to file
-            f.write(str(train_loss)+','+str(val_loss)+','+str(lr)+'\n')
+            f.write(str(train_loss)+','+str(val_loss)+','+str(current_lr)+'\n')
             f.flush()
-                
+            
+            #make history plot
             try:
                 self._make_history_plots()
             except:
                 pass
             
+        
+            #perform learning rate schedule step
+            if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                self.scheduler.step(val_loss) #for ReduceLrOnPlateau
+                updated_lr = self.scheduler.get_last_lr()[0]
+                if updated_lr < current_lr:
+                    self.log.info(f"Reduced learning rate to {updated_lr}")
+            else:
+                self.scheduler.step() #for CosineAnnealingLr
+                
+            
+
         f.close()
         self.log.info('Training Completed!\n')
          

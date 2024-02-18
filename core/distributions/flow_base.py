@@ -51,7 +51,7 @@ class MultivariateNormalBase(nn.Module):
     def log_prob(self, samples):
         """assumes that samples have dim (Nbatch, self.dim) ie 1 sample per batch"""
         
-        if samples.dim[1] != self.dim:
+        if samples.shape[1] != self.dim:
             raise ValueError(f'Wrong samples dim. Expected (batch_size, {self.dim}) and got {samples.dim}')
         
     

@@ -19,7 +19,8 @@ class Flow(nn.Module):
                  base_distribution,
                  transformation,
                  prior_metadata : dict = None,
-                 embedding_network : nn.Module = None):
+                 embedding_network : nn.Module = None, 
+                 configuration: dict = None):
         
         super(Flow, self).__init__()
         
@@ -31,6 +32,7 @@ class Flow(nn.Module):
         
         self.prior_metadata = prior_metadata
         
+        self.configuration = configuration
            
         return
 
@@ -73,6 +75,7 @@ class Flow(nn.Module):
         
         
         embedded_strain = self.embedding_network(strain)
+        
         
         if evidence:
             embedded_strain = torch.cat([embedded_strain for _ in range(inputs.shape[0])], dim = 0)

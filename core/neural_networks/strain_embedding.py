@@ -63,6 +63,7 @@ class EmbeddingNetwork(nn.Module):
                  strain_shape : list, 
                  num_blocks   = 3,
                  block_dims :list = [2048, 1024, 512, 256], 
+                 strain_out_dim = 256,
                  use_batch_norm = True, 
                  activation     = nn.ELU(),
                  dropout_probability=0.0):
@@ -133,6 +134,8 @@ class EmbeddingNetwork(nn.Module):
         self.resnet = nn.ModuleList(self.residual_blocks)
         
         self.linear = nn.LazyLinear(block_dims[0])
+
+        self.final_linear = nn.LazyLinear(strain_out_dim)
         
     def forward(self, strain):
         
@@ -158,6 +161,8 @@ class EmbeddingNetwork(nn.Module):
         #Final Resnet
         for res_layer in self.resnet:
             out = res_layer(out)
+
+        out = self.activation(self.final_linear(out))
         
         return out
             

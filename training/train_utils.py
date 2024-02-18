@@ -1,10 +1,10 @@
 from torch import optim
 from torch.optim import lr_scheduler 
 
-def get_LR_scheduler_from_name(Lr_scheduler_name: str):
+def get_LR_scheduler(name: str, kwargs : dict):
     """Returns the LR Scheduler identified by string name"""
-    return getattr(lr_scheduler, Lr_scheduler_name)
+    return getattr(lr_scheduler, name)(**kwargs)
 
-def get_optimizer_from_name(optimizer_name: str):
+def get_optimizer(name: str, kwargs: dict):
     """Returns the LR Scheduler identified by string name"""
-    return getattr(optim, optimizer_name)
+    return getattr(optim, name)(**kwargs)

@@ -19,7 +19,7 @@
     },
     "e0": {
       "distribution": "uniform",
-      "min": 0.60,
+      "min": 0.65,
       "max": 0.95
     },
     "p_0": {
@@ -29,13 +29,13 @@
     },
     "time_shift": {
       "distribution": "uniform",
-      "min": -0.5,
-      "max": 0.5
+      "min": -0.25,
+      "max": 0.25
     },
     "polarization": {
       "distribution": "uniform",
       "min": 0.0,
-      "max": 180.0
+      "max": 3.141592653589793
     },
     "inclination": {
       "distribution": "sin",

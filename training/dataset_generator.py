@@ -169,7 +169,9 @@ class DatasetGenerator(Dataset):
                 self.prior[p] = prior_dict_[dist](val, self.device)
             else:
                 min, max = prior_kwargs['parameters'][p]['min'], prior_kwargs['parameters'][p]['max']
-                self.prior[p] = prior_dict_[dist](min, max, self.device, self.seed)
+                #if m1 and m2 has the same seed then m1 == m2 for each sample!
+                seed = 2*self.seed if p=='m2' else self.seed 
+                self.prior[p] = prior_dict_[dist](min, max, self.device, seed)
         
         #convert prior dictionary to MultivariatePrior
         self.multivariate_prior = MultivariatePrior(self.prior)
@@ -202,6 +204,7 @@ class DatasetGenerator(Dataset):
         #sorting m1 and m2 so that m2 <= m1
         m1 = prior_samples['m1'].T.squeeze()
         m2 = prior_samples['m2'].T.squeeze()
+        
 
         m, _ = torch.sort(torch.stack([m1, m2]).T)
         
@@ -211,7 +214,7 @@ class DatasetGenerator(Dataset):
         #m1 and m2 have shape [Nbatch]
         prior_samples['M'] = (m1+m2).reshape((self.batch_size, 1))
         prior_samples['q'] = (m2/m1).reshape((self.batch_size, 1))
-
+        
         return prior_samples
 
 
@@ -282,18 +285,21 @@ class DatasetGenerator(Dataset):
 
         out_prior_samples = self._compute_M_and_q(prior_samples.copy())
         
+        
         #generate projected waveform strain
         h = self.waveform_generator(**prior_samples)
-
+        
+        
         #apply time shift and whiten
         whitened_template = self._apply_time_shifts_and_whiten(h)
         
         #add gaussian noise
-        whitened_strain = self._add_noise(whitened_template)
+        whitened_strain = self._add_noise(whitened_template).float()
 
         #standardize parameters
-        out_prior_samples = self.standardize_parameters(out_prior_samples)
-    
-        return out_prior_samples, whitened_strain
+        out_prior_samples = self.standardize_parameters(out_prior_samples).float()
+        
+        #print(whitened_strain)
+        return out_prior_samples, torch.nan_to_num(whitened_strain)
     
 

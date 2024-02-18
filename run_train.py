@@ -1,9 +1,13 @@
 import os
 import json
 import torch
+
 from hyperion.training import *
 from hyperion.config import CONF_DIR
 from hyperion.core.flow import build_flow
+
+from gwskysim.gwskysim.sources import EffectiveFlyByTemplate
+from gwskysim.gwskysim.detectors import GWDetector
 
 
 
@@ -116,7 +120,65 @@ if __name__ == '__main__':
         conf = json.load(json_file)
 
     
-    print(conf)
+    NUM_EPOCHS = int(conf['num_epochs'])
+    BATCH_SIZE = int(conf['batch_size'])
+    INITIAL_LEARNING_RATE = float(conf['initial_learning_rate'])
+
+    device = conf['device']
+    
+    with torch.device(device):
+
+        #set up gwskysim detectors and asd_samplers
+        detectors = dict()
+        asd_samplers = dict()
+        for ifo in conf['detectors']:
+            detectors[ifo] = GWDetector(ifo, use_torch=True, device = device)
+            asd_samplers[ifo] = ASD_sampler(ifo, device=device, fs=conf['fs'])
+        
+        #set up EFB-T waveform
+        efbt = EffectiveFlyByTemplate(duration = 1, torch_compile=False, detectors=detectors, fs=conf['fs'], device = device)
+
+        #setup dataset generator
+        dataset_kwargs = {'waveform_generator': efbt, 'asd_generators':asd_samplers, 
+                          'device':device, 'batch_size': BATCH_SIZE}
+
+        train_ds = DatasetGenerator(**dataset_kwargs, random_seed=conf['train_seed'])
+        val_ds = DatasetGenerator(**dataset_kwargs, random_seed=conf['train_seed'])        
+        
+        #set up Flow model
+        prior_metadata = train_ds._prior_metadata
+        flow = build_flow(prior_metadata).to(device)
+
+        #set up Optimizer and Learning rate schedulers
+        optim_kwargs = {'params': [p for p in flow.parameters() if p.requires_grad], 
+                        'lr': INITIAL_LEARNING_RATE}
+        optimizer = get_optimizer(name=conf['optimizer']['algorithm'], kwargs=optim_kwargs)
+
+        scheduler_kwargs = conf['lr_schedule']['kwargs']
+        scheduler_kwargs.update({'optimizer':optimizer})
+        scheduler = get_LR_scheduler(name = conf['lr_schedule']["scheduler"], 
+                                     kwargs = scheduler_kwargs )
+        
+        #set up Trainer
+
+        checkpoint_filepath = os.path.join('training_results', 'BHBH_flow_model.pt')
+
+        trainer_kwargs = {'optimizer': optimizer, 'scheduler':scheduler, 
+                        'checkpoint_filepath': checkpoint_filepath,
+                        'steps_per_epoch' : conf['steps_per_epoch'],
+                        'val_steps_per_epoch' : conf['val_steps_per_epoch'],
+                        'verbose': conf['verbose'], 
+                        }
+
+        flow_trainer = Trainer(flow, train_ds, val_ds, device=device, **trainer_kwargs)
+        
+        flow_trainer.train(NUM_EPOCHS)
+        
+
+
+
+
+
 
     
 
