@@ -1,31 +1,12 @@
 import os
-import sys
-import glob
-
+import json
 import torch
-from torch.utils.data import DataLoader
-
-from torch.optim import Adam
-from torch.optim.lr_scheduler import CosineAnnealingLR, ReduceLROnPlateau, StepLR, CosineAnnealingWarmRestarts
-
-
-from torch_dataset import DatasetManager, SimpleSingleWaveformDataset 
-from flow_model    import build_flow
-
-from trainer import Trainer
+from hyperion.training import *
+from hyperion.config import CONF_DIR
+from hyperion.core.flow import build_flow
 
 
-NUM_EPOCHS = 250
-BATCH_SIZE = 512
 
-INITIAL_LEARNING_RATE = 1e-4
-
-
-mode = sys.argv[1]
-
-load_trained = True
-if load_trained == True:
-    INITIAL_LEARNING_RATE /=4
 
 def run_train():
     
@@ -128,6 +109,23 @@ def run_train():
 
 
 if __name__ == '__main__':
-    run_train()
+
+    conf_json = CONF_DIR + '/train_config.json'
+    
+    with open(conf_json) as json_file:
+        conf = json.load(json_file)
+
+    
+    print(conf)
+
+    
+
+
+
+
+
+
+
+    #run_train()
 
 

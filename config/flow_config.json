@@ -19,9 +19,8 @@
     "embedding_network":{
                  "strain_shape"         : [3, 2048],
                  "num_blocks"           : 3,
-                 "block_dims"           :[2048, 1024, 512,256],
+                 "block_dims"           :[2048, 1024, 512, 256],
                  "use_batch_norm"       : false,
                  "dropout_probability"  : 0.2
     }
-
 }
