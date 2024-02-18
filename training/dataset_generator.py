@@ -85,10 +85,11 @@ class DatasetGenerator(Dataset):
             print("----> No prior was given: loading default prior...")
         
         self._load_prior(prior_filepath)     
-        
-        
         return
-
+    
+    def __len__(self):
+        return int(1e7) #set it very high. It matters only when torch DataLoaders are used
+    
     @property
     def fs(self):
         return self.waveform_generator.fs
@@ -195,10 +196,7 @@ class DatasetGenerator(Dataset):
 
         return 
     
-    def __len__(self):
-        return int(1e8) #set it very high. It matters only when torch DataLoaders are used
-    
-    
+
     def _compute_M_and_q(self, prior_samples):
 
         #sorting m1 and m2 so that m2 <= m1

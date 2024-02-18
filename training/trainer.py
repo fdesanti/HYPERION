@@ -17,23 +17,20 @@ sns.set_context("talk")
 
 class Trainer:
     def __init__(self,
-                flow:           torch.nn.Module,
-                training_dataset:   torch.utils.data.DataLoader,
-                validation_dataset  :   torch.utils.data.DataLoader,
-                optimizer:      torch.optim.Optimizer,
-                scheduler:      torch.optim.lr_scheduler,
-                device:         str,
+                flow: torch.nn.Module,
+                training_dataset: torch.utils.data.DataLoader,
+                validation_dataset: torch.utils.data.DataLoader,
+                optimizer: torch.optim.Optimizer,
+                scheduler: torch.optim.lr_scheduler,
+                device: str,
                 checkpoint_filepath: str,
-               
-                
                 steps_per_epoch     = None,
                 val_steps_per_epoch = None,
                 verbose = True,
-                
                 ):
         
         self.device     = device
-        self.flow       = flow.to(device)
+        self.flow       = flow
         self.train_ds   = training_dataset
         self.val_ds     = validation_dataset
         self.optimizer  = optimizer
@@ -41,100 +38,97 @@ class Trainer:
         
         self.checkpoint_filepath = checkpoint_filepath
         self.checkpoint_dir      = os.path.dirname(checkpoint_filepath)
-        self.steps_per_epoch     = steps_per_epoch
-        self.val_steps_per_epoch = val_steps_per_epoch
 
+        if steps_per_epoch is not None:
+            self.steps_per_epoch = steps_per_epoch
+        else:
+            self.steps_per_epoch = len(self.train_ds) // 1000
+        
+        if val_steps_per_epoch is not None:
+            self.val_steps_per_epoch = val_steps_per_epoch
+        else:
+            self.val_steps_per_epoch = len(self.val_ds) // 1000
+             
         self.verbose = verbose
         return
 
     def _train_on_epoch(self, epoch):
-        avg_train_loss = 0
-        if self.steps_per_epoch is not None:
-            total_steps = self.steps_per_epoch
-        else:
-            total_steps = len(self.train_ds)
-        step         = 1
-        fail_counter = 1
+        """
+        Training over one epoch where an epoch is defined as when
+        the model has been optimized on a number of batches equal
+        to the specified training steps
+        """
 
-        for parameters, strains in self.train_ds:
+        avg_train_loss = 0
+        
+        fail_counter = 0
+
+        #main loop over the epoch's batches
+        for step in range(self.steps_per_epoch):
             
-            #moving batch on device
-            parameters = parameters.to(self.device)
-            strains    = strains.to(self.device)
-            
+            #getting the trainig batch
+            parameters, strains = self.train_ds.__getitem__()
+                       
             #training step
             self.optimizer.zero_grad()
             
+            #get the loss
             log_p =  -self.flow.log_prob(parameters, strains)
             loss  = torch.mean(log_p)
+            
             if torch.isnan(loss) or torch.isinf(loss):
+                #do not update model's weights
                 fail_counter += 1
-                step -= 1
             else:
                 if self.verbose:
-                    print(f'Epoch = {epoch} |  Step = {step} / {total_steps}  |  Loss = {loss.item():.3f}', end='\r')
-            #print(loss)
+                    print(f'Epoch = {epoch} |  Step = {step+1} / {self.steps_per_epoch}  |  Loss = {loss.item():.3f}', end='\r')
             
                 #updating weights
                 loss.backward()
                 avg_train_loss += loss.item() #item() returns loss as a number instead of a tensor
             
-            
-                
-            
+            #perform the single step gradient descend
             self.optimizer.step()
             
-            
-            
-            if step == total_steps:
-                break
-            
-            step+=1
-        if fail_counter >= 0.5*total_steps:
+
+        if fail_counter >= 0.5*self.steps_per_epoch:
+            #something went wrong too many times during the epoch
+            #better to leave the model as it is
             return np.nan
        
-        
-        avg_train_loss /= step
+        #compute the mean loss
+        avg_train_loss /= self.total
     
         return avg_train_loss
    
+
     def _test_on_epoch(self, epoch):
+        """
+        Validation over one epoch where an epoch is defined as when
+        the model has been optimized on a number of batches equal
+        to the specified training steps
+        """
+
         avg_val_loss = 0
-        if self.val_steps_per_epoch is not None:
-            total_steps = self.val_steps_per_epoch
-        else:
-            total_steps = len(self.val_ds)
+        fail_counter = 0
 
-        step         = 1
-        fail_counter = 1
-
-        for parameters, strains in self.val_ds:
+        for step in range(self.val_steps_per_epoch):
             
-            #moving batch on device
-            parameters = parameters.to(self.device)
-            strains    = strains.to(self.device)
+            #getting batch
+            parameters, strains = self.val_ds.__getitem__()
             
             #computing loss
             log_p = - self.flow.log_prob(parameters, strains)
-            loss  = torch.mean(log_p)#.detach()
+            loss  = torch.mean(log_p)
             
             if torch.isnan(loss) or torch.isinf(loss):
                 fail_counter += 1
-                step         -= 1
             else:
-         
                 avg_val_loss += loss.item() #item() returns loss as a number instead of a tensor
-
                 if self.verbose:
-                    print(f'Epoch = {epoch}  |  Validation Step = {step} / {total_steps}  |  Loss = {loss.item():.3f}', end='\r')
+                    print(f'Epoch = {epoch}  |  Validation Step = {step+1} / {self.val_steps_per_epoch}  |  Loss = {loss.item():.3f}', end='\r')
             
-                #return np.nan
-            
-            if step == total_steps:
-                break
-            step+=1
-        
-        if fail_counter >= 0.5* total_steps:
+        if fail_counter >= 0.5* self.val_steps_per_epoch:
             return np.nan
         
         avg_val_loss /= step
@@ -166,22 +160,20 @@ class Trainer:
         plt.plot(epochs, val_loss, label = 'val loss')
         plt.legend()
         plt.xlabel('epoch')
+        plt.ylabel('$KL[p || q]$')
         ymin = np.min(train_loss)-0.5
         ymax = train_loss[0]+0.5
         plt.ylim(ymin, ymax)
+        
         #learning_rate
         plt.subplot(122)
         plt.plot(epochs, lr, label = 'learning rate')
         plt.legend()
         plt.xlabel('epoch')
-        plt.savefig(self.checkpoint_dir+'/history_plot.jpg', dpi=200)
+        plt.ylabel('$\eta$')
+        plt.savefig(self.checkpoint_dir+'/history_plot.jpg', dpi=200, bbox_inches='tight')
         plt.close()
-
-        #best_epoch = np.argwhere(train_loss==train_loss.min())[0][0]#best epoch for validation
-        #print(f"best train loss = {train_loss[best_epoch]:.3f} at epoch {epochs[best_epoch]}")
-        #best_epoch = np.argwhere(val_loss==val_loss.min())[0][0] #best epoch for validation
-        #print(f"best val   loss = {val_loss[best_epoch]:.3f} at epoch {epochs[best_epoch]}\n")
-        
+     
 	
     def train(self, num_epochs, overwrite_history=True):
         self.log = GWLogger('training_logger')
@@ -199,21 +191,12 @@ class Trainer:
             f.write('#training loss, validation loss, learning rate\n')
             f.flush()
         
-       
-        
+
         self.log.info('Starting Training...\n')
         
-        #subset_imax = self.Nsubs - len(self.train_dataset)
+        #main training loop over the epochs
         for epoch in tqdm(range(1,num_epochs+1)):
-            #select dataset subset
-            #start = np.random.randint(0, subset_imax)
-            #train_indices = np.arange(start, start+self.Nsubs)
-            #train_subset = Subset(self.train_dataset, train_indices)
-            #self.train_ds = DataLoader(train_subset, **self.data_loader_kwargs)
-
-
-
-
+            
             #on-epoch training
             self.flow.train(True) #train attribute comes from nn.Module and is used to set the weights in training mode
             train_loss = self._train_on_epoch(epoch)
@@ -229,6 +212,7 @@ class Trainer:
         
             self.log.info(f'Epoch = {epoch}  |  avg train loss = {train_loss:.3f}  |  avg val loss = {val_loss:.3f}')
            
+            #save updated model weights and update best values
             if (train_loss < best_train_loss) and (val_loss < best_val_loss):
                 self._save_checkpoint(epoch+1)
                 best_train_loss = train_loss
@@ -245,14 +229,10 @@ class Trainer:
                 lr = self.scheduler.get_last_lr()[0]
                 self.scheduler.step() #for CosineAnnealingLr
                 
-            
             #write history to file
             f.write(str(train_loss)+','+str(val_loss)+','+str(lr)+'\n')
             f.flush()
                 
-            
-            
-            
             try:
                 self._make_history_plots()
             except:
