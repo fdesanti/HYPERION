@@ -299,7 +299,7 @@ class DatasetGenerator(Dataset):
         #standardize parameters
         out_prior_samples = self.standardize_parameters(out_prior_samples).float()
         
-        #print(whitened_strain)
+        print('out samples', out_prior_samples[0], whitened_strain[0])
         return out_prior_samples, torch.nan_to_num(whitened_strain)
     
 
