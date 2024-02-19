@@ -3,7 +3,9 @@
 
     "detectors": ["L1", "H1", "V1"],
 
-    "inference_parameters": ["M", "q", "e0", "p_0", "distance", "time_shift", "polarization", "inclination", "ra", "dec"],
+    "fs": 2048,
+
+    "inference_parameters": ["M", "q", "e0", "p_0", "distance", "time_shift", "ra", "dec"],
 
     "num_epochs": 250, 
 
@@ -11,8 +13,8 @@
 
     "initial_learning_rate": 1e-4,
 
-    "steps_per_epoch": 500, 
-    "val_steps_per_epoch": 125,
+    "steps_per_epoch": 1000, 
+    "val_steps_per_epoch": 250,
 
     "lr_schedule": {
         "scheduler": "ReduceLROnPlateau", 
@@ -31,6 +33,6 @@
     "train_seed": 123,
     "val_seed": 1234,
     "test_seed":12345,
-    "verbose": true,
-    "fs": 2048
+    "verbose": true
+    
 }

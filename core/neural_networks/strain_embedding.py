@@ -104,7 +104,7 @@ class EmbeddingNetwork(nn.Module):
         
         filters      = [16, 32, 16, 32, 64, 128]
         kernel_sizes = [7, 7, 5, 5, 3, 3]
-        #kernel_sizes = [25, 15, 7, 7, 5, 5]
+        #kernel_sizes = [128, 64, 32, 16, 8, 4]
             
         self.CNN_localization = nn.ModuleList(
              [

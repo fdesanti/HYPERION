@@ -187,7 +187,7 @@ class DatasetGenerator(Dataset):
                 self.prior[p] = prior_dict_[p](self.prior['m1'], self.prior['m2'])
                 min, max = float(self.prior[p].minimum), float(self.prior[p].maximum)
                 metadata = {'distribution':p , 'min': min, 'max': max}
-                self._prior_metadata[p] = metadata
+                self._prior_metadata['parameters'][p] = metadata
         
         #update reference gps time in detectors
         for det in self.det_names:
@@ -232,7 +232,7 @@ class DatasetGenerator(Dataset):
             dt = h['time_delay'][ifo] #time delay from Earth center + central time shift 
             
             #apply hann window to cancel border offsets
-            h['strain'][ifo]*= torch.hann_window(h['strain'][ifo].shape[-1])
+            #h['strain'][ifo]*= torch.hann_window(h['strain'][ifo].shape[-1])
         
             #pad template with left/right last values adding points up to noise_duration
             h_tmp  = torch.nn.functional.pad(h['strain'][ifo], (pad, pad ), mode='replicate')  

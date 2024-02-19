@@ -162,9 +162,9 @@ class Trainer:
         plt.legend()
         plt.xlabel('epoch')
         plt.ylabel('$KL[p || q]$')
-        ymin = np.min(train_loss)-0.5
+        ymin = min(np.min(train_loss), np.min(val_loss))-0.5
         ymax = train_loss[0]+0.5
-        #plt.ylim(ymin, ymax)
+        plt.ylim(ymin, ymax)
         
         #learning_rate
         plt.subplot(122)

@@ -54,10 +54,8 @@ if __name__ == '__main__':
         #SAMPLING --------
         num_samples = 50_000
         parameters, strain = test_ds.__getitem__()
-        
-        plt.plot(strain[0][0].cpu().numpy())
-        plt.plot(strain[0][1].cpu().numpy())
-        plt.plot(strain[0][2].cpu().numpy())
+        for i in range(len(strain[0])):
+            plt.plot(strain[0][i].cpu().numpy())
         plt.savefig('training_results/strain.png', dpi=200)
 
         #set up Flow model
@@ -71,11 +69,11 @@ if __name__ == '__main__':
             flow.embedding_network(torch.empty(strain.shape)) 
     
             posterior_samples = flow.sample(num_samples, strain,
-                                        restrict_to_bounds=False,
+                                        restrict_to_bounds=True,
                                        )
         
         parameters = flow._post_process_samples(parameters, restrict_to_bounds=False)
-        
+        print(posterior_samples)
         
         posterior_dict={}
 
