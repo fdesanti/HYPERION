@@ -73,7 +73,7 @@ class AffineCouplingLayer(nn.Module):
                  strain_features     :int = 256,
                  num_identity        :int = 4,
                  num_transformed     :int = 4,
-                 linear_dim          :int = 512,
+                 linear_dim          :int = 256,
                  dropout_probability :int = 0.2,
                  s_network           = None,
                  t_network           = None,

@@ -74,7 +74,7 @@ if __name__ == '__main__':
                                         restrict_to_bounds=False,
                                        )
         
-        parameters = flow._post_process_samples(parameters.T, restrict_to_bounds=False)
+        parameters = flow._post_process_samples(parameters, restrict_to_bounds=False)
         
         
         posterior_dict={}
@@ -96,7 +96,7 @@ if __name__ == '__main__':
         plt.close()
 
         plt.figure()
-        corner.corner(posterior_dict)
+        corner.corner(posterior_dict, show_titles=True, quantiles=(0.16,0.5, 0.64))
         plt.savefig('training_results/corner.png', dpi = 200)
         plt.close()
         
