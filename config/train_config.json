@@ -30,6 +30,7 @@
 
     "train_seed": 123,
     "val_seed": 1234,
+    "test_seed":12345,
     "verbose": true,
     "fs": 2048
 }

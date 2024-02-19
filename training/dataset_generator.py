@@ -195,6 +195,10 @@ class DatasetGenerator(Dataset):
 
         #add inference parameters to metadata
         self._prior_metadata['inference_parameters'] = self.inference_parameters
+        
+        #add means and stds to metadata
+        self._prior_metadata['means'] = self.means
+        self._prior_metadata['stds']  = self.stds
 
         return 
     
@@ -299,7 +303,7 @@ class DatasetGenerator(Dataset):
         #standardize parameters
         out_prior_samples = self.standardize_parameters(out_prior_samples).float()
         
-        print('out samples', out_prior_samples[0], whitened_strain[0])
-        return out_prior_samples, torch.nan_to_num(whitened_strain)
+        #print('out samples', out_prior_samples[0], whitened_strain[0])
+        return out_prior_samples, whitened_strain
     
 

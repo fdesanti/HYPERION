@@ -5,14 +5,14 @@
 import os
 import torch
 import numpy as np
-import seaborn as sns
+#import seaborn as sns
 import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 from gwskysim.gwskysim.utilities.gwlogger import GWLogger
 
-sns.set_theme()
-sns.set_context("talk")
+#sns.set_theme()
+#sns.set_context("talk")
 
 
 class Trainer:
@@ -165,7 +165,7 @@ class Trainer:
         plt.ylabel('$KL[p || q]$')
         ymin = np.min(train_loss)-0.5
         ymax = train_loss[0]+0.5
-        plt.ylim(ymin, ymax)
+        #plt.ylim(ymin, ymax)
         
         #learning_rate
         plt.subplot(122)

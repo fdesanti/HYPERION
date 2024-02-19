@@ -1,7 +1,6 @@
 {
   "description": "Distribution and ranges of parameters of a huge Population of BHBH close encounters.",
-  
-  "random_seed": 10,
+ 
   "population_name": "BHBH-CE",
 
   "reference_gps_time": 1242442967.4,
@@ -20,11 +19,11 @@
     "e0": {
       "distribution": "uniform",
       "min": 0.65,
-      "max": 0.95
+      "max": 0.99
     },
     "p_0": {
       "distribution": "uniform",
-      "min": 10.0,
+      "min": 13.0,
       "max": 30.0
     },
     "time_shift": {

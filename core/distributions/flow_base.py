@@ -185,68 +185,6 @@ class VonMisesNormal(nn.Module):
         samples[:, self.VonMises_mask] = VonMises_samples
         
         return samples
-        
-        
-        
-        
-        
-    
-    
-    
-        
 
-   
-#######################################
-#============== TEST =================#
-#######################################
-def main_test():
-    from tqdm import tqdm
-    
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    print('using device %s'%device)
-    
-    #prior = VonMisesNormal(parameters={'Normal':(0.0, 1.1), 'VonMises':(0.0, 1.1)}, dim = {'Normal':6, 'VonMises':4}, device=device)
-    prior = VonMisesNormal(device=device)
-    
-    for _ in tqdm(range(10)):
-        x = prior.sample(num_samples = 10000)
-  
-    '''
-    import matplotlib.pyplot as plt
-    plt.figure()
-    for i in range(len(x)):
-        plt.subplot(len(x), 1, i+1)
-        plt.hist(x[i], 100)
-    plt.show()
-    '''
-    
-    #print(x, x.dim)
-    print(x.device)
-    
-    x = torch.unsqueeze(x, 0)
-    print(x.dim)
-    log_prob=prior.log_prob(x)
-    print(log_prob)
-   
-    #print(x.T.dim)
-    
-    '''
-    import matplotlib.pyplot as plt
-    x = x.T
-    for i in range(10):
-    
-        plt.hist(x[:, i], 100)
-        plt.title(str(i))
-        plt.show()
-    '''
-    x = torch.cat([x, x, x, x], axis = 0)
-    log_prob=prior.log_prob(x)
-    print(log_prob)
-    
-    return
-
-if __name__ == '__main__':
-    main_test()
-    
     
     

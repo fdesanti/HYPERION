@@ -32,6 +32,7 @@ class Flow(nn.Module):
         
         self.prior_metadata = prior_metadata
         
+        
         self.configuration = configuration
            
         return
@@ -45,26 +46,41 @@ class Flow(nn.Module):
 
     @property
     def inference_parameters(self):
+        if not hasattr(self, '_inference_parameters'):
+            self._inference_parameters = self.prior_metadata['inference_parameters']
+     
         return self._inference_parameters
-    @inference_parameters.setter
-    def inference_parameters(self, prior_metadata):
-        self._inference_parameters = prior_metadata['inference_parameters']
     
     
     @property
     def priors(self):
+        if not hasattr(self, '_priors'):
+            self._priors = self.prior_metadata['priors']
         return self._priors
-    @priors.setter
-    def priors(self, prior_metadata):
-        self._priors = prior_metadata['priors']
+
+    @property
+    def means(self):
+        if not hasattr(self, '_means'):
+            self._means = self.prior_metadata['means']
+        return self._means
+ 
+    @property
+    def stds(self):
+        if not hasattr(self, '_stds'):
+            self._stds = self.prior_metadata['stds']
+        return self._stds
+
+    
+        
     
     
     @property
     def reference_time(self):
+        if not hasattr(self, '_reference_time'):
+            self._reference_time = prior_metadata['reference_gps_time']
         return self._reference_time
-    @reference_time.setter
-    def reference_time(self, prior_metadata):
-        self._reference_time = prior_metadata['reference_gps_time']
+    
+        
     
     
     
@@ -125,7 +141,7 @@ class Flow(nn.Module):
             print(f"---> Sampling took {end-start:.3f} seconds")
         
         
-        return processed_samples_dict, log_posterior
+        return processed_samples_dict#, log_posterior
     
     
     def _post_process_samples(self, flow_samples, restrict_to_bounds, event_time = None):
@@ -136,7 +152,8 @@ class Flow(nn.Module):
         
         #de-standardize samples
         for i, name in enumerate(self.inference_parameters):
-            processed_samples = self.priors[name].de_standardize(flow_samples[i])
+            #processed_samples = self.priors[name].de_standardize(flow_samples[i])
+            processed_samples = flow_samples[i]*self.stds[name] + self.means[name]
             
             processed_samples_dict[name] = processed_samples.unsqueeze(1)#.cpu().numpy()
 
