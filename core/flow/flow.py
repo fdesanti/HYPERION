@@ -132,7 +132,7 @@ class Flow(nn.Module):
             log_posterior -= log_std
             
 
-        processed_samples_dict = self._post_process_samples(samples, restrict_to_bounds, event_time) 
+        processed_samples_dict = self._post_process_samples(samples.T, restrict_to_bounds, event_time) 
 
         #processed_samples_df = pd.DataFrame.from_dict(processed_samples_dict)
 
@@ -146,7 +146,7 @@ class Flow(nn.Module):
     
     def _post_process_samples(self, flow_samples, restrict_to_bounds, event_time = None):
         #flow_samples must be transposed to have shape [N posterior parameters, N samples]
-        flow_samples = flow_samples.T
+        #flow_samples = flow_samples.T
         
         processed_samples_dict = dict()
         

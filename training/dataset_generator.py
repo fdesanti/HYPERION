@@ -162,7 +162,7 @@ class DatasetGenerator(Dataset):
                     
         #load single priors as dictionary: each key is a parameter
         self.prior = dict()
-        for p in prior_kwargs['parameters'].keys():
+        for i, p in enumerate(prior_kwargs['parameters'].keys()):
             dist = prior_kwargs['parameters'][p]['distribution']
             if dist == 'delta':
                 val = prior_kwargs['parameters'][p]['value']
@@ -171,7 +171,7 @@ class DatasetGenerator(Dataset):
                 min, max = prior_kwargs['parameters'][p]['min'], prior_kwargs['parameters'][p]['max']
                 #if m1 and m2 has the same seed then m1 == m2 for each sample!
                 seed = 2*self.seed if p=='m2' else self.seed 
-                self.prior[p] = prior_dict_[dist](min, max, self.device, seed)
+                self.prior[p] = prior_dict_[dist](min, max, self.device, seed+i)
         
         #convert prior dictionary to MultivariatePrior
         self.multivariate_prior = MultivariatePrior(self.prior)
@@ -206,8 +206,8 @@ class DatasetGenerator(Dataset):
     def _compute_M_and_q(self, prior_samples):
 
         #sorting m1 and m2 so that m2 <= m1
-        m1 = prior_samples['m1'].T.squeeze()
-        m2 = prior_samples['m2'].T.squeeze()
+        m1 = prior_samples['m1'].mT.squeeze()
+        m2 = prior_samples['m2'].mT.squeeze()
         
 
         m, _ = torch.sort(torch.stack([m1, m2]).T)
@@ -244,7 +244,8 @@ class DatasetGenerator(Dataset):
             asd = self.asd_generator[ifo](batch_size = self.batch_size)
             
             #divide frequency domain template with the ASD
-            h_tmp /= asd
+            h_tmp /= (asd / self.delta_t / 2.)
+            
             
             #revert back to time domain
             h_tmp = irfft(h_tmp, fs = self.fs)
@@ -256,16 +257,16 @@ class DatasetGenerator(Dataset):
 
         out_h = torch.stack(out_h, dim=1)
         
-        return out_h / self.noise_std
+        return out_h #/ self.noise_std
     
     
     def _add_noise(self, h):
         """Adds gaussian white noise to whitened templates."""
         
         mean = torch.zeros(h.shape)
-        noise = torch.normal(mean, self.noise_std, generator=self.rng)
+        noise = torch.normal(mean, 1, generator=self.rng)
         
-        return (h + noise)/self.noise_std
+        return (h + noise)#/self.noise_std
     
     
     def standardize_parameters(self, prior_samples):

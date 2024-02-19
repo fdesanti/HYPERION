@@ -42,16 +42,23 @@ if __name__ == '__main__':
         dataset_kwargs = {'waveform_generator': efbt, 'asd_generators':asd_samplers, 
                           'device':device, 'batch_size': 1}
 
-        test_ds = DatasetGenerator(**dataset_kwargs, random_seed=conf['test_seed'])
-          
-        
-        #set up Flow model
-        checkpoint_path = 'training_results/BHBH/BHBH_flow_model.pt'
-        flow = build_flow(checkpoint_path=checkpoint_path).to(device)
+        test_ds = DatasetGenerator(**dataset_kwargs, random_seed = torch.randint(0, 1000000, (1,)).item())
+         
 
         #SAMPLING --------
         num_samples = 50_000
         parameters, strain = test_ds.__getitem__()
+        
+        plt.plot(strain[0][0].cpu().numpy())
+        plt.plot(strain[0][1].cpu().numpy())
+        plt.plot(strain[0][2].cpu().numpy())
+        plt.savefig('training_results/strain.png', dpi=200)
+
+        #set up Flow model
+        checkpoint_path = 'training_results/BHBH/BHBH_flow_model.pt'
+        flow = build_flow(checkpoint_path=checkpoint_path).to(device)
+
+ 
         with torch.no_grad():
             flow.eval()
             #initialize cuda (for a faster sampling)
@@ -60,10 +67,11 @@ if __name__ == '__main__':
             posterior_samples = flow.sample(num_samples, strain,
                                         restrict_to_bounds=False,
                                        )
-
-        parameters = flow._post_process_samples(parameters, restrict_to_bounds=False)
         
-        print(posterior_samples)
+        parameters = flow._post_process_samples(parameters.T, restrict_to_bounds=False)
+        
+        
+    
 
         plt.figure(figsize=(8, 40))
         print('parameter', 'true', 'flow median')
@@ -74,7 +82,7 @@ if __name__ == '__main__':
             plt.hist(plot_samples, 'auto');
             plt.axvline(parameters[parameter].cpu().numpy(), color='r')
             plt.title(parameter)
-            print(parameter, parameters[parameter], np.median(plot_samples))
+            print(f'{parameter} - real: {parameters[parameter].item():.3f} - median flow: {np.median(plot_samples):.3f}')
         
             
         plt.savefig('training_results/flow_result.png')

@@ -11,8 +11,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from gwskysim.gwskysim.utilities.gwlogger import GWLogger
 
-#sns.set_theme()
-#sns.set_context("talk")
+
 
 
 class Trainer:

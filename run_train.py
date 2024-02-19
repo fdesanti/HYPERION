@@ -1,6 +1,7 @@
 import os
 import json
 import torch
+import seaborn as sns
 
 from hyperion.training import *
 from hyperion.config import CONF_DIR
@@ -8,6 +9,9 @@ from hyperion.core.flow import build_flow
 
 from gwskysim.gwskysim.sources import EffectiveFlyByTemplate
 from gwskysim.gwskysim.detectors import GWDetector
+
+sns.set_theme()
+sns.set_context("talk")
 
 
 if __name__ == '__main__':

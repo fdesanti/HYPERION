@@ -7,7 +7,7 @@
 
     "num_epochs": 250, 
 
-    "batch_size": 512, 
+    "batch_size": 128, 
 
     "initial_learning_rate": 1e-4,
 
