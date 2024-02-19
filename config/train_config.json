@@ -3,11 +3,11 @@
 
     "detectors": ["L1", "H1", "V1"],
 
-    "device": "cuda", 
+    "inference_parameters": ["M", "q", "e0", "p_0", "distance", "time_shift", "polarization", "inclination", "ra", "dec"],
 
     "num_epochs": 250, 
 
-    "batch_size": 128, 
+    "batch_size": 512, 
 
     "initial_learning_rate": 1e-4,
 

@@ -29,8 +29,6 @@ if __name__ == '__main__':
     
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
-              
-
     with torch.device(device):
 
         #set up gwskysim detectors and asd_samplers
@@ -45,7 +43,8 @@ if __name__ == '__main__':
 
         #setup dataset generator
         dataset_kwargs = {'waveform_generator': efbt, 'asd_generators':asd_samplers, 
-                          'device':device, 'batch_size': BATCH_SIZE}
+                          'device':device, 'batch_size': BATCH_SIZE, 
+                          'inference_parameters': conf['inference_parameters']}
 
         train_ds = DatasetGenerator(**dataset_kwargs, random_seed=conf['train_seed'])
         val_ds = DatasetGenerator(**dataset_kwargs, random_seed=conf['val_seed'])        

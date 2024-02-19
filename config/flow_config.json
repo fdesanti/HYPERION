@@ -13,7 +13,7 @@
 
     "base_distribution":{
         "dim"        :10,
-        "trainable"  :false
+        "trainable"  :true
     },
 
     "embedding_network":{

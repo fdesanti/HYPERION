@@ -244,7 +244,7 @@ class DatasetGenerator(Dataset):
             asd = self.asd_generator[ifo](batch_size = self.batch_size)
             
             #divide frequency domain template with the ASD
-            h_tmp /= (asd / self.delta_t / 2.)
+            h_tmp /= asd
             
             
             #revert back to time domain
@@ -257,7 +257,7 @@ class DatasetGenerator(Dataset):
 
         out_h = torch.stack(out_h, dim=1)
         
-        return out_h #/ self.noise_std
+        return out_h * torch.sqrt(2 * self.delta_t)#/ self.noise_std
     
     
     def _add_noise(self, h):

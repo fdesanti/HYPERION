@@ -1,8 +1,9 @@
-import os
 import json
 import torch
+import corner
 import numpy as np
 import matplotlib.pyplot as plt
+
 
 
 from hyperion.training import *
@@ -22,7 +23,11 @@ if __name__ == '__main__':
 
     
     
-    device = 'cuda:1' if torch.cuda.is_available() else 'cpu'
+    if torch.cuda.is_available():
+        num_gpus = torch.cuda.device_count()
+        device = f'cuda:{num_gpus-1}'
+    else:
+        device = 'cpu'
     
    
 
@@ -40,7 +45,8 @@ if __name__ == '__main__':
 
         #setup dataset generator
         dataset_kwargs = {'waveform_generator': efbt, 'asd_generators':asd_samplers, 
-                          'device':device, 'batch_size': 1}
+                          'device':device, 'batch_size': 1, 
+                          'inference_parameters': conf['inference_parameters']}
 
         test_ds = DatasetGenerator(**dataset_kwargs, random_seed = torch.randint(0, 1000000, (1,)).item())
          
@@ -71,12 +77,13 @@ if __name__ == '__main__':
         parameters = flow._post_process_samples(parameters.T, restrict_to_bounds=False)
         
         
-    
+        posterior_dict={}
 
         plt.figure(figsize=(8, 40))
         print('parameter', 'true', 'flow median')
         for i, parameter in enumerate(posterior_samples.keys()):
             plot_samples = posterior_samples[parameter].cpu().numpy()
+            posterior_dict[parameter] = plot_samples
 
             plt.subplot(10, 1, i+1)
             plt.hist(plot_samples, 'auto');
@@ -88,6 +95,13 @@ if __name__ == '__main__':
         plt.savefig('training_results/flow_result.png')
         plt.close()
 
+        plt.figure()
+        corner.corner(posterior_dict)
+        plt.savefig('training_results/corner.png', dpi = 200)
+        plt.close()
+        
+
+        
         
     
     

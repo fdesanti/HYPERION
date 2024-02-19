@@ -103,8 +103,8 @@ class EmbeddingNetwork(nn.Module):
 
         
         filters      = [16, 32, 16, 32, 64, 128]
-        #kernel_sizes = [7, 7, 5, 5, 3, 3]
-        kernel_sizes = [25, 15, 7, 7, 5, 5]
+        kernel_sizes = [7, 7, 5, 5, 3, 3]
+        #kernel_sizes = [25, 15, 7, 7, 5, 5]
             
         self.CNN_localization = nn.ModuleList(
              [
@@ -136,7 +136,7 @@ class EmbeddingNetwork(nn.Module):
         
         self.linear = nn.LazyLinear(block_dims[0])
 
-        self.final_linear = nn.LazyLinear(strain_out_dim)
+        #self.final_linear = nn.LazyLinear(strain_out_dim)
         
     def forward(self, strain):
         
@@ -163,7 +163,7 @@ class EmbeddingNetwork(nn.Module):
         for res_layer in self.resnet:
             out = res_layer(out)
 
-        out = self.activation(self.final_linear(out))
+        #out = self.activation(self.final_linear(out))
         
         return out
             

@@ -71,20 +71,13 @@ class Flow(nn.Module):
         return self._stds
 
     
-        
-    
-    
     @property
     def reference_time(self):
         if not hasattr(self, '_reference_time'):
-            self._reference_time = prior_metadata['reference_gps_time']
+            self._reference_time = self.prior_metadata['reference_gps_time']
         return self._reference_time
     
         
-    
-    
-    
-    
 
     def log_prob(self, inputs, strain, evidence=False):
         """computes the loss function"""
@@ -127,12 +120,11 @@ class Flow(nn.Module):
             log_posterior = self.base_distribution.log_prob(samples) - inverse_logabsdet 
             #log_posterior = self.log_prob(samples, strain, evidence=True) 
             
-            std = self.prior_metadata['stds']
-            log_std = torch.sum(torch.log(torch.tensor([std[p][0] for p in self.inference_parameters])))
+            log_std = torch.sum(torch.log(torch.tensor([self.stds[p][0] for p in self.inference_parameters])))
             log_posterior -= log_std
             
 
-        processed_samples_dict = self._post_process_samples(samples.T, restrict_to_bounds, event_time) 
+        processed_samples_dict = self._post_process_samples(samples, restrict_to_bounds, event_time) 
 
         #processed_samples_df = pd.DataFrame.from_dict(processed_samples_dict)
 
@@ -146,7 +138,7 @@ class Flow(nn.Module):
     
     def _post_process_samples(self, flow_samples, restrict_to_bounds, event_time = None):
         #flow_samples must be transposed to have shape [N posterior parameters, N samples]
-        #flow_samples = flow_samples.T
+        flow_samples = flow_samples.T
         
         processed_samples_dict = dict()
         
@@ -155,7 +147,7 @@ class Flow(nn.Module):
             #processed_samples = self.priors[name].de_standardize(flow_samples[i])
             processed_samples = flow_samples[i]*self.stds[name] + self.means[name]
             
-            processed_samples_dict[name] = processed_samples.unsqueeze(1)#.cpu().numpy()
+            processed_samples_dict[name] = processed_samples#.cpu().numpy()
 
         #correct right ascension
         if event_time is not None:
@@ -164,7 +156,7 @@ class Flow(nn.Module):
             processed_samples_dict['ra'] = ra_corrected
 
         if restrict_to_bounds:
-            num_samples = samples.shape[1]
+            num_samples = flow_samples.shape[1]
             processed_samples_dict = self.restrict_samples_to_bounds(processed_samples_dict, num_samples)
 
     
