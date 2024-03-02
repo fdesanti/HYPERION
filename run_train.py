@@ -36,7 +36,7 @@ if __name__ == '__main__':
         asd_samplers = dict()
         for ifo in conf['detectors']:
             detectors[ifo] = GWDetector(ifo, use_torch=True, device = device)
-            asd_samplers[ifo] = ASD_sampler(ifo, device=device, fs=conf['fs'])
+            asd_samplers[ifo] = ASD_Sampler(ifo, device=device, fs=conf['fs'])
         
         #set up EFB-T waveform
         efbt = EffectiveFlyByTemplate(duration = 1, torch_compile=False, detectors=detectors, fs=conf['fs'], device = device)
@@ -79,7 +79,3 @@ if __name__ == '__main__':
         flow_trainer = Trainer(flow, train_ds, val_ds, device=device, **trainer_kwargs)
         
         flow_trainer.train(NUM_EPOCHS)
-        
-
-
-

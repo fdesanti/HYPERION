@@ -139,7 +139,8 @@ class Flow(nn.Module):
     def _post_process_samples(self, flow_samples, restrict_to_bounds, event_time = None):
         #flow_samples must be transposed to have shape [N posterior parameters, N samples]
         flow_samples = flow_samples.T
-        
+
+
         processed_samples_dict = dict()
         
         #de-standardize samples

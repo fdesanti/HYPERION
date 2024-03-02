@@ -5,7 +5,7 @@
 
     "fs": 2048,
 
-    "inference_parameters": ["M", "q", "e0", "p_0", "distance", "time_shift", "ra", "dec"],
+    "inference_parameters": ["M", "q", "e0", "p_0", "distance", "polarization", "inclination", "time_shift", "ra", "dec"],
 
     "num_epochs": 250, 
 
@@ -14,7 +14,7 @@
     "initial_learning_rate": 1e-4,
 
     "steps_per_epoch": 1000, 
-    "val_steps_per_epoch": 250,
+    "val_steps_per_epoch": 100,
 
     "lr_schedule": {
         "scheduler": "ReduceLROnPlateau", 

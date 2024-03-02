@@ -1,6 +1,6 @@
-from .asd import ASD_sampler
+from .asd import ASD_Sampler
 from .trainer import Trainer
 from .train_utils import *
-from .dataset_generator import DatasetGenerator
+from .dataset import *
 
 
