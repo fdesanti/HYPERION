@@ -1,13 +1,20 @@
+"""This module contains a class to generate and save a training dataset into hdf5 files"""
+
 import json
 import torch
+import torch.nn.functional as F
+from torch.distributions import Gamma
+
+from ...core.fft import *
+from ...config import CONF_DIR
+from ...core.distributions.prior_distributions import *
+
 from torch.utils.data import Dataset
 
-from ..core.fft import *
-from ..core.distributions.prior_distributions import *
-from ..config import CONF_DIR
+import matplotlib.pyplot as plt
 
 
-class DatasetGenerator(Dataset):
+class DatasetGenerator():
     """
     Class to generate training dataset. Can work either offline as well as an online (i.e. on training) generator.
     
@@ -25,7 +32,7 @@ class DatasetGenerator(Dataset):
                  batch_size      = 512,
                  device          = 'cpu',
                  inference_parameters = None,
-                 random_seed     = 123,
+                 random_seed     = None,
                  ):
         """
         Constructor.
@@ -62,8 +69,7 @@ class DatasetGenerator(Dataset):
             Random seed to set the random number generator for reproducibility. (Default: 123)
         
         """
-        super(DatasetGenerator, self).__init__()
-
+        
         self.waveform_generator   = waveform_generator
         self.asd_generator        = asd_generators
         self.batch_size           = batch_size
@@ -71,9 +77,12 @@ class DatasetGenerator(Dataset):
         self.noise_duration       = noise_duration
         self.device               = device
         self.inference_parameters = inference_parameters
+        #print('>>>>>>><',self.inference_parameters)
 
         #set up self random number generator
         self.rng  = torch.Generator(device)
+        if not random_seed:
+            random_seed = torch.randint(0, 2**32, (1,)).item()
         self.rng.manual_seed(random_seed)
         self.seed = random_seed
 
@@ -85,10 +94,13 @@ class DatasetGenerator(Dataset):
             print("----> No prior was given: loading default prior...")
         
         self._load_prior(prior_filepath)     
+
+        self.network_snr_distributions = Gamma(concentration=2, rate=0.3)
+        self.min_snr = 4
         return
     
     def __len__(self):
-        return int(1e7) #set it very high. It matters only when torch DataLoaders are used
+        return 128000 #set it very high. It matters only when torch DataLoaders are used
     
     @property
     def fs(self):
@@ -137,7 +149,7 @@ class DatasetGenerator(Dataset):
     @inference_parameters.setter
     def inference_parameters(self, name_list):
         if name_list is None:
-            name_list = ['M', 'q', 'e0', 'p_0', 'distance', 'time_shift', 'polarization', 'inclination', 'ra', 'dec'] #default
+            name_list = ['M', 'q', 'e0', 'p_0', 'distance', 'time_shift','polarization', 'inclination', 'ra', 'dec'] #default
         self._inference_parameters = name_list
 
 
@@ -209,17 +221,47 @@ class DatasetGenerator(Dataset):
         m1 = prior_samples['m1'].mT.squeeze()
         m2 = prior_samples['m2'].mT.squeeze()
         
+        m = torch.stack([m1, m2])
+        if m.ndim > 1:
+            m = m.T 
 
-        m, _ = torch.sort(torch.stack([m1, m2]).T)
+        m, _ = torch.sort(m)
+        if m.ndim > 1:
+            m = m.T
         
-        m1 = m.T[1]
-        m2 = m.T[0]
+        m1, m2  = m[1], m[0]
         
         #m1 and m2 have shape [Nbatch]
         prior_samples['M'] = (m1+m2).reshape((self.batch_size, 1))
         prior_samples['q'] = (m2/m1).reshape((self.batch_size, 1))
         
         return prior_samples
+    
+    
+    def noise_weighted_inner_product(self, a, b, psd, duration):
+        integrand = torch.conj(a) * b / psd
+        return 4 / duration * torch.sum(integrand, dim = -1)
+    
+    
+    def matched_filter_snr(self, frequency_domain_template, frequency_domain_strain, psd, duration):
+
+        rho = self.noise_weighted_inner_product(frequency_domain_template, 
+                                                   frequency_domain_strain, 
+                                                   psd, duration)
+        
+        rho_opt = self.noise_weighted_inner_product(frequency_domain_template, 
+                                                   frequency_domain_template, 
+                                                   psd, duration)
+        
+        snr_square = torch.abs(rho / torch.sqrt(rho_opt))
+       
+        return torch.sqrt(snr_square)
+    
+    def rescale_to_network_snr(self, h, newtwork_snr):
+        original_snr = newtwork_snr.unsqueeze(1).view(-1, 1, 1)
+        new_snr = self.network_snr_distributions.sample(original_snr.shape) + self.min_snr
+        hnew = h*new_snr/original_snr
+        return hnew, new_snr.view(-1)
 
 
     def _apply_time_shifts_and_whiten(self, h):
@@ -227,46 +269,67 @@ class DatasetGenerator(Dataset):
         out_h = []
         pad   = (self.noise_duration - self.signal_duration)*self.fs // 2
         
+        noise_points = self.noise_duration*self.fs
+
+        snr = dict()
+        
         for ifo in self.det_names:
-                        
+
+            #sample asd and time domain noise from generator
+            asd, noise = self.asd_generator[ifo](batch_size=self.batch_size)
+            
             dt = h['time_delay'][ifo] #time delay from Earth center + central time shift 
             
             #apply hann window to cancel border offsets
-            #h['strain'][ifo]*= torch.hann_window(h['strain'][ifo].shape[-1])
+            h['strain'][ifo]*= torch.hann_window(h['strain'][ifo].shape[-1])
         
             #pad template with left/right last values adding points up to noise_duration
-            h_tmp  = torch.nn.functional.pad(h['strain'][ifo], (pad, pad ), mode='replicate')  
+            h_tmp  = torch.nn.functional.pad(h['strain'][ifo], (pad, pad), mode='replicate')  
 
-            #apply time shifts to templates in the frequency domain
-            h_tmp = rfft(h_tmp, n = h_tmp.shape[-1], fs=self.fs) * torch.exp(-1j * 2 * torch.pi * self.frequencies * dt)
-
-            #sample asd from generator
-            asd = self.asd_generator[ifo](batch_size = self.batch_size)
-            
+            #apply time shifts to templates in the frequency domain and revert back to time domain
+            h_f = rfft(h_tmp, n = h_tmp.shape[-1], fs=self.fs) * torch.exp(-1j * 2 * torch.pi * self.frequencies * dt)
+            '''
+            snr[ifo] = self.matched_filter_snr(h_f, 
+                                        h_f+rfft(noise, n = noise.shape[-1], fs=self.fs) ,
+                                        asd.double()**2, 
+                                        self.noise_duration)
+            '''
+            #h_t = irfft(h_f, fs=self.fs) + noise
+            #h_f = rfft(h_t, n=h_t.shape[-1], fs = self.fs)
             #divide frequency domain template with the ASD
-            h_tmp /= asd
             
+            #n_f = rfft(noise, n = noise.shape[-1], fs = self.fs)
+            
+            #h_f += n_f
+            h_f /= asd
             
             #revert back to time domain
-            h_tmp = irfft(h_tmp, fs = self.fs)
-    
+            h_t = irfft(h_f, fs = self.fs) 
+            
             #crop to desired output duration
-            central_time = h_tmp.shape[-1]//2
+            central_time = h_t.shape[-1]//2
             d = self.signal_duration * self.fs // 2 
-            out_h.append(h_tmp[:, central_time-d : central_time+d])
+            out_h.append(h_t[..., central_time-d : central_time+d])
 
         out_h = torch.stack(out_h, dim=1)
+        #self.snr = snr
+
+        #self.snr_net = torch.stack([snr[ifo]**2 for ifo in snr.keys()], dim = -1).sum(dim=-1)**0.5
+        #print('snr net', snr_net)
+
+        #out_h, self.snr_net = self.rescale_to_network_snr(out_h, snr_net)
         
-        return out_h * torch.sqrt(2 * self.delta_t)#/ self.noise_std
+
+        
+        return out_h #/ self.noise_std #* torch.sqrt(2 * self.delta_t)#/
     
     
     def _add_noise(self, h):
         """Adds gaussian white noise to whitened templates."""
         
         mean = torch.zeros(h.shape)
-        noise = torch.normal(mean, 1, generator=self.rng)
-        
-        return (h + noise)#/self.noise_std
+        noise = torch.normal(mean, self.noise_std, generator=self.rng)
+        return (h + noise) / self.noise_std
     
     
     def standardize_parameters(self, prior_samples):
@@ -282,29 +345,33 @@ class DatasetGenerator(Dataset):
     
 
 
-    def __getitem__(self, idx=None):
+    def __getitem__(self, idx=None, return_hp_and_hc=False, add_noise=True):
 
         #sampling prior
         prior_samples = self.multivariate_prior.sample((self.batch_size, 1))
-        #prior_samples['t0_p'] = prior_samples['t0_p'][0]
 
         out_prior_samples = self._compute_M_and_q(prior_samples.copy())
         
-        
         #generate projected waveform strain
-        h = self.waveform_generator(**prior_samples)
-        
+        h = self.waveform_generator(**prior_samples, 
+                                    return_hp_and_hc=return_hp_and_hc)
+        if return_hp_and_hc:
+            return out_prior_samples, h
         
         #apply time shift and whiten
         whitened_template = self._apply_time_shifts_and_whiten(h)
         
         #add gaussian noise
-        whitened_strain = self._add_noise(whitened_template).float()
+        if add_noise:
+            whitened_strain = self._add_noise(whitened_template).float()
+        else:
+            whitened_strain = whitened_template.float()
 
         #standardize parameters
         out_prior_samples = self.standardize_parameters(out_prior_samples).float()
         
-        #print('out samples', out_prior_samples[0], whitened_strain[0])
         return out_prior_samples, whitened_strain
     
+
+
 

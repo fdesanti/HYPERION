@@ -6,9 +6,10 @@ import numpy as np
 from ..core.fft import rfftfreq
 from ..config import CONF_DIR
 
+import matplotlib.pyplot as plt
 
 
-class ASD_sampler():
+class ASD_Sampler():
     """
     Class that samples a new ASD from a reference one by generating random amplitude and phase for each frequency bin.
 
@@ -51,7 +52,7 @@ class ASD_sampler():
 
     """
 
-    def __init__(self, ifo, asd_file=None, fs = 2048, duration=2, device = 'cpu', random_seed = 123):
+    def __init__(self, ifo, asd_file=None, fs=2048, duration=2, device = 'cpu', random_seed=None):
 
         #read reference Asd
         if asd_file is not None:
@@ -60,20 +61,30 @@ class ASD_sampler():
             file = f"{CONF_DIR}/ASD_{ifo}_O3.txt"
 
         asd_f, asd = np.loadtxt(file, unpack=True)
-
+    
         #generate frequency array
+        self.fs = fs
+        self.noise_points = duration*fs
+
         self.f = rfftfreq(fs*duration, d=1/fs, device = device)
+        #fmin = max(min(asd_f), 1/self.noise_points)
+        #self.f = self.f[self.f>=fmin]
+        #self.f = self.f[self.f<=max(asd_f)]
+
         self.df = torch.abs(self.f[1] - self.f[2])
+        
 
         #reference ASD from interpolation
         self.asd_reference = torch.from_numpy(np.interp(self.f.cpu().numpy(), asd_f, asd)).to(device)
 
         #other attributes
-        self.fs = fs
+        
         self.device = device
 
         #set up random number generator
         self.rng = torch.Generator(device)
+        if not random_seed:
+            random_seed = torch.randint(0, 2**32, (1,)).item()
         self.rng.manual_seed(random_seed)
         return
 
@@ -92,41 +103,42 @@ class ASD_sampler():
     def fs(self, value):
         self._fs = value
 
+
     @property
     def asd_std(self):
         if not hasattr(self, '_asd_std'):
-            self._asd_std = (0.5)* self.asd_reference * self.df ** 0.5
-            #self._asd_std = self.asd_reference 
+            self._asd_std = 0.5 * self.asd_reference * self.df ** 0.5
         return self._asd_std
 
 
-    def sample(self, batch_size):
+    def sample(self, batch_size, noise):
 
-        out_asd_shape = (batch_size, len(self.f))
+        asd_shape = (batch_size, len(self.f))
         
         # Generate scaled random power + phase
- 
-        mean = torch.zeros(out_asd_shape)
-        out_asd_real = torch.normal(mean=mean, std=self.asd_std, generator=self.rng)
-        out_asd_imag = torch.normal(mean=mean, std=self.asd_std, generator=self.rng)
+        mean = torch.zeros(asd_shape)
+        asd_real = torch.normal(mean=mean, std=self.asd_std, generator=self.rng)
+        asd_imag = torch.normal(mean=mean, std=self.asd_std, generator=self.rng)
     
         # If the signal length is even, frequencies +/- 0.5 are equal
         # so the coefficient must be real.
             #if not (samples % 2): si[..., -1] = 0
 
         # Regardless of signal length, the DC component must be real
-        out_asd_imag[..., 0] = 0
+        asd_imag[..., 0] = 0
 
         # Combine power + corrected phase to Fourier components
-        out_asd = torch.abs(out_asd_real + 1J * out_asd_imag)
+        out_asd = asd_real + 1J * asd_imag
+        
 
         #out_asd = torch.stack([self.asd_reference for _ in range(batch_size)])
         #out_asd = torch.mean(out_asd, axis = 0)
+        if noise:
+            noise_from_asd = self.noise_points * torch.fft.irfft(out_asd, n=self.noise_points, axis=-1)
+            return torch.abs(out_asd), noise_from_asd
+        
+        return torch.abs(out_asd)
 
-        return out_asd
-
-    def __call__(self, batch_size = 512):
-        return self.sample(batch_size)
-    
-    def _test(self):
-        return 
+    def __call__(self, batch_size = 1, noise=True):
+        return self.sample(batch_size, noise)
+     

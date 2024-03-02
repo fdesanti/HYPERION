@@ -59,20 +59,20 @@ class Trainer:
         """
 
         avg_train_loss = 0
-        
         fail_counter = 0
-
+        #step = 0
         #main loop over the epoch's batches
         for step in range(self.steps_per_epoch):
+        #for parameters, strains in self.train_ds:
             #getting the trainig batch
             parameters, strains = self.train_ds.__getitem__()
-
+            
             
             #training step
             self.optimizer.zero_grad()
             
             #get the loss
-            log_p =  -self.flow.log_prob(parameters, strains)
+            log_p =  -self.flow.log_prob(parameters.to(self.device), strains.to(self.device))
             loss  = torch.mean(log_p)
             
             if torch.isnan(loss) or torch.isinf(loss):
@@ -88,6 +88,9 @@ class Trainer:
             
             #perform the single step gradient descend
             self.optimizer.step()
+            #if step > self.steps_per_epoch:
+            #    break
+            #step+=1
             
 
         if fail_counter >= 0.5*self.steps_per_epoch:
@@ -96,7 +99,7 @@ class Trainer:
             return np.nan
        
         #compute the mean loss
-        avg_train_loss /= self.steps_per_epoch
+        avg_train_loss /= (self.steps_per_epoch-fail_counter)
     
         return avg_train_loss
    
@@ -110,16 +113,17 @@ class Trainer:
 
         avg_val_loss = 0
         fail_counter = 0
-
+        #step=0
         for step in range(self.val_steps_per_epoch):
+        #for parameters, strains in self.val_ds:
             
             #getting batch
             parameters, strains = self.val_ds.__getitem__()
             
             #computing loss
-            log_p = -self.flow.log_prob(parameters, strains)
+            log_p = -self.flow.log_prob(parameters.to(self.device), strains.to(self.device))
             loss  = torch.mean(log_p)
-            
+           
             if torch.isnan(loss) or torch.isinf(loss):
                 fail_counter += 1
                 print(f'Epoch = {epoch}  |  Validation Step = {step+1} / {self.val_steps_per_epoch}  |  Loss = {loss.item():.3f}', end='\r')
@@ -128,11 +132,13 @@ class Trainer:
                 avg_val_loss += loss.item() #item() returns loss as a number instead of a tensor
                 if self.verbose:
                     print(f'Epoch = {epoch}  |  Validation Step = {step+1} / {self.val_steps_per_epoch}  |  Loss = {loss.item():.3f}', end='\r')
-            
+            #if step> self.val_steps_per_epoch:
+            #    break
+            #step+=1
         if fail_counter >= 0.5* self.val_steps_per_epoch:
             return np.nan
         
-        avg_val_loss /= step
+        avg_val_loss /= (self.val_steps_per_epoch-fail_counter)
         return avg_val_loss
   
     
@@ -205,7 +211,7 @@ class Trainer:
             
             #on-epoch validation
             self.flow.eval()      #eval attribute comes from nn.Module and is used to set the weights in evaluation mode
-            with torch.no_grad():
+            with torch.inference_mode():
                 val_loss = self._test_on_epoch(epoch)
             
             if np.isnan(train_loss) or np.isnan(val_loss):

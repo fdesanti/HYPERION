@@ -78,21 +78,21 @@ class EmbeddingNetwork(nn.Module):
         
         self.Dropout = nn.Dropout(dropout_probability)
 
-        self.initial_batch_norm = nn.BatchNorm1d(self.strain_channels)
+        #self.initial_batch_norm = nn.BatchNorm1d(self.strain_channels)
         self.CNN = nn.Sequential(
                  
                  nn.Conv1d(self.strain_channels, 32, kernel_size = 5, stride = 1, bias = True),
-                 nn.BatchNorm1d(32),
+                 #nn.BatchNorm1d(32),
                  nn.MaxPool1d(2),
                  activation, 
                  
                  nn.Conv1d(32, 64, kernel_size = 5, stride = 1, bias = True),
-                 nn.BatchNorm1d(64),
+                 #nn.BatchNorm1d(64),
                  nn.MaxPool1d(2),
                  activation, 
             
                  nn.Conv1d(64, 128, kernel_size = 5, stride = 1, bias = True),
-                 nn.BatchNorm1d(128),
+                 #nn.BatchNorm1d(128),
                  nn.MaxPool1d(2),
                  activation,
                  
@@ -110,7 +110,7 @@ class EmbeddingNetwork(nn.Module):
              [
               nn.Sequential(
                           nn.Conv1d(strain_shape[0], filter, kernel_size = kernel_size, stride = 1, bias = True), 
-                          nn.BatchNorm1d(filter),
+                          #nn.BatchNorm1d(filter),
                           
                           self.activation, 
                           GlobalMaxPooling1D(),
@@ -141,10 +141,12 @@ class EmbeddingNetwork(nn.Module):
     def forward(self, strain):
         
         #initial batch norm layer
-        s = self.initial_batch_norm(strain)
+        s = strain#self.initial_batch_norm(strain)
         
+
         #Morphology CNN
         out_CNN = self.CNN(s)
+        #print('morphology CNN', out_CNN)
 
         #Localization CNN
         out_CNN_localization = torch.tensor([], device=strain.device)
@@ -154,6 +156,7 @@ class EmbeddingNetwork(nn.Module):
         out_CNN_localization = self.out_CNN_localization_block_linear(out_CNN_localization)
         
         out_CNN_localization = self.Dropout(out_CNN_localization)
+        #print('out CNN localization', out_CNN_localization)
         
         #Combination of the two CNN blocks
         out = torch.cat([out_CNN, out_CNN_localization], dim = 1)

@@ -1,14 +1,9 @@
 import torch 
-
-from .likelihood import  GWLikelihood
-
-from ...core.distributions.prior_distributions import * 
-
 import numpy as np
+
 from scipy.stats import kstest
-
-
-_priors = {'uniform': UniformPrior, 'cos': CosinePrior, 'sin': SinePrior, 'delta': DeltaPrior, 'pow': PowerLawPrior}
+from .likelihood import  GWLikelihood
+from ...core.distributions.prior_distributions import * 
 
 
 class IS_Priors(MultivariatePrior):
@@ -27,31 +22,21 @@ class IS_Priors(MultivariatePrior):
     def __init__(self, flow, device = 'cpu'):
         
         self.flow = flow        
-        self.parameter_names = ['m1', 'm2', 'e0', 'p_0', 'distance', 'ra', 'dec', 'time_shift'] #TODO make it general
         
         prior_dict = dict()
-        for par_name in self.parameter_names:
-            minimum, maximum, distribution = flow.model_hyperparams['parameters_bounds'][par_name]['min'], \
-                                             flow.model_hyperparams['parameters_bounds'][par_name]['max'], \
-                                             flow.model_hyperparams['parameters_bounds'][par_name]['distribution']
+        for par_name in flow.inference_parameters:
+            distribution = flow.prior_metadata['parameters'][par_name]['distribution']
+            if distribution == 'delta':
+                value = flow.prior_metadata['parameters'][par_name]['value']
+                prior_dict[par_name] = prior_dict_[distribution](value, device)
             
-            if par_name == 'dec':
-                distribution = 'cos'
-            
-            elif par_name == 'time_shift':
-                minimum /= 2
-                maximum /= 2
-
-            elif par_name == 'distance':
-                minimum /= 1e6
-                maximum /= 1e6
-
-            prior_dict[par_name] = _priors[distribution](minimum, maximum, device)
+            else:
+                minimum, maximum = flow.prior_metadata['parameters'][par_name]['min'], \
+                                   flow.prior_metadata['parameters'][par_name]['max']                 
+                prior_dict[par_name] = prior_dict_[distribution](minimum, maximum, device)
             
         super(IS_Priors, self).__init__(prior_dict)
-        
         return
-    
     
 
 
@@ -130,7 +115,7 @@ class ImportanceSampling():
     
     @property
     def parameter_names(self):
-        return self.flow.model_hyperparams['parameters_names']
+        return self.flow.prior_metadata['parameters_names']
    
     def compute_Bayes_factor(self, strain, whitened_strain, psd, event_time):
         """
@@ -226,17 +211,14 @@ class ImportanceSampling():
         thetas.pop('q')
         #compute log Prior
         logP = self.priors.log_prob(thetas)
-        
-        #print('prior computed')
-        thetas['pol']  = torch.tensor(0)
-        thetas['incl'] = torch.tensor(0)
+
+        #add reference time         
         thetas['t0_p'] = torch.tensor(event_time)
         
         
         #compute log Likelihood
         logL = self.likelihood.log_Likelihood(strain=strain, psd=psd, waveform_parameters=thetas)
 
-        #print('likelihood computed')
         
         
 
@@ -323,8 +305,10 @@ class ImportanceSampling():
         
         medians = [float(torch.median(thetas[par_name])) for par_name in self.parameter_names]    
 
-        ks_stat = np.mean([(1-kstest(thetas[name].cpu().numpy().T[0], self.reference_posterior_samples[name]).statistic)*100 for name in self.parameter_names if not name == 'time_shift'])
-        
+        if self.reference_posterior_samples:
+            ks_stat = np.mean([(1-kstest(thetas[name].cpu().numpy().T[0], self.reference_posterior_samples[name]).statistic)*100 for name in self.parameter_names if not name == 'time_shift'])
+        else:
+            ks_stat = 'None'
         return thetas, log_posterior, medians, ks_stat
     
     

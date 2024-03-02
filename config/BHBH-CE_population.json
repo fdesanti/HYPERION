@@ -5,6 +5,8 @@
 
   "reference_gps_time": 1242442967.4,
 
+  "fs": 2048,
+
   "parameters": {
     "m1": {
       "distribution": "uniform",
@@ -18,13 +20,13 @@
     },
     "e0": {
       "distribution": "uniform",
-      "min": 0.65,
-      "max": 0.99
+      "min": 0.75,
+      "max": 0.95
     },
     "p_0": {
       "distribution": "uniform",
-      "min": 13.0,
-      "max": 30.0
+      "min": 10.0,
+      "max": 20.0
     },
     "time_shift": {
       "distribution": "uniform",
@@ -43,8 +45,8 @@
     },
     "distance": {
       "distribution": "uniform",
-      "min": 100,
-      "max": 2000
+      "min": 10,
+      "max": 1000
     },
     "ra": {
       "distribution": "uniform",
