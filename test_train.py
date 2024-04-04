@@ -60,12 +60,14 @@ if __name__ == '__main__':
             plt.title(det)            
         plt.savefig('training_results/BHBH/strain.png', dpi=200)
 
-        #set up Flow model
+        #set up Sampler
         checkpoint_path = 'training_results/BHBH/BHBH_flow_model.pt'
+        
         sampler = PosteriorSampler(flow_checkpoint_path=checkpoint_path, waveform_generator=efbt, num_posterior_samples=num_samples, device=device)
 
         posterior = sampler.sample_posterior(strain = strain, num_samples=num_samples, restrict_to_bounds = True)
         
+        #compare sampled parameters to true parameters
         true_parameters = sampler.flow._post_process_samples(parameters, restrict_to_bounds=False)
         true_parameters = TensorDict.from_dict(true_parameters)
         true_parameters = {key: true_parameters[key].cpu().item() for key in true_parameters.keys()}
@@ -74,4 +76,5 @@ if __name__ == '__main__':
         for par in true_parameters:
             print(f"{par}: {posterior[par].cpu().median():.2f} vs {true_parameters[par]:.2f}")
         
+        #generate corner plot
         sampler.plot_corner(injection_parameters=true_parameters)

@@ -75,24 +75,30 @@ class EmbeddingNetwork(nn.Module):
         self.num_blocks = num_blocks
         self.block_dims = block_dims
         self.activation = activation
-        
+        self.use_batch_norm = use_batch_norm
+
         self.Dropout = nn.Dropout(dropout_probability)
 
-        self.initial_batch_norm = nn.BatchNorm1d(self.strain_channels)
+        if use_batch_norm:
+            self.initial_batch_norm = nn.BatchNorm1d(self.strain_channels)
+        
+        #=======================================================================
+        # Construct CNN for morphology features extraction
+        #=======================================================================
         self.CNN = nn.Sequential(
                  
                  nn.Conv1d(self.strain_channels, 32, kernel_size = 5, stride = 1, bias = True),
-                 nn.BatchNorm1d(32),
+                 nn.BatchNorm1d(32) if use_batch_norm else nn.Identity(),
                  nn.MaxPool1d(2),
                  activation, 
                  
                  nn.Conv1d(32, 64, kernel_size = 5, stride = 1, bias = True),
-                 nn.BatchNorm1d(64),
+                 nn.BatchNorm1d(64) if use_batch_norm else nn.Identity(),
                  nn.MaxPool1d(2),
                  activation, 
             
                  nn.Conv1d(64, 128, kernel_size = 5, stride = 1, bias = True),
-                 nn.BatchNorm1d(128),
+                 nn.BatchNorm1d(128) if use_batch_norm else nn.Identity(),
                  nn.MaxPool1d(2),
                  activation,
                  
@@ -100,8 +106,10 @@ class EmbeddingNetwork(nn.Module):
                  nn.Flatten(),
                  nn.LazyLinear(block_dims[0]), activation
                  )
-
         
+        #=======================================================================
+        # Construct CNN for time/space localization features extraction
+        #=======================================================================
         filters      = [16, 32, 16, 32, 64, 128]
         kernel_sizes = [7, 7, 5, 5, 3, 3]
         #kernel_sizes = [128, 64, 32, 16, 8, 4]
@@ -110,8 +118,7 @@ class EmbeddingNetwork(nn.Module):
              [
               nn.Sequential(
                           nn.Conv1d(strain_shape[0], filter, kernel_size = kernel_size, stride = 1, bias = True), 
-                          nn.BatchNorm1d(filter),
-                          
+                          nn.BatchNorm1d(filter) if use_batch_norm else nn.Identity(),
                           self.activation, 
                           GlobalMaxPooling1D(),
               ) 
@@ -120,20 +127,24 @@ class EmbeddingNetwork(nn.Module):
         )
         self.out_CNN_localization_block_linear = nn.Sequential(nn.LazyLinear(block_dims[0]), activation)
         
-        
+
+        #=======================================================================
+        # Construct ResNet blocks
+        #=======================================================================
         self.residual_blocks = []
         input_dim = block_dims[0]
         for block_dim in block_dims:
-            for i in range(num_blocks):
+            for _ in range(num_blocks):
                 self.residual_blocks.append( ResBlock(input_dim=input_dim, 
                                                       output_dim=block_dim, 
-                                                      use_batch_norm=use_batch_norm, 
+                                                      use_batch_norm=False, 
                                                       activation=activation,
                                                       dropout_probability= dropout_probability) )
                 input_dim = block_dim
             
         self.resnet = nn.ModuleList(self.residual_blocks)
         
+        #pre ResNet Layer
         self.linear = nn.LazyLinear(block_dims[0])
 
         #self.final_linear = nn.LazyLinear(strain_out_dim)
@@ -141,7 +152,10 @@ class EmbeddingNetwork(nn.Module):
     def forward(self, strain):
         
         #initial batch norm layer
-        s = self.initial_batch_norm(strain)
+        if self.use_batch_norm:
+            s = self.initial_batch_norm(strain)
+        else:
+            s = strain
         
 
         #Morphology CNN
@@ -167,7 +181,6 @@ class EmbeddingNetwork(nn.Module):
             out = res_layer(out)
 
         #out = self.activation(self.final_linear(out))
-        
         return out
             
 
