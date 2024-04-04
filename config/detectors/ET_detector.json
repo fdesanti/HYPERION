@@ -1,0 +1,16 @@
+{
+    "description": "Configuration parameters for Einstein Telescope Detector (Sardinia Site hypothesis + triangular)", 
+
+    "name" : "ET",
+
+    "config_parameters": {
+        "latitude"          : 40.44, 
+        "longitude"         : 9.4566, 
+        "elevation"         : 51.884,
+        "arms_orientation"  : 116.5, 
+        "angle_between_arms": 60.0
+    }
+    
+}
+
+

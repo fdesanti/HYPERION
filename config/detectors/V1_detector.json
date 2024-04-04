@@ -1,0 +1,14 @@
+{
+    "description": "Configuration parameters for Virgo Detector", 
+
+    "name" : "V1",
+    
+    "config_parameters": {
+        "latitude"          : 43.63, 
+        "longitude"         : 10.5, 
+        "elevation"         : 51.884,
+        "arms_orientation"  : 116.5, 
+        "angle_between_arms": 90.0
+    }
+
+}

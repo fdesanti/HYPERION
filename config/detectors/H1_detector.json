@@ -1,0 +1,15 @@
+{
+    "description": "Configuration parameters for LIGO Hanford Detector", 
+
+    "name": "H1", 
+    
+    "config_parameters": {
+        "latitude"          : 46.45, 
+        "longitude"         : -119.41, 
+        "elevation"         : 142.554,
+        "arms_orientation"  : 171.8, 
+        "angle_between_arms": 90.0
+    }
+
+}
+
