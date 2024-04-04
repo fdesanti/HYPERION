@@ -1,0 +1,15 @@
+# File extensions
+*.pdf
+*.png
+*.pt
+*.hdf5
+*.ipynb
+*.DS_Store
+
+# Python compiled folders
+__pycache__/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+
