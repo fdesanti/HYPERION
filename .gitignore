@@ -4,9 +4,12 @@
 *.pt
 *.hdf5
 *.ipynb
+
+# Compiled files
+*.pyc
 *.DS_Store
 
-# Python compiled folders
+# Cached directories
 __pycache__/
 
 # Jupyter Notebook
