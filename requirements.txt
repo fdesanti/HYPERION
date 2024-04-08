@@ -1,0 +1,8 @@
+pytorch>=2.0.0
+tensordict
+seaborn
+yaml
+json
+h5py
+tqdm
+bilby
