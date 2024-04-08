@@ -17,7 +17,7 @@ pip install -r requirements.txt
 ```
 
 To use HYPERION as an installed package you need to add it to PYTHONPATH. 
-Add these lines to your ~/.bash_profile (~/.zprofile on Mac)
+Add these lines to your /.bash_profile (/.zprofile on Mac)
 
 ```
 PYTHONPATH = "path_to_work_dir":$PYTHONPATH
@@ -29,6 +29,13 @@ then run
 ```
 source ~/.bash_profile
 ```
+
+### A note about PyTorch
+By default PyTorch will download (on Linux) the latest CUDA binaries (12.1). 
+Refer to the page https://pytorch.org/get-started/locally/ for other CUDA versions
+(e.g. PcUniverse only works with CUDA <= 11.8)
+
+## Usage
 
 
 
