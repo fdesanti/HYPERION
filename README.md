@@ -20,7 +20,7 @@ To use HYPERION as an installed package you need to add it to PYTHONPATH.
 Run the following (on Mac change "bashrc" with "zprofile")
 
 ```
-echo PYTHONPATH = "path_to_work_dir":$PYTHONPATH > ~/.bashrc  
+echo PYTHONPATH = <path_to_work_dir>:$PYTHONPATH > ~/.bashrc  
 echo export PYTHONPATH > ~/.bashrc  
 source ~/.bashrc
 ```
@@ -29,6 +29,7 @@ source ~/.bashrc
 By default PyTorch will download (on Linux) the latest CUDA binaries (12.1). 
 Refer to the page https://pytorch.org/get-started/locally/ for other CUDA versions
 (e.g. PcUniverse only works with CUDA <= 11.8)
+It is recommended to install pytorch before installing the requirements
 
 ## Usage
 
