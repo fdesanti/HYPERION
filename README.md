@@ -17,17 +17,12 @@ pip install -r requirements.txt
 ```
 
 To use HYPERION as an installed package you need to add it to PYTHONPATH. 
-Add these lines to your /.bash_profile (/.zprofile on Mac)
+Run the following (on Mac change "bashrc" with "zprofile")
 
 ```
-PYTHONPATH = "path_to_work_dir":$PYTHONPATH
-export PYTHONPATH
-```
-
-then run 
-
-```
-source ~/.bash_profile
+echo PYTHONPATH = "path_to_work_dir":$PYTHONPATH > ~/.bashrc  
+echo export PYTHONPATH > ~/.bashrc  
+source ~/.bashrc
 ```
 
 ### A note about PyTorch
