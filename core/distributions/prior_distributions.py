@@ -1,4 +1,5 @@
 import torch
+from tensordict import TensorDict
 
 N_ = int(1e6)
 
@@ -17,8 +18,8 @@ class Rand():
             self.rng = None
         
 
-    def __call__(self, sample_shape, device):
-        return torch.rand(sample_shape, generator = self.rng, device = device)
+    def __call__(self, sample_shape, device, dtype=None):
+        return torch.rand(sample_shape, generator = self.rng, device = device, dtype=dtype)
 
 
 class BasePrior():
@@ -101,8 +102,8 @@ class UniformPrior(BasePrior):
         delta = self.maximum - self.minimum
         return self.minimum + samples * delta
     
-    def sample(self, sample_shape, standardize=False):
-        samples = self.rand(sample_shape, device = self.device)
+    def sample(self, sample_shape, standardize=False, dtype=None):
+        samples = self.rand(sample_shape, dtype=dtype, device = self.device)
         samples = self.rescale(samples)
         if standardize:
             samples = self.standardize_samples(samples)
@@ -112,7 +113,7 @@ class UniformPrior(BasePrior):
 class DeltaPrior(BasePrior):
     """Dirac Delta Prior distribution """
     
-    def __init__(self, value, device = 'cpu'):
+    def __init__(self, value, device = 'cpu', seed = None):
         """Dirac delta function prior, this always returns value. """
         super(DeltaPrior, self).__init__(value, value, device)
         self.value = value 
@@ -142,8 +143,8 @@ class DeltaPrior(BasePrior):
         
         return log_prob
 
-    def sample(self, sample_shape, standardize=False): #standardize does nothing here
-        return self.value * torch.ones(sample_shape)
+    def sample(self, sample_shape, standardize=False, dtype=None): #standardize does nothing here
+        return self.value * torch.ones(sample_shape, dtype=dtype, device = self.device)
     
     
     
@@ -176,8 +177,8 @@ class CosinePrior(BasePrior):
         prob = torch.cos(samples) / 2 * self.is_in_prior_range(samples)
         return torch.log(prob)
     
-    def sample(self, sample_shape, standardize=False):
-        samples = self.rand(sample_shape, device = self.device)
+    def sample(self, sample_shape, standardize=False, dtype=None):
+        samples = self.rand(sample_shape, device = self.device, dtype=dtype)
         samples = self.rescale(samples)
         if standardize:
             samples = self.standardize_samples(samples)
@@ -213,8 +214,8 @@ class SinePrior(BasePrior):
         prob = torch.sin(samples) / 2 * self.is_in_prior_range(samples)
         return torch.log(prob)
     
-    def sample(self, sample_shape, standardize=False):
-        samples = self.rand(sample_shape, device = self.device)
+    def sample(self, sample_shape, standardize=False, dtype=None):
+        samples = self.rand(sample_shape, device = self.device, dtype=dtype)
         samples = self.rescale(samples)
         if standardize:
             samples = self.standardize_samples(samples)
@@ -271,8 +272,8 @@ class PowerLawPrior(BasePrior):
         return ln_p + ln_in_range
 
     
-    def sample(self, sample_shape, standardize=False):
-        samples = self.rand(sample_shape, device = self.device)
+    def sample(self, sample_shape, standardize=False, dtype=None):
+        samples = self.rand(sample_shape, device = self.device, dtype=dtype)
         samples = self.rescale(samples)
         if standardize:
             samples = self.standardize_samples(samples)
@@ -309,9 +310,9 @@ class M_uniform_in_components(BasePrior):
             self._std = self.sample(N_).std()
         return self._std
     
-    def sample(self, sample_shape, standardize = False):
-        m1 = self.m1.sample(sample_shape)
-        m2 = self.m2.sample(sample_shape)
+    def sample(self, sample_shape, standardize = False, dtype=None):
+        m1 = self.m1.sample(sample_shape, dtype=dtype)
+        m2 = self.m2.sample(sample_shape, dtype=dtype)
         M = m1+m2
         if standardize:
             M = self.standardize_samples(M)
@@ -357,9 +358,9 @@ class q_uniform_in_components(BasePrior):
         sorted_m2 = sorted.T[0]
         return sorted_m1, sorted_m2
     
-    def sample(self, sample_shape, standardize = False):
-        m1 = self.m1.sample(sample_shape)
-        m2 = self.m2.sample(sample_shape)
+    def sample(self, sample_shape, standardize = False, dtype=None):
+        m1 = self.m1.sample(sample_shape, dtype=dtype)
+        m2 = self.m2.sample(sample_shape, dtype=dtype)
         
         m1, m2 = self._sort_masses(m1, m2)
 
@@ -369,7 +370,16 @@ class q_uniform_in_components(BasePrior):
             q = self.standardize_samples(q)
         return q
         
-      
+
+prior_dict_ = {'uniform'  : UniformPrior, 
+               'delta'    : DeltaPrior, 
+               'cos'      : CosinePrior,
+               'sin'      : SinePrior, 
+               'power-law': PowerLawPrior, 
+               'M' : M_uniform_in_components, 
+               'q' : q_uniform_in_components}
+
+
     
 class MultivariatePrior():
     """
@@ -383,32 +393,46 @@ class MultivariatePrior():
     
     """
     
-    def __init__(self, prior_dict):
+    def __init__(self, prior_dict, seed = None, device = 'cpu'):
         
-        self.priors = prior_dict
+        self.priors = self._load_priors(prior_dict, seed, device)
         self.names  = list(prior_dict.keys())
-        
         return
+    
+    @staticmethod
+    def _load_priors(prior_dict, seed, device):
+        """Loads the priors from a dictionary of prior distributions"""
+        priors = dict()
+        
+        for key in prior_dict:
+            dist_name = prior_dict[key]['distribution']
+            kwargs = prior_dict[key]['kwargs']
+            kwargs['device'] = device
+
+            if seed is not None:
+                if isinstance(seed, dict):
+                    kwargs['seed'] = seed[key]
+                else:
+                    kwargs['seed'] = seed
+
+            priors[key] = prior_dict_[dist_name](**kwargs)
+
+        return priors
     
     def log_prob(self, samples):
         """Samples must be a dictionary containing a set of parameter samples of shape [Nbatch, 1]"""
         logP = torch.stack([self.priors[name].log_prob(samples[name]) for name in samples.keys()], dim = -1)
         return logP.sum(-1)
     
-    def sample(self, sample_shape, standardize=False):
+    def sample(self, sample_shape, standardize=False, dtype=None):
         samples = dict()
         for name in self.names:
-            samples[name] = self.priors[name].sample(sample_shape, standardize)
+            samples[name] = self.priors[name].sample(sample_shape, standardize, dtype=dtype)
+        samples = TensorDict.from_dict(samples)
         return samples
             
         
         
-prior_dict_ = {'uniform'  : UniformPrior, 
-               'delta'    : DeltaPrior, 
-               'cos'      : CosinePrior,
-               'sin'      : SinePrior, 
-               'power-law': PowerLawPrior, 
-               'M' : M_uniform_in_components, 
-               'q' : q_uniform_in_components}
+
 
     
