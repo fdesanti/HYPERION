@@ -170,20 +170,12 @@ class DatasetGenerator():
             self._prior_metadata = prior_kwargs
                     
         #load single priors as dictionary: each key is a parameter
-        self.prior = dict()
-        for i, p in enumerate(prior_kwargs['parameters'].keys()):
-            dist = prior_kwargs['parameters'][p]['distribution']
-            if dist == 'delta':
-                val = prior_kwargs['parameters'][p]['value']
-                self.prior[p] = prior_dict_[dist](val, self.device)
-            else:
-                min, max = prior_kwargs['parameters'][p]['min'], prior_kwargs['parameters'][p]['max']
-                #if m1 and m2 has the same seed then m1 == m2 for each sample!
-                seed = 2*self.seed if p=='m2' else self.seed 
-                self.prior[p] = prior_dict_[dist](min, max, self.device, seed+i)
+        
+        seed = {par: 2*self.seed if par=='m2' else self.seed+i for i, par in enumerate(prior_kwargs['parameters'].keys())}
         
         #convert prior dictionary to MultivariatePrior
-        self.multivariate_prior = MultivariatePrior(self.prior)
+        self.multivariate_prior = MultivariatePrior(prior_kwargs['parameters'], device = self.device, seed = seed)
+        self.prior = self.multivariate_prior.priors
         
         #add M and q to prior dictionary
         #NB: they are not added to MultivariatePrior to avoid conflict with the waveform_generator 
@@ -195,7 +187,8 @@ class DatasetGenerator():
             for p in ['M', 'q']:
                 self.prior[p] = prior_dict_[p](self.prior['m1'], self.prior['m2'])
                 min, max = float(self.prior[p].minimum), float(self.prior[p].maximum)
-                metadata = {'distribution':f'{p}_uniform_in_components', 'min': min, 'max': max}
+                
+                metadata = {'distribution':f'{p}_uniform_in_components', 'kwargs':{'minimum': min, 'maximum': max}}
                 self._prior_metadata['parameters'][p] = metadata
         
         #update reference gps time in detectors
@@ -208,7 +201,7 @@ class DatasetGenerator():
         #add means and stds to metadata
         self._prior_metadata['means'] = self.means
         self._prior_metadata['stds']  = self.stds
-
+        
         return 
     
 

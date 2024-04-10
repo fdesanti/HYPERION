@@ -23,22 +23,13 @@ class IS_Priors(MultivariatePrior):
     def __init__(self, flow, device = 'cpu'):
         
         self.flow = flow        
-        parameters = flow.prior_metadata['parameters'].keys()
         
-        prior_dict = dict()
-        for par_name in parameters:
-            distribution = flow.prior_metadata['parameters'][par_name]['distribution']
-            if distribution == 'delta':
-                value = flow.prior_metadata['parameters'][par_name]['value']
-                prior_dict[par_name] = prior_dict_[distribution](value, device)
-            
-            elif distribution not in ['M_uniform_in_components', \
-                                      'q_uniform_in_components']: 
-                minimum, maximum = flow.prior_metadata['parameters'][par_name]['min'], \
-                                   flow.prior_metadata['parameters'][par_name]['max']                 
-                prior_dict[par_name] = prior_dict_[distribution](minimum, maximum, device)
-            
-        super(IS_Priors, self).__init__(prior_dict)
+        priors = flow.prior_metadata['parameters'].copy()
+        if 'M' in priors:
+            priors.pop('M')
+        if 'q' in priors:
+            priors.pop('q')
+        super(IS_Priors, self).__init__(priors, device=device)
         return
     
 

@@ -157,12 +157,10 @@ class Flow(nn.Module):
     def restrict_samples_to_bounds(self, processed_samples_dict, num_samples):
         restricted_samples_dict = dict()
         total_mask = torch.ones(num_samples, dtype=torch.bool)
-        bounds = self.prior_metadata['parameters']
-                
-        #for name in ['dec']:
+
         for name in self.inference_parameters:
-            
-            total_mask *= ((processed_samples_dict[name]<=bounds[name]['max']) * (processed_samples_dict[name]>=bounds[name]['min']))
+            bounds = self.prior_metadata['parameters'][name]['kwargs']
+            total_mask *= ((processed_samples_dict[name]<=bounds['maximum']) * (processed_samples_dict[name]>=bounds['minimum']))
 
         for name in self.inference_parameters:
             restricted_samples_dict [name] = processed_samples_dict[name][total_mask]
