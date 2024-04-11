@@ -13,6 +13,7 @@ git clone git@gitlab.com:mmagwpisa/hyperion.git
 then install the dependencies.
 
 ```
+cd hyperion
 pip install -r requirements.txt
 ```
 
@@ -26,10 +27,17 @@ source ~/.bashrc
 ```
 
 ### A note about PyTorch
-By default PyTorch will download (on Linux) the latest CUDA binaries (12.1). 
+By default (on Linux) PyTorch is shipped with the latest CUDA binaries (12.1). 
 Refer to the page https://pytorch.org/get-started/locally/ for other CUDA versions
 (e.g. PcUniverse only works with CUDA <= 11.8)
-It is recommended to install pytorch before installing the requirements
+
+```
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+```
+
+It is therefore recommended to install pytorch before installing the requirements
+
+
 
 ## Usage
 
