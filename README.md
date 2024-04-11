@@ -28,7 +28,6 @@ source ~/.bashrc
 
 ### A note about PyTorch
 By default (on Linux) PyTorch is shipped with the latest CUDA binaries (12.1). 
-
 Refer to the page https://pytorch.org/get-started/locally/ for other CUDA versions
 (e.g. PcUniverse only works with CUDA <= 11.8)
 
