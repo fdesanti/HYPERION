@@ -3,7 +3,9 @@ from tensordict import TensorDict
 
 N_ = int(1e6)
 
-
+###########################
+# Rand Wrapper Class
+###########################
 class Rand():
     """
     Wrapper class to torch.rand to explot a random generator with a fixed seed
@@ -22,6 +24,10 @@ class Rand():
         return torch.rand(sample_shape, generator = self.rng, device = device, dtype=dtype)
 
 
+
+################################
+# Analytical Prior Distributions
+################################
 class BasePrior():
     """Base class for Prior Distributions"""
     
@@ -280,6 +286,10 @@ class PowerLawPrior(BasePrior):
         return samples
     
     
+###########################
+# GW Prior Distributions
+###########################    
+    
 class M_uniform_in_components(BasePrior):
     """Class that manages total Mass M prior from uniform distributed masses"""
     
@@ -369,7 +379,7 @@ class q_uniform_in_components(BasePrior):
         if standardize:
             q = self.standardize_samples(q)
         return q
-        
+
 
 prior_dict_ = {'uniform'  : UniformPrior, 
                'delta'    : DeltaPrior, 
