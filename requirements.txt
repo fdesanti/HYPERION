@@ -1,8 +1,19 @@
+#torch-related
 torch>=2.0.0
+torchvision
+torchaudio
 tensordict
+
+#plotting and I/O
 seaborn
-yaml
-json
+pyyaml
 h5py
 tqdm
+
+#gw related
 bilby
+astropy
+healpy
+
+
+
