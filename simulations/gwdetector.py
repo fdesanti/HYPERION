@@ -75,19 +75,23 @@ class GWDetector(object):
             
         #loading configuration parameters
         with open(config_file_path) as config_file:
-            conf_params = json.load(config_file)
-            self.name                   = conf_params['name']
-            self.latitude               = conf_params['config_parameters']['latitude']
-            self.longitude              = conf_params['config_parameters']['longitude']
-            self.elevation              = conf_params['config_parameters']['elevation']
-            self.arms_orientation_angle = conf_params['config_parameters']['arms_orientation']
-            self.angle_between_arms     = conf_params['config_parameters']['angle_between_arms']
+            det_conf = json.load(config_file)
+            conf_params = det_conf['config_parameters']
             
+            self.name                   = det_conf['name']
+            self.latitude               = conf_params['latitude']
+            self.longitude              = conf_params['longitude']
+            self.elevation              = conf_params['elevation']
+            self.angle_between_arms     = conf_params['angle_between_arms']
+            
+            if 'arms_orientation' in conf_params:
+                self.arms_orientation_angle = conf_params['arms_orientation']
+                
+            elif ('xarm_azimuth' in conf_params) and ('yarm_azimuth' in conf_params):
+                self.arms_orientation_angle = 0.5*(conf_params['xarm_azimuth'] + conf_params['yarm_azimuth'])
         
-            
+        
         self.reference_time = reference_time
-        
-        
         return
     
     @property
@@ -117,7 +121,7 @@ class GWDetector(object):
             value = self.xp.tensor(value)
         self._longitude = self.xp.deg2rad(value)
         
-    #ARMS ORIENTATION ---------------------------------
+    #ELEVATION ---------------------------------------
     @property
     def elevation(self):
         return self._elevation
@@ -169,9 +173,9 @@ class GWDetector(object):
     def lst(self, t_gps):
         #TODO generalize to the case of multiple gps times even batched. Astropy can accept either numpy.ndarray
         #     or torch.tensor (if on cpu) instances. The boring issue is the check of similarity between the gps time(s) and the reference
-        if t_gps != self.reference_time or not hasattr(self, '_lst'):
+        #if t_gps != self.reference_time or not hasattr(self, '_lst'):
             #if self.use_torch and self.xp.is_tensor(t_gps): t_gps = t_gps.cpu().numpy()
-            self._lst = self.lst_estimate(t_gps, sidereal_time_kwargs={'kind':'mean'})
+        self._lst = self.lst_estimate(t_gps, sidereal_time_kwargs={'kind':'mean'})
         
         return self._lst
     
@@ -280,25 +284,10 @@ class GWDetector(object):
         
         xangle = self.arms_orientation_angle    
         
-
         ampl11, ampl12 = self._ab_factors(xangle, ra, dec, t_gps)
-
-        if self.name == 'ET':
-            ampl21, ampl22 = self._ab_factors(xangle+(2/3)*self.xp.pi, ra, dec, t_gps)
-            ampl31, ampl32 = self._ab_factors(xangle+(4/3)*self.xp.pi, ra, dec, t_gps)
-
+        
         fplus  = self.xp.sin(self.angle_between_arms)*(ampl11*self.xp.cos(2*polarization) + ampl12*self.xp.sin(2*polarization))
         fcross = self.xp.sin(self.angle_between_arms)*(ampl12*self.xp.cos(2*polarization) - ampl11*self.xp.sin(2*polarization))
-
-        
-        if self.name == 'ET':
-            fplus2 = self.xp.sin(self.angle_between_arms)*(ampl21*self.xp.cos(2*polarization) + ampl22*self.xp.sin(2*polarization))
-            fplus3 = self.xp.sin(self.angle_between_arms)*(ampl31*self.xp.cos(2*polarization) + ampl32*self.xp.sin(2*polarization))
-            fplus  = self.xp.sqrt(fplus**2 + fplus2**2 + fplus3**2)
-
-            fcross2 = self.xp.sin(self.angle_between_arms)*(ampl22*self.xp.cos(2*polarization) - ampl21*self.xp.sin(2*polarization))
-            fcross3 = self.xp.sin(self.angle_between_arms)*(ampl32*self.xp.cos(2*polarization) - ampl31*self.xp.sin(2*polarization))
-            fcross  = self.xp.sqrt(fcross**2 + fcross2**2 + fcross3**2)
 
         return fplus, fcross
 
@@ -396,4 +385,3 @@ class GWDetector(object):
         #print(((dx * ehat).sum(axis = -1, keepdim=True) / c).shape)
         kwargs = {'keepdim':True} if self.use_torch else {'keepdims':True}
         return (dx * ehat).sum(axis = -1, **kwargs) / c
- 

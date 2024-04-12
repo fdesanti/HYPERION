@@ -4,10 +4,10 @@
     "name": "H1", 
     
     "config_parameters": {
-        "latitude"          : 46.45, 
-        "longitude"         : -119.41, 
+        "latitude"          : 46.45514666446043, 
+        "longitude"         : -119.4076571388784, 
         "elevation"         : 142.554,
-        "arms_orientation"  : 171.8, 
+        "arms_orientation"  : 170.99924234706103, 
         "angle_between_arms": 90.0
     }
 

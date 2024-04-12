@@ -4,10 +4,10 @@
     "name" : "V1",
     
     "config_parameters": {
-        "latitude"          : 43.63, 
-        "longitude"         : 10.5, 
+        "latitude"          : 43.63141447003932, 
+        "longitude"         : 10.504496611112913, 
         "elevation"         : 51.884,
-        "arms_orientation"  : 116.5, 
+        "arms_orientation"  : 115.56756342034298, 
         "angle_between_arms": 90.0
     }
 
