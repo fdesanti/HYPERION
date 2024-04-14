@@ -42,13 +42,13 @@ parameters:
     distribution: "uniform"
     kwargs:
       minimum: 0.0
-      maximum: 3.141592653589793
+      maximum: torch.pi
 
   inclination:
     distribution: "sin"
     kwargs:
       minimum: 0.0
-      maximum: 3.141592653589793
+      maximum: torch.pi
 
   distance:
     distribution: "uniform"
@@ -60,10 +60,10 @@ parameters:
     distribution: "uniform"
     kwargs:
       minimum: 0.0
-      maximum: 6.283185307179586
+      maximum: 2 * torch.pi
     
   dec:
     distribution: "cos"
     kwargs:
-      minimum: -1.5707963267948966
-      maximum: 1.5707963267948966
+      minimum: -torch.pi / 2
+      maximum:  torch.pi / 2

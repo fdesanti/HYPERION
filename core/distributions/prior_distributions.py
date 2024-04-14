@@ -414,18 +414,20 @@ class MultivariatePrior():
         """Loads the priors from a dictionary of prior distributions"""
         priors = dict()
         
-        for key in prior_dict:
-            dist_name = prior_dict[key]['distribution']
-            kwargs = prior_dict[key]['kwargs']
+        for par in prior_dict:
+            dist_name = prior_dict[par]['distribution']
+            kwargs = prior_dict[par]['kwargs']
+            #evaluate string expressions in kwargs
+            kwargs = {key: eval(value) if isinstance(value, str) else value for key, value in kwargs.items()}
             kwargs['device'] = device
 
             if seed is not None:
                 if isinstance(seed, dict):
-                    kwargs['seed'] = seed[key]
+                    kwargs['seed'] = seed[par]
                 else:
                     kwargs['seed'] = seed
 
-            priors[key] = prior_dict_[dist_name](**kwargs)
+            priors[par] = prior_dict_[dist_name](**kwargs)
 
         return priors
     

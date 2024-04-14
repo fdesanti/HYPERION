@@ -171,20 +171,12 @@ class GWDetector(object):
     
     
     def lst(self, t_gps):
-        #TODO generalize to the case of multiple gps times even batched. Astropy can accept either numpy.ndarray
-        #     or torch.tensor (if on cpu) instances. The boring issue is the check of similarity between the gps time(s) and the reference
-        #if t_gps != self.reference_time or not hasattr(self, '_lst'):
-            #if self.use_torch and self.xp.is_tensor(t_gps): t_gps = t_gps.cpu().numpy()
-        self._lst = self.lst_estimate(t_gps, sidereal_time_kwargs={'kind':'mean'})
-        
-        return self._lst
+        """returns the local sidereal time at the observatory site."""        
+        return self.lst_estimate(t_gps, sidereal_time_kwargs={'kind':'mean'})
     
     def gmst(self, t_gps):
-        #TODO generalize to the case of multiple gps times even batched. Astropy can accept either numpy.ndarray
-        #     or torch.tensor (if on cpu) instances. The boring issue is the check of similarity between the gps time(s) and the reference
-        if t_gps != self.reference_time or not hasattr(self, '_gmst'):
-            self._gmst = self.lst_estimate(t_gps, sidereal_time_kwargs={'kind':'mean', 'longitude': 'greenwich'})
-        return self._gmst
+        """returns the Greenwich Mean Sidereal Time."""
+        return self.lst_estimate(t_gps, sidereal_time_kwargs={'kind':'mean', 'longitude': 'greenwich'})
           
           
     def lst_estimate(self, t_gps, sidereal_time_kwargs):
@@ -220,6 +212,7 @@ class GWDetector(object):
         """
         Method that calculates the amplitude factors of plus and cross
         polarizationarization in the wave projection on the detector.
+        (See: Phys. Rev. D 58, 063001)
             
         Args:
         -----
@@ -385,3 +378,11 @@ class GWDetector(object):
         #print(((dx * ehat).sum(axis = -1, keepdim=True) / c).shape)
         kwargs = {'keepdim':True} if self.use_torch else {'keepdims':True}
         return (dx * ehat).sum(axis = -1, **kwargs) / c
+
+
+
+class GWDetectorNetwork():
+
+    def __init__(self):
+
+        return 
