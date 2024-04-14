@@ -11,7 +11,6 @@ c = c.value #speed of light value
 from ..config import CONF_DIR
 
 
-
 def list_available_detectors():
     #list all the detector files in conf dir
     full_path = glob.glob(f"{CONF_DIR}/detectors/*_detector.json")
@@ -290,7 +289,7 @@ class GWDetector(object):
 
         Args:
         -----
-            hp, hc: numpy.ndarrays or torch.tensors or GWSignal object 
+            hp, hc: either numpy.ndarray or torch.tensor or pycbc/gwpy TimeSeries
                 Plus and cross polarizations of the wave.
 
             ra: float
@@ -307,7 +306,7 @@ class GWDetector(object):
                 
         Returns:
         --------
-            h: numpy.ndarray or torch.tensor or GWSignal object
+            h: either numpy.ndarray or torch.tensor or pycbc/gwpy TimeSeries
                 Final gravitational wave signal (detector stain).
         """
         #assert(len(hp)==len(hc))
@@ -382,7 +381,104 @@ class GWDetector(object):
 
 
 class GWDetectorNetwork():
+    """
+    Class for a network of gravitational wave detectors.
+    It accepts a list of detector names (or a list of GWDetector instances).
+    The class allows for the gw projection on the detector network.
 
-    def __init__(self):
+
+    Arguments:
+    ----------
+        names : list of strings
+            List of detector names. Use list_available_detectors() to see a list of available names. 
+            Mutually exclusive with <detectors> argument.
+
+        detectors : dict of GWDetector instances
+            List of GWDetector instances. If it is provided, <names> will be ignored.
+
+        kwargs : dict
+           Optional initialization parameters for the detectors. If <detectors> is provided, this argument is ignored.
+           See the documentation of the GWDetector class for more details.
+
+    """
+
+    def __init__(self, detectors=None, names=['H1', 'L1', 'V1'], **kwargs):
+        
+        """Constructor"""
+        
+
+        if detectors:
+            self.detectors = detectors
+        else:
+            self.detectors = {}
+
+            default_kwargs = {'use_torch': False, 
+                              'device': 'cpu', 
+                              'reference_time':1370692818, 
+                              'config_file_path' : None}
+            default_kwargs.update(kwargs)
+            
+            for name in names:
+                self.detectors[name] = GWDetector(name, **default_kwargs)
 
         return 
+    
+
+    @property
+    def names(self):
+        return list(self.detectors.keys())
+    
+
+    def project_wave(self, hp, hc, ra, dec, polarization, t_gps=None):
+        """
+        Project the plus and cross gw polarizations into the detectors frames
+
+        Args:
+        -----
+            hp, hc: numpy.ndarrays or torch.tensors
+                Plus and cross polarizations of the wave.
+
+            ra: float
+                Right ascension of the source in rad.
+
+            dec: float
+                Declination of the source in rad.
+
+            polarization: float
+                polarizationarization angle of the wave in rad.
+                
+            t_gps: float
+                GPS time of the event
+                
+        Returns:
+        --------
+            h: dict of either numpy.ndarray or torch.tensor or pycbc/gwpy TimeSeries
+                Final gravitational wave signal (detector stain) 
+                for each of the detectors in the network.
+        """
+        
+        h = dict()
+        for name, detector in self.detectors.items():
+            h[name] = detector.project_wave(hp, hc, ra, dec, polarization, t_gps)        
+        return h
+    
+    def time_delay_from_earth_center(self, ra, dec, t_gps=None):
+        """ 
+        Returns the time delay(s) from Earth Center for each detector in the network
+
+        Args:
+        -----
+            ra: float or numpy.ndarray or torch.tensor 
+                Right ascension of the source in rad.
+
+            dec: float or numpy.ndarray or torch.tensor 
+                Declination of the source in rad.
+
+            t_gps: float or or numpy.ndarray or torch.tensor 
+                GPS time of the event
+        
+        """
+        delays = dict()
+        for name, detector in self.detectors.items():
+            delays[name] = detector.time_delay_from_earth_center(ra, dec, t_gps)
+        return delays 
