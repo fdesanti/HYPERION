@@ -1,5 +1,5 @@
 {
-    "description": "Configuration parameters for Einstein Telescope Detector (Triangular) as in bilby. (See https://git.ligo.org/lscsoft/bilby/-/blob/master/bilby/gw/detector/detectors/ET.interferometer?ref_type=heads)", 
+    "description": "Configuration parameters for Einstein Telescope Detector (Triangular) at the Sardinia Site. (See https://iopscience.iop.org/article/10.3847/1538-4357/ac4164)", 
 
     "name" : "E1",
 
@@ -8,8 +8,7 @@
         "longitude"         : 10.504496611112913, 
         "elevation"         : 51.884,
         "angle_between_arms": 60.0, 
-        "xarm_azimuth"      : 70.56740000017476,
-        "yarm_azimuth"      : 130.56740000034597
+        "arms_orientation"  : 0.0
     }
     
 }
