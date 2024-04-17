@@ -387,7 +387,7 @@ class GammaPrior(BasePrior):
     def __init__(self, concentration=1.0, rate=1.0, device = 'cpu', seed = None):
         super(GammaPrior, self).__init__(0, concentration, device, seed)
         self.concentration = torch.as_tensor(concentration, device = device)
-        self.rate = torch.as_tensor(concentration, device = device)
+        self.rate = torch.as_tensor(rate, device = device)
         self.Gamma = Gamma(self.concentration, self.rate)
         return
     
