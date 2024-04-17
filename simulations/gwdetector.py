@@ -327,6 +327,12 @@ class GWDetector(object):
     
     
     def time_delay_from_location(self, other_location, ra, dec, t_gps = None):
+        
+        #TODO: Add the possibility to pass an array of gps_times
+        #      check better with the implementation in PyCBC (it is allowed)
+        #      look in in GWFast (https://github.com/CosmoStatGW/gwfast/blob/master/gwfast/signal.py#L1372)
+        #      (the _DeltLoc function)
+        
         """---- Adapted from PyCBC ----"""
         
         """Return the time delay from the given location to detector for
