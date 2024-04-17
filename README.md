@@ -26,7 +26,7 @@ echo export PYTHONPATH > ~/.bashrc
 source ~/.bashrc
 ```
 
-### A note about PyTorch
+### A note about PyTorch installation
 By default (on Linux) PyTorch is shipped with the latest CUDA binaries (12.1). 
 Refer to the page https://pytorch.org/get-started/locally/ for other CUDA versions
 (e.g. PcUniverse only works with CUDA <= 11.8)
@@ -38,6 +38,16 @@ pip3 install torch torchvision torchaudio --index-url https://download.pytorch.o
 It is therefore recommended to install pytorch before installing the requirements
 
 
+### A note about TEOBResumS-DALI installation
+TEOBResumS-DALI can be installed with the following steps
+
+```
+git clone https://git.ligo.org/rossella.gamba/teobresums
+cd teobresums
+git checkout dev/DALI
+cd Python
+python setup.py install
+```
 
 ## Usage
 
