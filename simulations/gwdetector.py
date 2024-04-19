@@ -2,6 +2,8 @@ import os
 import glob
 import json
 
+from importlib import import_module
+
 from astropy import units as u
 from astropy.time import Time
 from astropy.constants import c
@@ -59,9 +61,9 @@ class GWDetector(object):
         self.device    = device
         
         if use_torch:
-            self.xp = __import__('torch')
+            self.xp = import_module('torch')
         else:
-            self.xp = __import__('numpy')
+            self.xp = import_module('numpy')
         self.use_torch = use_torch
         
                   
