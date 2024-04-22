@@ -1,5 +1,6 @@
 import torch
 from tensordict import TensorDict
+from torch.distributions import Gamma
 
 N_ = int(1e6)
 
@@ -379,6 +380,24 @@ class q_uniform_in_components(BasePrior):
         if standardize:
             q = self.standardize_samples(q)
         return q
+    
+    
+    
+class GammaPrior(BasePrior):
+    def __init__(self, concentration=1.0, rate=1.0, device = 'cpu', seed = None):
+        super(GammaPrior, self).__init__(0, concentration, device, seed)
+        self.concentration = torch.as_tensor(concentration, device = device)
+        self.rate = torch.as_tensor(rate, device = device)
+        self.Gamma = Gamma(self.concentration, self.rate)
+        return
+    
+    def sample(self, sample_shape, standardize = False, dtype=None ):
+        
+        if isinstance(sample_shape, int):
+            sample_shape = (1, sample_shape)
+            return self.Gamma.sample(sample_shape).squeeze()
+        else:
+            return self.Gamma.sample(sample_shape)
 
 
 prior_dict_ = {'uniform'  : UniformPrior, 
@@ -386,6 +405,7 @@ prior_dict_ = {'uniform'  : UniformPrior,
                'cos'      : CosinePrior,
                'sin'      : SinePrior, 
                'power-law': PowerLawPrior, 
+               'gamma'    : GammaPrior,
                'M' : M_uniform_in_components, 
                'q' : q_uniform_in_components}
 
