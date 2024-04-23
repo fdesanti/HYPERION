@@ -410,7 +410,7 @@ class GWDetectorNetwork():
 
     """
 
-    def __init__(self, detectors=None, names=['H1', 'L1', 'V1'], **kwargs):
+    def __init__(self, names=['H1', 'L1', 'V1'], detectors=None, **kwargs):
         
         """Constructor"""
         
@@ -431,10 +431,15 @@ class GWDetectorNetwork():
 
         return 
     
-
     @property
     def names(self):
         return list(self.detectors.keys())
+    
+    def set_reference_time(self, reference_time):
+        """Set the reference time for the detectors in the network"""
+        for ifo in self.names:
+            self.detectors[ifo].reference_time = reference_time
+        
     
 
     def project_wave(self, hp, hc, ra, dec, polarization, t_gps=None):
