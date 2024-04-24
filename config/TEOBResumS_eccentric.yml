@@ -1,0 +1,52 @@
+
+##########################################
+# TEOBResumS Eccentric population prior
+##########################################
+fs : 2048
+
+
+parameters:
+
+  M:
+    distribution: "uniform"
+    kwargs:
+      minimum: 10.0
+      maximum: 300.0
+
+  
+
+  ecc:
+    distribution: "uniform"
+    kwargs:
+      minimum: 0.65
+      maximum: 0.95
+
+  time_shift:
+    distribution: "uniform"
+    minimum: -0.25
+    maximum: 0.25
+
+  polarization:
+    distribution: "uniform"
+    minimum: 0.0
+    maximum: 3.141592653589793
+
+  inclination:
+    distribution: "sin"
+    minimum: 0.0
+    maximum: 3.141592653589793
+
+  distance:
+    distribution: "uniform"
+    minimum: 10
+    maximum: 2000
+
+  ra:
+    distribution: "uniform"
+    minimum: 0.0
+    maximum: 6.283185307179586
+    
+  dec:
+    distribution: "cos"
+    minimum: -1.5707963267948966
+    maximum: 1.5707963267948966
