@@ -1,0 +1,51 @@
+# Config Params for different Interferometric Detectors
+
+#LIGO Livingston
+L1:
+    latitude            : 30.562894331426406 
+    longitude           : -90.7742403888887 
+    elevation           : -6.5740596
+    arms_orientation    : 242.71636956358617
+    angle_between_arms  : 90.0
+
+#LIGO Hanford
+H1:
+    latitude            : 46.45514666446043 
+    longitude           : -119.4076571388784
+    elevation           : 142.55387311
+    arms_orientation    : 170.99924234706103
+    angle_between_arms  : 90.0
+
+#Virgo
+V1:
+    latitude            : 43.63141447003932
+    longitude           : 10.504496611112913
+    elevation           : 51.88388207
+    arms_orientation    : 115.56756342034298
+    angle_between_arms  : 90.0
+
+#Einstein Telescope Triangular - Sardinia Site
+#See https://iopscience.iop.org/article/10.3847/1538-4357/ac4164
+#Elevation is taken from SOS-Enattos depth(https://iopscience.iop.org/article/10.1088/1742-6596/1468/1/012242/pdf)
+E1:
+    latitude            : 40.443
+    longitude           : 9.457
+    elevation           : -100 
+    arms_orientation    : 0
+    angle_between_arms  : 60.0
+
+E2:
+    latitude            : 40.443
+    longitude           : 9.457
+    elevation           : -100 
+    arms_orientation    : 60.0
+    angle_between_arms  : 60.0
+
+E3:
+    latitude            : 40.443
+    longitude           : 9.457
+    elevation           : -100 
+    arms_orientation    : 120.0
+    angle_between_arms  : 60.0
+
+

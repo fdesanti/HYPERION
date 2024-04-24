@@ -23,11 +23,28 @@ class GWLikelihood():
     
     @property
     def fs(self):
-        return self.waveform_generator.fs
-    
+        if self.waveform_generator:
+            return self.waveform_generator.fs
+        elif hasattr(self, '_fs'):
+            return self._fs
+        else:
+            raise AttributeError('Sampling frequency must be set')
+    @fs.setter
+    def fs(self, value):
+        self._fs = value
+        
     @property
     def duration(self):
-        return self.waveform_generator.duration
+        if self.waveform_generator:
+            return self.waveform_generator.duration 
+        elif hasattr(self, '_duration'):
+            return self._duration 
+        else:
+            raise AttributeError('Duration must be set')
+    
+    @duration.setter
+    def duration(self, value):
+        self._duration = value
     
     @property
     def frequencies(self):
@@ -66,7 +83,7 @@ class GWLikelihood():
             #logL -= (2. / self.duration) * torch.sum(torch.conj(frequency_domain_strain) * frequency_domain_strain / (psd[det_name])) / self.fs
 
             T = len(strain[det_name]/self.fs)
-            logL -= (2. / self.duration) * torch.sum(torch.abs(frequency_domain_strain)** 2 / psd[det_name])
+            logL -= (2. / T) * torch.sum(torch.abs(frequency_domain_strain)** 2 / psd[det_name])
             #logL -= (2. / T) * sum(abs(frequency_domain_strain) ** 2 / (psd[det_name]))
             #logL += self._gaussian_likelihood(frequency_domain_strain, 0, psd[det_name])
         return logL.real

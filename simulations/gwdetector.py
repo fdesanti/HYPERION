@@ -1,26 +1,30 @@
 import os
-import glob
-import json
+import yaml
 
 from importlib import import_module
 
 from astropy import units as u
 from astropy.time import Time
-from astropy.constants import c
+from astropy.constants import R_earth, c
 from astropy.coordinates import EarthLocation
-c = c.value #speed of light value
+
+R_earth = R_earth.value #earth radius value [m]
+c = c.value #speed of light value [m/s]
 
 from ..config import CONF_DIR
 
 
-def list_available_detectors():
-    #list all the detector files in conf dir
-    full_path = glob.glob(f"{CONF_DIR}/detectors/*_detector.json")
-    #extract the detector names
-    available = sorted([os.path.basename(path)[:-14] for path in full_path])
-    return available
+def get_detectors_configs(det_conf_path = None):
+    #get the detectors configuration parameters
+    if not det_conf_path:
+        det_conf_path = f"{CONF_DIR}/detectors/detectors.yml"
+    with open(det_conf_path, 'r') as file:
+        det_configs = yaml.safe_load(file)    
+        
+    return det_configs
 
-available_detectors = list_available_detectors()
+detectors_configs = get_detectors_configs()
+available_detectors = list(detectors_configs.keys())
 
 
 class GWDetector(object):
@@ -62,35 +66,36 @@ class GWDetector(object):
         
         if use_torch:
             self.xp = import_module('torch')
+            from ..core.utilities import interp1d
+            self.interp = interp1d     
         else:
             self.xp = import_module('numpy')
+            self.interp = self.xp.interp
         self.use_torch = use_torch
         
-                  
+
+        #loading configuration parameters --------------------------------------------
         if name is not None:
-            assert name in available_detectors, f"{name} detector not available. Available ones are {available_detectors}. Please select one of those or provide a custom config file path"
-            config_file_path = f"{CONF_DIR}/detectors/{name}_detector.json"
+            assert name in available_detectors, f"{name} detector not available. Available ones are {available_detectors}. \
+                                                 Please select one of those or provide a custom config file path"
+            conf_params = detectors_configs[name]
+            self.name = name
         else:
             assert config_file_path is not None, "No name specified, please provide at least a custom detector config file"
+            conf_params = get_detectors_configs(config_file_path)
+            self.name = list(conf_params.keys())[0] #get the detector name from the configuration file
             
-            
-        #loading configuration parameters
-        with open(config_file_path) as config_file:
-            det_conf = json.load(config_file)
-            conf_params = det_conf['config_parameters']
-            
-            self.name                   = det_conf['name']
-            self.latitude               = conf_params['latitude']
-            self.longitude              = conf_params['longitude']
-            self.elevation              = conf_params['elevation']
-            self.angle_between_arms     = conf_params['angle_between_arms']
-            
-            if 'arms_orientation' in conf_params:
-                self.arms_orientation_angle = conf_params['arms_orientation']
-                
-            elif ('xarm_azimuth' in conf_params) and ('yarm_azimuth' in conf_params):
-                self.arms_orientation_angle = 0.5*(conf_params['xarm_azimuth'] + conf_params['yarm_azimuth'])
+        self.latitude               = conf_params['latitude']
+        self.longitude              = conf_params['longitude']
+        self.elevation              = conf_params['elevation']
+        self.angle_between_arms     = conf_params['angle_between_arms']
         
+        if 'arms_orientation' in conf_params:
+            self.arms_orientation_angle = conf_params['arms_orientation']
+            
+        elif ('xarm_azimuth' in conf_params) and ('yarm_azimuth' in conf_params):
+            self.arms_orientation_angle = 0.5*(conf_params['xarm_azimuth'] + conf_params['yarm_azimuth'])
+    
         
         self.reference_time = reference_time
         return
@@ -177,7 +182,7 @@ class GWDetector(object):
     
     def gmst(self, t_gps):
         """returns the Greenwich Mean Sidereal Time."""
-        return self.lst_estimate(t_gps, sidereal_time_kwargs={'kind':'mean', 'longitude': 'greenwich'})
+        return self.lst_estimate(t_gps, sidereal_time_kwargs={'kind':'apparent', 'longitude': 'greenwich'})
           
           
     def lst_estimate(self, t_gps, sidereal_time_kwargs):
@@ -291,19 +296,19 @@ class GWDetector(object):
 
         Args:
         -----
-            hp, hc: either numpy.ndarray or torch.tensor or pycbc/gwpy TimeSeries
+            hp, hc: array, tensor or pycbc/gwpy TimeSeries
                 Plus and cross polarizations of the wave.
 
-            ra: float
+            ra: float, array, tensor
                 Right ascension of the source in rad.
 
-            dec: float
+            dec: float, array, tensor
                 Declination of the source in rad.
 
-            polarization: float
+            polarization: float, array, tensor
                 polarizationarization angle of the wave in rad.
                 
-            t_gps: float
+            t_gps: float, array, tensor
                 GPS time of the event
                 
         Returns:
@@ -323,41 +328,37 @@ class GWDetector(object):
     
     def time_delay_from_earth_center(self, ra, dec, t_gps=None):
         """Returns the time delay from Earth Center"""
-        if t_gps is None:
-            t_gps = self.reference_time
-        return self.time_delay_from_location([0, 0, 0], ra, dec, t_gps)
+        #define earth center on right device (if torch is used)
+        kw = {'device':'cpu'} if self.use_torch else {}
+        earth_center = self.xp.zeros(3, **kw)
+        return self.time_delay_from_location(earth_center, ra, dec, t_gps)
     
     
     def time_delay_from_location(self, other_location, ra, dec, t_gps = None):
+        """
+        Return the time delay from the given location to detector for
+        a signal from a certain sky location at given GPS time(s).
+        It supports batched computation with either numpy arrays or torch tensors.
+        Adapted from PyCBC and Lalsimulation.
         
-        #TODO: Add the possibility to pass an array of gps_times
-        #      check better with the implementation in PyCBC (it is allowed)
-        #      look in in GWFast (https://github.com/CosmoStatGW/gwfast/blob/master/gwfast/signal.py#L1372)
-        #      (the _DeltLoc function)
-        
-        """---- Adapted from PyCBC ----"""
-        
-        """Return the time delay from the given location to detector for
-        a signal with the given sky location
-        In other words return `t1 - t2` where `t1` is the
-        arrival time in this detector and `t2` is the arrival time in the
-        other location.
+        Args:
+        -----
+            other_location : list, array, tensor or GWDetector instance
+                Earth Geocenter coordinates or GWDetector instance
+                
+            ra : float, array, tensor
+                The right ascension (in rad) of the signal.
+                
+            declination : float, array, tensor
+                The declination (in rad) of the signal.
+                
+            t_gps : float, array, tensor
+                The GPS time (in s) of the signal. If None, the reference time of the detector is used.
 
-        Parameters:
-        -----------
-        other_location : list of Earth Geocenter coordinates or GWDetector instance
-            
-        ra : float
-            The right ascension (in rad) of the signal.
-        declination : float
-            The declination (in rad) of the signal.
-        t_gps : float
-            The GPS time (in s) of the signal.
-
-        Returns
-        -------
-        float
-            The arrival time difference between the detectors.
+        Returns:
+        --------
+            dt : float, array, tensor
+                The arrival time difference between the detectors.
         """
 
         if t_gps is None:
@@ -366,28 +367,26 @@ class GWDetector(object):
         if isinstance(other_location, GWDetector):
             other_location = other_location.location
         
-        ra_angle = self.gmst(t_gps) - ra
-        cosd     = self.xp.cos(dec)
-
-        e0 = cosd * self.xp.cos(ra_angle)
-        e1 = cosd * -self.xp.sin(ra_angle)
-        e2 = self.xp.sin(dec)
-
-        if e0.ndim > 0:
-            ehat = self.xp.concatenate([e0, e1, e2], -1)
-        else:
-            ehat = [e0, e1, e2]
-            ehat = self.xp.tensor(ehat) if self.use_torch else self.xp.array(ehat)
-        
-        other_location = self.xp.tensor(other_location, dtype=self.xp.float64).to(self.device) if self.use_torch else self.xp.array(other_location)
+        #compute relative position vector
         dx = other_location - self.location
-        #print((dx*ehat).shape)
-        #print(((dx * ehat).sum(axis = -1, keepdim=True) / c).shape)
-        kwargs = {'keepdim':True} if self.use_torch else {'keepdims':True}
-        return (dx * ehat).sum(axis = -1, **kwargs) / c
+        
+        #greenwich hour angle
+        gha = self.gmst(t_gps) - ra 
+    
+        #compute the components of unit vector pointing from the geocenter to the surce
+        e0 = self.xp.cos(dec) * self.xp.cos(gha)
+        e1 = self.xp.cos(dec) * -self.xp.sin(gha)
+        e2 = self.xp.sin(dec)
+        
+        #compute the dot product 
+        #we do it manually to enable batched computation / multi gps times
+        dt = (dx[0]*e0 + dx[1]*e1 + dx[2]*e2) / c
+        return dt
 
 
-
+###########################################
+#---------- Detector Network --------------
+###########################################    
 class GWDetectorNetwork():
     """
     Class for a network of gravitational wave detectors.
