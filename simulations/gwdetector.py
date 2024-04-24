@@ -82,8 +82,9 @@ class GWDetector(object):
             self.name = name
         else:
             assert config_file_path is not None, "No name specified, please provide at least a custom detector config file"
-            conf_params = get_detectors_configs(config_file_path)
-            self.name = list(conf_params.keys())[0] #get the detector name from the configuration file
+            detector = get_detectors_configs(config_file_path)
+            self.name = list(detector.keys())[0] #get the detector name from the configuration file
+            conf_params = detector[self.name]
             
         self.latitude               = conf_params['latitude']
         self.longitude              = conf_params['longitude']
