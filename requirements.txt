@@ -1,5 +1,5 @@
 #torch-related
-torch>=2.0.0
+torch>=2.1.0
 torchvision
 torchaudio
 tensordict
@@ -7,6 +7,7 @@ tensordict
 #plotting and I/O
 seaborn
 pyyaml
+glob
 h5py
 tqdm
 
