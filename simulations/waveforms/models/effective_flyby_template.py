@@ -91,6 +91,14 @@ class EffectiveFlyByTemplate():
         return
     
     @property
+    def name(self):
+        return 'EffectiveFlyByTemplate'
+    
+    @property
+    def has_cuda(self):
+        return True
+    
+    @property
     def fs(self):
         return self._fs
     @fs.setter
