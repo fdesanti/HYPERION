@@ -11,12 +11,14 @@ reference_gps_time: 1370692818
 
 fs: 2048 #sampling frequency Hz for simulations & inference 
 
-ASD_reference_run: O4 #reference run for the ASDs
+ASD_reference_run: O3 #reference run for the ASDs
 
 inference_parameters: ["M", "q", "e0", "p_0", "distance", "polarization", "inclination", "time_shift", "ra", "dec"]
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "time_shift", "ra", "dec"]
 
 waveform: "EffectiveFlyByTemplate"
+
+prior: "TEOBResumS_hyperbolic"
 
 #============================
 # FLOW and EMBEDDING NETWORK

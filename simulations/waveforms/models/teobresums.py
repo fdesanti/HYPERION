@@ -9,7 +9,7 @@ Instructions for the TEOBResumS waveform model:
 """
 
 import torch
-import EOBRun_module as EOBRun
+import EOBRun_module
 
 def modes_to_k(modes):
     """
@@ -21,10 +21,10 @@ def modes_to_k(modes):
 
 
 
-class  TEOBResumS():
+class  TEOBResumSDALI():
     """Wrapper class for the TEOBResumS waveform model."""
     
-    def __init__(self, **kwargs):
+    def __init__(self, fs = 2048, **kwargs):
         
         modes = [(2,1),(2,2),(3,3),(4,2)]
 
@@ -32,7 +32,7 @@ class  TEOBResumS():
         self.default_kwargs = {
         # Initial conditions and output time grid
         'domain'             : 0,      # Time domain. EOBSPA is not available for eccentric waveforms!
-        'srate_interp'       : 4096, # Srate at which to interpolate. Default = 4096.
+        'srate_interp'       : fs,     # Srate at which to interpolate. Default = 4096.
         'use_geometric_units': "no",   # output quantities in geometric units. Default = 1
         'interp_uniform_grid': "yes",   # interpolate mode by mode on a uniform grid. Default = "no" (no interpolation)
 
@@ -53,10 +53,8 @@ class  TEOBResumS():
         }
 
         self.kwargs = self.default_kwargs.update(kwargs)
+        return
         
-
-         
-
 
     @property
     def name(self):
@@ -65,3 +63,15 @@ class  TEOBResumS():
     @property
     def has_cuda(self):
         return False
+
+    def __call__(self, **waveform_parameters):
+        """
+        Compute the waveform.
+        """
+        # Update the parameters
+        self.kwargs.update(waveform_parameters)
+        
+        # Run the model
+        h = EOBRun_module.EOBRunPy(self.kwargs)
+        
+        return h

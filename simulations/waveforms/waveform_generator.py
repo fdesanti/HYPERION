@@ -1,9 +1,9 @@
 
 import torch
-from .models import EffectiveFlyByTemplate, TEOBResumS
+from .models import EffectiveFlyByTemplate, TEOBResumSDALI
 
 models_dict = {'EffectiveFlyBy': EffectiveFlyByTemplate, 
-                'TEOBResumS': TEOBResumS}
+                'TEOBResumSDALI': TEOBResumSDALI}
 
 
 
