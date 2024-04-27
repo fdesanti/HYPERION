@@ -4,85 +4,126 @@
 ##########################################
 
 waveform_kwargs:
-  domain              : 0       # Time domain. EOBSPA is not available for eccentric waveforms!
-  srate_interp        : 2048    # Sampling frequency. Default = 2048.
-  use_geometric_units : "no"    # output quantities in geometric units. Default = 1
-  interp_uniform_grid : "yes"   # interpolate mode by mode on a uniform grid. Default = "no" (no interpolation)
-  use_mode_lm         : [1]     # List of modes to use/output through EOBRunPy.
+  # Initial conditions and output time grid
+  domain              : 0         # Time domain. EOBSPA is not available for eccentric waveforms!
+  srate_interp        : 2048      # Sampling frequency. Default = 2048.
+  initial_frequency   : 10,       # in Hz if use_geometric_units = 0, else in geometric units
+  use_geometric_units : "no"      # output quantities in geometric units. Default = 1
+  interp_uniform_grid : "yes"     # interpolate mode by mode on a uniform grid. Default = "no" (no interpolation)
+  
+  #modes
+  use_mode_lm         : [0,1,4,6] # List of modes to use/output through EOBRunPy.
+  
   # ode
-  ode_tmax           : 20e4     # Maximum time for the ODE integration. Default = 20e4.
+  ode_tmax            : 20e4      # Maximum time for the ODE integration. Default = 20e4.
+  
   # nqcs
-  nqc                : 'manual'
-  nqc_coefs_flx      : 'none'
-  nqc_coefs_hlm      : 'none'
+  nqc                 : 'manual'
+  nqc_coefs_flx       : 'none'
+  nqc_coefs_hlm       : 'none'
+  
   # Output parameters (Python)
-  arg_out            : "no"     # Output hlm/hflm. Default = "no"
-  output_hpc         : "yes"     # Output waveform. Default = 1.
+  arg_out             : "no"      # Output hlm/hflm. Default = "no"
+  output_hpc          : "yes"     # Output waveform. Default = 1.
 
+
+#=================================
+# INTRINSIC PARAMETERS
+#=================================
 
 parameters:
+  intrinsic:
+    #M:                          # Total mass of the binary system
+    #  distribution: "uniform"
+    #  kwargs:
+    #    minimum: 10.0
+    #    maximum: 300.0
 
-  M:                          # Total mass of the binary system
-    distribution: "uniform"
-    kwargs:
-      minimum: 10.0
-      maximum: 300.0
+    #q:                          # Mass ratio m1/m2 >= 1
+    #  distribution: "uniform"
+    #  kwargs:
+    #    minimum: 1.0
+    #    maximum: 18.0
 
-  q:                          # Mass ratio m1/m2 >= 1
-    distribution: "uniform"
-    kwargs:
-      minimum: 1.0
-      maximum: 18.0
+    m1:                         
+      distribution: "uniform"
+      kwargs:
+        minimum: 10.0
+        maximum: 150.0
 
-  H_hyp:                      # Initial E_eob
-    distribution: "uniform"
-    kwargs:
-      minimum: 1.0
-      maximum: 1.01
+    m2:                        
+      distribution: "uniform"
+      kwargs:
+        minimum: 10.0
+        maximum: 150.0
+
+    H_hyp:                      # Initial E_eob
+      distribution: "uniform"
+      kwargs:
+        minimum: 1.0
+        maximum: 1.01
+      
+    j_hyp:                      # initial pphi_eob (angular momentum)
+      distribution: "delta"
+      kwargs:
+        value: 4.0
+
+    r_hyp:                      # initial ratial separation
+      distribution: "uniform"
+      kwargs:
+        minimum: 10
+        maximum: 1000
+
+    inclination:
+      distribution: "sin"
+      kwargs:
+        minimum: 0.0
+        maximum: torch.pi
+
+    chi1:                       # Dimensionless spin of the primary
+      distribution: "uniform"
+      kwargs:
+        minimum: 0.0
+        maximum: 0.99
     
-  j_hyp:                      # initial pphi_eob (angular momentum)
-    distribution: "delta"
-    kwargs:
-      value: 4.0
+    chi2:                       # Dimensionless spin of the secondary          
+      distribution: "uniform"
+      kwargs:
+        minimum: 0.0
+        maximum: 0.99
 
-  r_hyp:                      # initial ratial separation
-    distribution: "uniform"
-    kwargs:
-      minimum: 10
-      maximum: 1000
+#=================================
+# EXTRINSIC PARAMETERS
+#=================================
 
-  time_shift:
-    distribution: "uniform"
-    kwargs:
-      minimum: -0.25
-      maximum: 0.25
+  extrinsic:
 
-  polarization:
-    distribution: "uniform"
-    kwargs:
-      minimum: 0.0
-      maximum: torch.pi
+    time_shift:
+      distribution: "uniform"
+      kwargs:
+        minimum: -0.1
+        maximum: 0.1
 
-  inclination:
-    distribution: "sin"
-    kwargs:
-      minimum: 0.0
-      maximum: torch.pi
+    polarization:
+      distribution: "uniform"
+      kwargs:
+        minimum: 0.0
+        maximum: torch.pi
 
-  distance:
-    distribution: "uniform"
-    kwargs:
-      minimum: 10
-      maximum: 2000
+    distance:
+      distribution: "uniform"
+      kwargs:
+        minimum: 10
+        maximum: 2000
 
-  ra:
-    distribution: "uniform"
-    kwargs:
-      minimum: 0.0
-      maximum: 2 * torch.pi
-    
-  dec:
-    distribution: "cos"
-    kwargs:
-      minimum: -torch.pi / 2
-      maximum:  torch.pi / 2
+    ra:
+      distribution: "uniform"
+      kwargs:
+        minimum: 0.0
+        maximum: 2 * torch.pi
+      
+    dec:
+      distribution: "cos"
+      kwargs:
+        minimum: -torch.pi / 2
+        maximum:  torch.pi / 2

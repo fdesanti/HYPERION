@@ -435,6 +435,10 @@ class MultivariatePrior():
         priors = dict()
         
         for par in prior_dict:
+            if isinstance(prior_dict[par], BasePrior):
+                priors[par] = prior_dict[par]
+                continue
+
             dist_name = prior_dict[par]['distribution']
             kwargs = prior_dict[par]['kwargs']
             #evaluate string expressions in kwargs

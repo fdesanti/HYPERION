@@ -36,7 +36,7 @@ base_distribution:
   trainable:        true
 
 embedding_network:
-  strain_shape:     [3, 2048]
+  strain_shape:     [3, None]
   num_blocks:       3
   block_dims:       [2048, 1024, 512, 256]
   strain_out_dim:   256
