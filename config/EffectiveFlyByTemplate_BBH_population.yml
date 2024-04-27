@@ -11,14 +11,14 @@ parameters:
     distribution: "uniform"
     kwargs:
       minimum: 10.0
-      maximum: 150.0
+      maximum: 100.0
     
 
   m2:
     distribution: "uniform"
     kwargs:
       minimum: 10.0
-      maximum: 150.0
+      maximum: 100.0
   
   e0:
     distribution: "uniform"

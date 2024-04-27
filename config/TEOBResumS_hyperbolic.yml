@@ -24,7 +24,7 @@ waveform_kwargs:
   
   # Output parameters (Python)
   arg_out             : "no"      # Output hlm/hflm. Default = "no"
-  output_hpc          : "yes"     # Output waveform. Default = 1.
+  output_hpc          : "no"     # Output waveform. Default = 1.
 
 
 #=================================
