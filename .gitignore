@@ -12,7 +12,8 @@
 # Cached directories
 __pycache__/
 
+#trained model directory
+training_results/
+
 # Jupyter Notebook
 .ipynb_checkpoints
-
-
