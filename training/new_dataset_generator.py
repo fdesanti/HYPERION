@@ -4,7 +4,8 @@
 import yaml
 import torch
 import torch.nn.functional as F
-from torch.distributions import Gamma
+
+from tensordict import TensorDict
 
 from ..core.fft import *
 from ..config import CONF_DIR
@@ -38,6 +39,7 @@ class DatasetGenerator:
                  batch_size      = 512,
                  device          = 'cpu',
                  random_seed     = None,
+                 num_preload     = 1000,
                  inference_parameters = None,
                  ):
         """
@@ -52,7 +54,9 @@ class DatasetGenerator:
         self.device               = device
         self.inference_parameters = inference_parameters
         self.det_network          = det_network
-        #print('>>>>>>><',self.inference_parameters)
+    
+        assert num_preload >= batch_size, 'The number of waveform to preload must be greater than batch_size'
+        self.num_preload = num_preload
 
         #set up self random number generator
         self.rng  = torch.Generator(device)
@@ -72,7 +76,6 @@ class DatasetGenerator:
         return
     
     
-
     @property
     def means(self):
         if not hasattr(self, '_means'):
@@ -126,9 +129,9 @@ class DatasetGenerator:
         self.prior_metadata = dict()
         self.prior_metadata['parameters'] = intrinsic_prior_conf
         self.prior_metadata['parameters'].update(extrinsic_prior_conf)
+        self.prior_metadata['inference_parameters'] = self.inference_parameters
         self.prior_metadata['means'] = self.means
         self.prior_metadata['stds']  = self.stds
-        self.prior_metadata['inference_parameters'] = self.inference_parameters
 
         #add M and q to prior dictionary
         #NB: they are not added to MultivariatePrior to avoid conflict with the waveform_generator 
@@ -150,28 +153,23 @@ class DatasetGenerator:
     def _compute_M_and_q(self, prior_samples):
 
         #sorting m1 and m2 so that m2 <= m1
-        m1 = prior_samples['m1'].mT.squeeze()
-        m2 = prior_samples['m2'].mT.squeeze()
-        
-        m = torch.stack([m1, m2])
-        if m.ndim > 1:
-            m = m.T 
-
-        m, _ = torch.sort(m)
-        if m.ndim > 1:
-            m = m.T
-        
-        m1, m2  = m[1], m[0]
+        m1, m2 = q_prior._sort_masses(m1, m2)
         
         #m1 and m2 have shape [Nbatch]
-        prior_samples['M'] = (m1+m2).reshape((self.batch_size, 1))
-        prior_samples['q'] = (m2/m1).reshape((self.batch_size, 1))
-        
+        prior_samples['M'] = (m1+m2)
+        prior_samples['q'] = (m2/m1)
+
         return prior_samples
     
 
 
-
+    def pre_load_waveforms(self, prior_samples):
+        """
+        Pre-load the waveforms for a given set of prior samples.
+        This is useful when the waveform generator is not able to generate the waveforms in parallel.
+        """
+        self.waveforms = self.waveform_generator(prior_samples)
+        return
       
     
     
@@ -187,35 +185,79 @@ class DatasetGenerator:
         out_prior_samples = torch.cat(out_prior_samples, dim=-1)
         return out_prior_samples
     
+    
+    def get_idxs(self):
+        if not hasattr(self, 'preloaded_wvfs'):
+            raise ValueError('There are no preloaded waveforms. Please run pre_load_waveforms() first.')
+
+        idxs = torch.arange(self.num_preload)
+        return torch.multinomial(idxs, self.batch_size, replacement=False)
+    
+
+    def preload_waveforms(self):
+        """
+        Preload a set of waveforms to speed up the generation of the dataset.
+        """
+        
+        print('[INFO] Preloading a new set of waveforms...')
+
+        #first we sample the intrinsic parameters
+        self.prior_samples = self.intrinsic_prior.sample((self.num_preload), 1)
+        if all(p in self.inference_parameters for p in ['M', 'q']):
+            self.prior_samples = self._compute_M_and_q(self.prior_samples)
+        
+
+        #then we call the waveform generator
+        hp, hc, tcoal = self.waveform_generator(self.prior_samples)
+
+        #store the waveforms as a TensorDict
+        wvfs = {'hp': hp, 'hc': hc}
+        tcoals = {'tcoal': tcoal}
+
+        self.preloaded_wvfs = TensorDict.from_dict(wvfs).to(self.device)
+        self.tcoals = TensorDict.from_dict(tcoals).to(self.device)
+        return
 
 
-    def __getitem__(self, idx=None, return_hp_and_hc=False, add_noise=True, prior_samples=None):
+    def __getitem__(self, add_noise=True):
 
-        #sampling prior-
-        if not prior_samples:
-            prior_samples = self.multivariate_prior.sample((self.batch_size, 1))
+        idxs = self.get_idxs()
 
-        out_prior_samples = self._compute_M_and_q(prior_samples.copy())
-        
-        #generate projected waveform strain
-        h = self.waveform_generator(**prior_samples, 
-                                    return_hp_and_hc=return_hp_and_hc)
-        
-        
-        if return_hp_and_hc:
-            return out_prior_samples, h
-        
-        #apply time shift and whiten
-        whitened_template = self._apply_time_shifts_and_whiten(h)
-        
-        #add gaussian noise
-        if add_noise:
-            whitened_strain = self._add_noise(whitened_template).float()
-        else:
-            whitened_strain = whitened_template.float()
+        #get the prior samples
+        prior_samples = self.prior_samples[idxs]
 
-        #standardize parameters
-        out_prior_samples = self.standardize_parameters(out_prior_samples).float()
+
+        #get the corresponding preloaded waveforms
+        hp, hc = self.preloaded_wvfs[idxs]
+
+        #sample extrinsic priors
+        prior_samples.update(self.extrinsic_prior.sample((self.batch_size), 1))
+
+        #rescale luminosity distance
+        hp /= prior_samples['distance']
+        hc /= prior_samples['distance']
+
+        #project strain onto detectors
+        h = self.det_network.project_strain(hp, hc, 
+                                            ra=prior_samples['ra'], 
+                                            dec=prior_samples['dec'], 
+                                            polarization=prior_samples['polarization'])
+        #compute relative time shifts
+        time_shifts = self.det_network.time_delay_from_earth_center(self, 
+                                                            ra=prior_samples['ra'], 
+                                                            dec=prior_samples['dec'])
+        
+        time_shifts+= prior_samples['time_shift']
+
+        #sample asd --> whiten --> add noise
+        asd = {det: self.asd_generator[det].sample(self.batch_size) for det in self.det_network}
+        whitened_strain = self.WhitenNet(h=h, 
+                                         asd=asd, 
+                                         time_shifts=time_shifts, 
+                                         add_noise=add_noise)
+
+
+        out_prior_samples = self.standardize_parameters(prior_samples).float()
         
         
         return out_prior_samples, whitened_strain
