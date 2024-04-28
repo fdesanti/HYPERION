@@ -73,8 +73,9 @@ training_options:
   optimizer:
     algorithm: Adam
 
-  train_seed:   123
-  val_seed:     1234
-  test_seed:    12345
+  seeds:
+    train:   123
+    val:     1234
+    test:    12345
   verbose:      true
 

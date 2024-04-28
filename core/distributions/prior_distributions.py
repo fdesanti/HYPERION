@@ -434,7 +434,7 @@ class MultivariatePrior():
         """Loads the priors from a dictionary of prior distributions"""
         priors = dict()
         
-        for par in prior_dict:
+        for i, par in enumerate(prior_dict):
             if isinstance(prior_dict[par], BasePrior):
                 priors[par] = prior_dict[par]
                 continue
@@ -447,9 +447,9 @@ class MultivariatePrior():
 
             if seed is not None:
                 if isinstance(seed, dict):
-                    kwargs['seed'] = seed[par]
+                    kwargs['seed'] = seed[par] + i
                 else:
-                    kwargs['seed'] = seed
+                    kwargs['seed'] = seed + i
 
             priors[par] = prior_dict_[dist_name](**kwargs)
 

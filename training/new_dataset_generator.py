@@ -8,7 +8,10 @@ from torch.distributions import Gamma
 
 from ..core.fft import *
 from ..config import CONF_DIR
-from ..core.distributions.prior_distributions import *
+from ..core.distributions import MultivariatePrior, prior_dict_
+from ..core.distributions import q_uniform_in_components as q_prior
+
+from ..simulations import WhitenNet
 
 from ..simulations.sim_utils import (optimal_snr, 
                                      matched_filter_snr, 
@@ -16,7 +19,7 @@ from ..simulations.sim_utils import (optimal_snr,
                                      network_optimal_snr)
 
 
-class DatasetGenerator():
+class DatasetGenerator:
     """
     Class to generate training dataset. Can work either offline as well as an online (i.e. on training) generator.
     
@@ -28,48 +31,17 @@ class DatasetGenerator():
     def __init__(self, 
                  waveform_generator, 
                  asd_generators, 
+                 det_network,
                  prior_filepath  = None, 
                  signal_duration = 1, 
                  noise_duration  = 2, 
                  batch_size      = 512,
                  device          = 'cpu',
-                 inference_parameters = None,
                  random_seed     = None,
+                 inference_parameters = None,
                  ):
         """
         Constructor.
-
-        Args:
-        -----
-        waveform_generator: object
-            GWskysim Waveform generator object istance. (Example: the EffectiveFlyByTemplate generator)
-
-        asd_generators: dict of ASD_sampler objects
-            Dictionary with hyperion's ASD_sampler object instances for each interferometer to simulate            
-
-        prior_filepath: str or Path
-            Path to a json file specifying the prior distributions over the simulation's parameters
-
-        signal_duration: float
-            Duration (seconds) of the output strain. (Default: 1)
-
-        noise_duration : float
-            Duration (seconds) of noise to simulate. Setting it higher than duration helps to avoid
-            border discontinuity issues when performing whitening. (Default: 2)
-        
-        batch_size : int
-            Batch size dimension. (Default: 512)
-            
-        device : str
-            Device to be used to generate the dataset. Either 'cpu' or 'cuda:n'. (Default: 'cpu')
-
-        inference_parameters : list of strings
-            List of inference parameter names (e.g. ['m1', 'm2', 'ra', 'dec', ...]). (Default: 
-            ['M', 'q', 'e0', 'p_0', 'distance', 'time_shift', 'polarization', 'inclination', 'ra', 'dec'])
-
-        random_seed : int
-            Random seed to set the random number generator for reproducibility. (Default: 123)
-        
         """
         
         self.waveform_generator   = waveform_generator
@@ -79,6 +51,7 @@ class DatasetGenerator():
         self.noise_duration       = noise_duration
         self.device               = device
         self.inference_parameters = inference_parameters
+        self.det_network          = det_network
         #print('>>>>>>><',self.inference_parameters)
 
         #set up self random number generator
@@ -88,74 +61,43 @@ class DatasetGenerator():
         self.rng.manual_seed(random_seed)
         self.seed = random_seed
 
-        assert sorted(waveform_generator.det_names) == sorted(asd_generators.keys()), f"Mismatch between ifos in waveform generator\
-                                                                                       and asd_generator. Got {sorted(waveform_generator.det_names)}\
-                                                                                       and {sorted(asd_generators.keys())}, respectively "
-        
-        if prior_filepath is None:
-            print("----> No prior was given: loading default prior...")
-        
+
+        #load prior        
         self._load_prior(prior_filepath)     
 
-        self.network_snr_distributions = Gamma(concentration=2, rate=0.3)
-        self.min_snr = 4
+        self.WhitenNet = WhitenNet(duration=waveform_generator.duration, 
+                                   fs= waveform_generator.fs, 
+                                   device=device,
+                                   rng=self.rng)
         return
     
-    def __len__(self):
-        return 128000 #set it very high. It matters only when torch DataLoaders are used
-    
-    @property
-    def fs(self):
-        return self.waveform_generator.fs
-    
-    @property
-    def delta_t(self):
-        return torch.tensor(1/self.fs)
-    
-    @property
-    def det_names(self):
-        return self.waveform_generator.det_names
-
-    @property
-    def frequencies(self):
-        if not hasattr(self, '_frequencies'):
-            n = (self.noise_duration) * self.fs
-            self._frequencies = rfftfreq(n, d=1/self.fs)
-        return self._frequencies
-    
-    @property
-    def noise_std(self):
-        return 1 / torch.sqrt(2*self.delta_t)
     
 
     @property
     def means(self):
         if not hasattr(self, '_means'):
             self._means = dict()
-            for parameter in self.inference_parameters:
-                self._means[parameter] = float(self.prior[parameter].mean)
+            for p in self.inference_parameters:
+                self._means[p] = float(self.full_prior[p].mean)
         return self._means
     
     @property
     def stds(self):
         if not hasattr(self, '_stds'):
             self._stds = dict()
-            for parameter in self.inference_parameters:
-                self._stds[parameter] = float(self.prior[parameter].std)
+            for p in self.inference_parameters:
+                self._stds[p] = float(self.full_prior[p].std)
         return self._stds
 
     @property
     def inference_parameters(self):
-        return self._inference_parameters
-    
+        return self._infer_pars
     @inference_parameters.setter
     def inference_parameters(self, name_list):
-        if name_list is None:
-            name_list = ['M', 'q', 'e0', 'p_0', 'distance', 'time_shift','polarization', 'inclination', 'ra', 'dec'] #default
-        self._inference_parameters = name_list
+        self._infer_pars = name_list
 
 
-    def _load_prior(self, prior_filepath=None):
+    def _load_prior(self, prior_filepath):
         """
         Load the prior distributions specified in the json prior_filepath:
         if no filepath is given, the default one stored in the config dir will be used
@@ -166,23 +108,28 @@ class DatasetGenerator():
 
         """
 
-        #load the json file
-        #TODO make it general to infer the right filepath from the waveform generator
-        if prior_filepath is None:
-            prior_filepath = CONF_DIR + '/EffectiveFlyByTemplate_BBH_population.yml' 
+        #load extrinsic prior
+        with open(prior_filepath, 'r') as f:
+            prior_conf = yaml.safe_load(f)
+            intrinsic_prior_conf = prior_conf['parameters']['intrinsic']
+            extrinsic_prior_conf = prior_conf['parameters']['extrinsic']
 
-        with open(prior_filepath, 'r') as yaml_file:
-            prior_kwargs = yaml.safe_load(yaml_file)
-            self._prior_metadata = prior_kwargs
-                    
-        #load single priors as dictionary: each key is a parameter
+        #intrinsic/extrinsic priors (used for sampling)
+        self.intrinsic_prior = MultivariatePrior(intrinsic_prior_conf, device=self.device, seed=self.seed)
+        self.extrinsic_prior = MultivariatePrior(extrinsic_prior_conf, device=self.device, seed=self.seed)
+
+        #Construct a full prior combining intrinsic and extrinsic priors
+        self.full_prior = self.intrinsic_prior.priors.copy()
+        self.full_prior.update(self.extrinsic_prior.priors.copy())
         
-        seed = {par: 2*self.seed if par=='m2' else self.seed+i for i, par in enumerate(prior_kwargs['parameters'].keys())}
-        
-        #convert prior dictionary to MultivariatePrior
-        self.multivariate_prior = MultivariatePrior(prior_kwargs['parameters'], device = self.device, seed = seed)
-        self.prior = self.multivariate_prior.priors
-        
+        #construct prior_metadata dictionary
+        self.prior_metadata = dict()
+        self.prior_metadata['parameters'] = intrinsic_prior_conf
+        self.prior_metadata['parameters'].update(extrinsic_prior_conf)
+        self.prior_metadata['means'] = self.means
+        self.prior_metadata['stds']  = self.stds
+        self.prior_metadata['inference_parameters'] = self.inference_parameters
+
         #add M and q to prior dictionary
         #NB: they are not added to MultivariatePrior to avoid conflict with the waveform_generator 
         #    this is intended when the inference parameters contain parameters that are combination of the default's one
@@ -195,18 +142,7 @@ class DatasetGenerator():
                 min, max = float(self.prior[p].minimum), float(self.prior[p].maximum)
                 
                 metadata = {'distribution':f'{p}_uniform_in_components', 'kwargs':{'minimum': min, 'maximum': max}}
-                self._prior_metadata['parameters'][p] = metadata
-        
-        #update reference gps time in detectors
-        for det in self.det_names:
-            self.waveform_generator.detectors[det].reference_time = prior_kwargs['reference_gps_time']
-
-        #add inference parameters to metadata
-        self._prior_metadata['inference_parameters'] = self.inference_parameters
-        
-        #add means and stds to metadata
-        self._prior_metadata['means'] = self.means
-        self._prior_metadata['stds']  = self.stds
+                self.prior_metadata['parameters'][p] = metadata
         
         return 
     
@@ -236,72 +172,8 @@ class DatasetGenerator():
 
 
 
-    def _apply_time_shifts_and_whiten(self, h):
-
-        out_h = []
-        pad   = (self.noise_duration - self.signal_duration)*self.fs // 2
-        
-        noise_points = self.noise_duration*self.fs
-
-        snr = dict()
-        
-        for ifo in self.det_names:
-
-            #sample asd and time domain noise from generator
-            asd, noise = self.asd_generator[ifo](batch_size=self.batch_size)
-            
-            dt = h['time_delay'][ifo] #time delay from Earth center + central time shift 
-            
-            #apply hann window to cancel border offsets
-            h['strain'][ifo]*= torch.hann_window(h['strain'][ifo].shape[-1])
-        
-            #pad template with left/right last values adding points up to noise_duration
-            h_tmp  = torch.nn.functional.pad(h['strain'][ifo], (pad, pad), mode='replicate')  
-
-            #apply time shifts to templates in the frequency domain and revert back to time domain
-            h_f = rfft(h_tmp, n = h_tmp.shape[-1], fs=self.fs) * torch.exp(-1j * 2 * torch.pi * self.frequencies * dt)
-            '''
-            snr[ifo] = self.matched_filter_snr(h_f, 
-                                        h_f+rfft(noise, n = noise.shape[-1], fs=self.fs) ,
-                                        asd.double()**2, 
-                                        self.noise_duration)
-            '''
-            #h_t = irfft(h_f, fs=self.fs) + noise
-            #h_f = rfft(h_t, n=h_t.shape[-1], fs = self.fs)
-            #divide frequency domain template with the ASD
-            
-            #n_f = rfft(noise, n = noise.shape[-1], fs = self.fs)
-            
-            #h_f += n_f
-            h_f /= asd
-            
-            #revert back to time domain
-            h_t = irfft(h_f, fs = self.fs) 
-            
-            #crop to desired output duration
-            central_time = h_t.shape[-1]//2
-            d = self.signal_duration * self.fs // 2 
-            out_h.append(h_t[..., central_time-d : central_time+d])
-
-        out_h = torch.stack(out_h, dim=1)
-        #self.snr = snr
-
-        #self.snr_net = torch.stack([snr[ifo]**2 for ifo in snr.keys()], dim = -1).sum(dim=-1)**0.5
-        #print('snr net', snr_net)
-
-        #out_h, self.snr_net = self.rescale_to_network_snr(out_h, snr_net)
-        
-
-        
-        return out_h #/ self.noise_std #* torch.sqrt(2 * self.delta_t)#/
+      
     
-    
-    def _add_noise(self, h):
-        """Adds gaussian white noise to whitened templates."""
-        
-        mean = torch.zeros(h.shape)
-        noise = torch.normal(mean, self.noise_std, generator=self.rng)
-        return (h + noise) / self.noise_std
     
     
     def standardize_parameters(self, prior_samples):

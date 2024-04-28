@@ -65,6 +65,10 @@ class  TEOBResumSDALI():
     def has_torch(self):
         return False
     
+    @property
+    def fs(self):
+        return self.kwargs['srate_interp']
+    
     
     @staticmethod
     def _check_compatability(parameters):

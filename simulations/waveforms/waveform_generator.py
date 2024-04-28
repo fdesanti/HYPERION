@@ -26,17 +26,14 @@ class WaveformGenerator:
     def __init__(self, 
                  waveform_model, 
                  duration = 4,
-                 fs = 2048,
                  **waveform_model_kwargs):
 
         assert waveform_model in models_dict.keys(), f"Waveform model {waveform_model} not found. \
                                                        Available models are {models_dict.keys()}"
         
         self.duration = duration
-        self.fs = fs
         self.wvf_model = models_dict[waveform_model](**waveform_model_kwargs)
-        
-        
+    
         return
 
     @property
@@ -56,11 +53,8 @@ class WaveformGenerator:
         
     @property
     def fs(self):
-        return self._fs
-    @fs.setter
-    def fs(self, value):
-        self._fs = value
-
+        return self.wvf_model.fs
+    
 
     def _resize_waveform(self, t, hp, hc):
         """
