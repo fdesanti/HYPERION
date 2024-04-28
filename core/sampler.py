@@ -32,11 +32,11 @@ class PosteriorSampler():
         self.device = device
         return
     
-    @property
+    @property #TODO: WHIS IS EXTREMELY UGLY --> try to find a better way to handle this
     def latex_labels(self):
         converter = {'m1':'$m_1$', 'm2':'$m_2$', 'M':'$M$ $[M_{\odot}]$', 'q':'$q$','M_chirp':'$\mathcal{M}$' ,'e0':'$e_0$', 'p_0':'$p_0$', 'distance':'$d_L$ [Mpc]',
                      'time_shift':'$\delta t_p$ [s]', 'polarization':'$\psi$', 'inclination':'$\iota$', 'dec': '$\delta$', 'ra':'$\\alpha$'}
-        return [converter[par_name] for par_name in self.inference_parameters ]
+        return [converter[par_name] if par_name in converter else par_name for par_name in self.inference_parameters ]
     
     @property
     def inference_parameters(self):

@@ -1,15 +1,15 @@
+import os
 import yaml
 import torch
 import matplotlib.pyplot as plt
 
 from tensordict import TensorDict
-
-from hyperion.config import CONF_DIR
 from hyperion.training import *
-from hyperion.training.dataset.dataset_generator import DatasetGenerator
-
-from hyperion.simulations import GWDetector, ASD_Sampler
-from hyperion.simulations.waveforms import EffectiveFlyByTemplate
+from hyperion.config import CONF_DIR
+from hyperion.core.flow import build_flow
+from hyperion.simulations import (ASD_Sampler, 
+                                  GWDetectorNetwork, 
+                                  WaveformGenerator)
 
 from hyperion.core import PosteriorSampler
 
@@ -20,6 +20,10 @@ if __name__ == '__main__':
     
     with open(conf_yaml, 'r') as yaml_file:
         conf = yaml.safe_load(yaml_file)
+
+    WAVEFORM_MODEL = conf['waveform_model']
+    PRIOR_PATH = os.path.join(CONF_DIR, conf['prior']+'.yml')
+    DURATION  = conf['duration']
 
     
     
@@ -34,28 +38,39 @@ if __name__ == '__main__':
     with torch.device(device):
 
         #set up gwskysim detectors and asd_samplers
-        detectors = dict()
+        det_network = GWDetectorNetwork(conf['detectors'], use_torch=True, device=device)
+        det_network.set_reference_time(conf['reference_gps_time'])
+        
         asd_samplers = dict()
         for ifo in conf['detectors']:
-            detectors[ifo] = GWDetector(ifo, use_torch=True, device = device)
-            asd_samplers[ifo] = ASD_Sampler(ifo, device=device, fs=conf['fs'])
+            asd_samplers[ifo] = ASD_Sampler(ifo, device=device, fs=conf['fs'], duration=DURATION)
         
-        #set up EFB-T waveform
-        efbt = EffectiveFlyByTemplate(duration = 1, torch_compile=False, detectors=detectors, fs=conf['fs'], device = device)
+        with open(PRIOR_PATH, 'r') as f:
+            prior_conf = yaml.safe_load(f)
+            wvf_kwargs = prior_conf['waveform_kwargs']
+        
+        waveform_generator = WaveformGenerator(WAVEFORM_MODEL, fs=conf['fs'], duration=DURATION, **wvf_kwargs)
 
         #setup dataset generator
-        dataset_kwargs = {'waveform_generator': efbt, 'asd_generators':asd_samplers, 
-                          'device':device, 'batch_size': 1, 
-                          'inference_parameters': conf['inference_parameters']}
+        dataset_kwargs = {'waveform_generator': waveform_generator, 
+                            'asd_generators':asd_samplers, 
+                            'det_network': det_network,
+                            'num_preload': 2,
+                            'device':device, 
+                            'batch_size': 1, 
+                            'inference_parameters': conf['inference_parameters'],
+                            'prior_filepath': PRIOR_PATH, 
+                            'n_proc': 1}
 
         test_ds = DatasetGenerator(**dataset_kwargs)
+        test_ds.preload_waveforms()
          
 
         #SAMPLING --------
         num_samples = 50_000
         parameters, strain = test_ds.__getitem__()
         plt.figure(figsize=(20, 15))
-        for i, det in enumerate(detectors.keys()):
+        for i, det in enumerate(det_network.detectors):
             plt.subplot(3, 1, i+1)
             plt.plot(strain[0][i].cpu().numpy())
             plt.title(det)            
@@ -64,7 +79,10 @@ if __name__ == '__main__':
         #set up Sampler
         checkpoint_path = 'training_results/BHBH/BHBH_flow_model.pt'
         
-        sampler = PosteriorSampler(flow_checkpoint_path=checkpoint_path, waveform_generator=efbt, num_posterior_samples=num_samples, device=device)
+        sampler = PosteriorSampler(flow_checkpoint_path=checkpoint_path, 
+                                   waveform_generator=waveform_generator, 
+                                   num_posterior_samples=num_samples, 
+                                   device=device)
 
         posterior = sampler.sample_posterior(strain = strain, num_samples=num_samples, restrict_to_bounds = True)
         

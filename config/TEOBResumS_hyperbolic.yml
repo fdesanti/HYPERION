@@ -42,7 +42,7 @@ parameters:
     H_hyp:                      # Initial E_eob
       distribution: "uniform"
       kwargs:
-        minimum: 1.0001
+        minimum: 1.0
         maximum: 1.01
       
     j_hyp:                      # initial pphi_eob (angular momentum)
@@ -53,7 +53,7 @@ parameters:
     r_hyp:                      # initial ratial separation
       distribution: "uniform"
       kwargs:
-        minimum: 50
+        minimum: 10
         maximum: 1000
 
     inclination:
@@ -96,7 +96,7 @@ parameters:
       distribution: "uniform"
       kwargs:
         minimum: 10
-        maximum: 6000
+        maximum: 3000
 
     ra:
       distribution: "uniform"

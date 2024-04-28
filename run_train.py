@@ -32,7 +32,11 @@ if __name__ == '__main__':
     DURATION  = conf['duration']
 
 
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    if torch.cuda.is_available():
+        num_gpus = torch.cuda.device_count()
+        device = f'cuda:{num_gpus-1}'
+    else:
+        device = 'cpu'
     
     with torch.device(device):
         """
