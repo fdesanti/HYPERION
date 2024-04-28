@@ -31,13 +31,7 @@ class WhitenNet:
     @property
     def n(self):
         return self.duration * self.fs
-    
-    @property
-    def window(self):
-        if not hasattr(self, '_window'):
-            self._window = tukey(self.n, alpha=0.01, device=self.device)
-        return self.window
-    
+       
        
     @property
     def delta_t(self):
@@ -61,7 +55,7 @@ class WhitenNet:
     @property
     def freqs(self):
         if not hasattr(self, '_freqs'):
-            self._freqs = rfftfreq(self.n, d=1/self.fs)
+            self._freqs = rfftfreq(self.n, d=1/self.fs, device=self.device)
         return self._freqs
 
     
@@ -106,7 +100,7 @@ class WhitenNet:
         whitened = h.copy()
 
         for det in h.keys():
-            ht = h[det] * self.window
+            ht = h[det] * tukey(self.n, alpha=0.01, device=self.device)
 
             #compute the frequency domain signal (template) and apply time shift
             hf = rfft(ht, n=self.n, fs=self.fs) * torch.exp(-2j * torch.pi * self.freqs * time_shift[det]) 

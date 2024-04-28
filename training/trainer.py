@@ -204,6 +204,11 @@ class Trainer:
         
         #main training loop over the epochs
         for epoch in tqdm(range(1,num_epochs+1)):
+
+            #preload waveforms
+            self.train_ds.preload_waveforms()
+            self.val_ds.preload_waveforms()
+
             
             #on-epoch training
             self.flow.train(True) #train attribute comes from nn.Module and is used to set the weights in training mode

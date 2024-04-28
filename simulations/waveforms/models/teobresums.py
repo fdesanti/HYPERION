@@ -23,16 +23,14 @@ def modes_to_k(modes):
 class  TEOBResumSDALI():
     """Wrapper class for the TEOBResumS waveform model."""
     
-    def __init__(self, duration = 8, **kwargs):
+    def __init__(self, fs, **kwargs):
         
         modes = [(2,1),(2,2),(3,3),(4,2)]
-
-        self.duration = duration
 
         self.default_kwargs = {
         # Initial conditions and output time grid
         'domain'             : 0,      # Time domain. EOBSPA is not available for eccentric waveforms!
-        'srate_interp'       : 2048.,   # Srate at which to interpolate. Default = 4096.
+        'srate_interp'       : float(fs),   # Srate at which to interpolate. Default = 4096.
         'use_geometric_units': "no",   # output quantities in geometric units. Default = 1
         'interp_uniform_grid': "yes",  # interpolate mode by mode on a uniform grid. Default = "no" (no interpolation)
         'initial_frequency'  : 10,     # in Hz if use_geometric_units = 0, else in geometric units
@@ -51,10 +49,12 @@ class  TEOBResumSDALI():
 
         # Output parameters (Python)
         'arg_out'            : "no",     # Output hlm/hflm. Default = "no"
-        'output_hpc'         : "yes",    # Output waveform. Default = 1.
+        'output_hpc'         : "no",    # Output waveform. Default = 1.
         }
         
-        self.kwargs = self.default_kwargs.update(kwargs) if kwargs else self.default_kwargs
+        self.kwargs = self.default_kwargs.copy()
+        if kwargs:
+            self.kwargs.update(kwargs) 
         return
         
     @property
@@ -83,7 +83,8 @@ class  TEOBResumSDALI():
             parameters['q'] = m1 / m2
         else:
             raise ValueError('Parameters are not compatible with the model.')
-
+        #parameters = parameters.to_dict()
+        #out_pars = {p: parameters[p].item() for p in parameters }
         return parameters
     
 
@@ -97,8 +98,10 @@ class  TEOBResumSDALI():
         waveform_parameters = self._check_compatability(waveform_parameters)
 
         pars.update(waveform_parameters)
-        
+        #print(pars)
         # Run the model
+
+        #print(pars)
         eob_output = EOBRun_module.EOBRunPy(pars)
         
         output = {}
@@ -110,5 +113,4 @@ class  TEOBResumSDALI():
         if pars['arg_out'] == 'yes':
             output['hlm'] = torch.from_numpy(eob_output[3])
             output['dyn'] = torch.from_numpy(eob_output[4])
-        
         return output

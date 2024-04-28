@@ -107,12 +107,12 @@ class ASD_Sampler():
         return self._asd_std
 
 
-    def sample(self, batch_size, noise):
+    def sample(self, batch_size, noise=False):
 
         asd_shape = (batch_size, len(self.f))
         
         # Generate scaled random power + phase
-        mean = torch.zeros(asd_shape)
+        mean = torch.zeros(asd_shape, device = self.device)
         asd_real = torch.normal(mean=mean, std=self.asd_std, generator=self.rng)
         asd_imag = torch.normal(mean=mean, std=self.asd_std, generator=self.rng)
     
@@ -135,6 +135,6 @@ class ASD_Sampler():
         
         return torch.abs(out_asd)
 
-    def __call__(self, batch_size = 1, noise=True):
+    def __call__(self, batch_size = 1, noise=False):
         return self.sample(batch_size, noise)
      

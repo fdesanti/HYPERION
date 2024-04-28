@@ -4,10 +4,11 @@ import matplotlib.pyplot as plt
 
 from tensordict import TensorDict
 
-from hyperion.training import *
 from hyperion.config import CONF_DIR
+from hyperion.training import *
+from hyperion.training.dataset.dataset_generator import DatasetGenerator
 
-from hyperion.simulations import GWDetector
+from hyperion.simulations import GWDetector, ASD_Sampler
 from hyperion.simulations.waveforms import EffectiveFlyByTemplate
 
 from hyperion.core import PosteriorSampler

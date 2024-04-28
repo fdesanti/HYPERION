@@ -34,12 +34,11 @@ class DatasetGenerator:
                  asd_generators, 
                  det_network,
                  prior_filepath  = None, 
-                 signal_duration = 1, 
-                 noise_duration  = 2, 
                  batch_size      = 512,
                  device          = 'cpu',
                  random_seed     = None,
                  num_preload     = 1000,
+                 n_proc          = 10,
                  inference_parameters = None,
                  ):
         """
@@ -49,11 +48,10 @@ class DatasetGenerator:
         self.waveform_generator   = waveform_generator
         self.asd_generator        = asd_generators
         self.batch_size           = batch_size
-        self.signal_duration      = signal_duration
-        self.noise_duration       = noise_duration
         self.device               = device
         self.inference_parameters = inference_parameters
         self.det_network          = det_network
+        self.n_proc               = n_proc
     
         assert num_preload >= batch_size, 'The number of waveform to preload must be greater than batch_size'
         self.num_preload = num_preload
@@ -130,22 +128,23 @@ class DatasetGenerator:
         self.prior_metadata['parameters'] = intrinsic_prior_conf
         self.prior_metadata['parameters'].update(extrinsic_prior_conf)
         self.prior_metadata['inference_parameters'] = self.inference_parameters
-        self.prior_metadata['means'] = self.means
-        self.prior_metadata['stds']  = self.stds
 
         #add M and q to prior dictionary
         #NB: they are not added to MultivariatePrior to avoid conflict with the waveform_generator 
         #    this is intended when the inference parameters contain parameters that are combination of the default's one
         #    (Eg. the total mass M =m1+m2 or q=m2/m1 that have no simple joint distribution) 
         #    In this way we store however the metadata (eg. min and max values) without compromising the simulation 
-             
         if ('M' in self.inference_parameters) and ('q' in self.inference_parameters):
             for p in ['M', 'q']:
-                self.prior[p] = prior_dict_[p](self.prior['m1'], self.prior['m2'])
-                min, max = float(self.prior[p].minimum), float(self.prior[p].maximum)
+                self.full_prior[p] = prior_dict_[p](self.full_prior['m1'], self.full_prior['m2'])
+                min, max = float(self.full_prior[p].minimum), float(self.full_prior[p].maximum)
                 
                 metadata = {'distribution':f'{p}_uniform_in_components', 'kwargs':{'minimum': min, 'maximum': max}}
                 self.prior_metadata['parameters'][p] = metadata
+
+        #store means and stds
+        self.prior_metadata['means'] = self.means
+        self.prior_metadata['stds']  = self.stds
         
         return 
     
@@ -153,6 +152,7 @@ class DatasetGenerator:
     def _compute_M_and_q(self, prior_samples):
 
         #sorting m1 and m2 so that m2 <= m1
+        m1, m2 = prior_samples['m1'], prior_samples['m2']
         m1, m2 = q_prior._sort_masses(m1, m2)
         
         #m1 and m2 have shape [Nbatch]
@@ -160,17 +160,7 @@ class DatasetGenerator:
         prior_samples['q'] = (m2/m1)
 
         return prior_samples
-    
-
-
-    def pre_load_waveforms(self, prior_samples):
-        """
-        Pre-load the waveforms for a given set of prior samples.
-        This is useful when the waveform generator is not able to generate the waveforms in parallel.
-        """
-        self.waveforms = self.waveform_generator(prior_samples)
-        return
-      
+         
     
     
     
@@ -179,7 +169,7 @@ class DatasetGenerator:
         
         out_prior_samples = []
         for parameter in self.inference_parameters:
-            standardized = self.prior[parameter].standardize_samples(prior_samples[parameter])
+            standardized = self.full_prior[parameter].standardize_samples(prior_samples[parameter])
             out_prior_samples.append(standardized)
             
         out_prior_samples = torch.cat(out_prior_samples, dim=-1)
@@ -190,7 +180,7 @@ class DatasetGenerator:
         if not hasattr(self, 'preloaded_wvfs'):
             raise ValueError('There are no preloaded waveforms. Please run pre_load_waveforms() first.')
 
-        idxs = torch.arange(self.num_preload)
+        idxs = torch.arange(self.num_preload).float()
         return torch.multinomial(idxs, self.batch_size, replacement=False)
     
 
@@ -202,20 +192,27 @@ class DatasetGenerator:
         print('[INFO] Preloading a new set of waveforms...')
 
         #first we sample the intrinsic parameters
-        self.prior_samples = self.intrinsic_prior.sample((self.num_preload), 1)
+        self.prior_samples = self.intrinsic_prior.sample(self.num_preload)
+        
+        
         if all(p in self.inference_parameters for p in ['M', 'q']):
             self.prior_samples = self._compute_M_and_q(self.prior_samples)
         
 
         #then we call the waveform generator
-        hp, hc, tcoal = self.waveform_generator(self.prior_samples)
+        
+        hp, hc, tcoal = self.waveform_generator(self.prior_samples.copy().to('cpu'), 
+                                                n_proc=self.n_proc)
+        print('[INFO] Done')
 
+        
         #store the waveforms as a TensorDict
         wvfs = {'hp': hp, 'hc': hc}
         tcoals = {'tcoal': tcoal}
 
         self.preloaded_wvfs = TensorDict.from_dict(wvfs).to(self.device)
         self.tcoals = TensorDict.from_dict(tcoals).to(self.device)
+        
         return
 
 
@@ -224,43 +221,44 @@ class DatasetGenerator:
         idxs = self.get_idxs()
 
         #get the prior samples
-        prior_samples = self.prior_samples[idxs]
-
+        prior_samples = self.prior_samples[idxs].unsqueeze(1)
 
         #get the corresponding preloaded waveforms
-        hp, hc = self.preloaded_wvfs[idxs]
+        hp, hc = self.preloaded_wvfs[idxs]['hp'], self.preloaded_wvfs[idxs]['hc']
 
         #sample extrinsic priors
-        prior_samples.update(self.extrinsic_prior.sample((self.batch_size), 1))
+        prior_samples.update(self.extrinsic_prior.sample((self.batch_size, 1)))
 
         #rescale luminosity distance
         hp /= prior_samples['distance']
         hc /= prior_samples['distance']
 
         #project strain onto detectors
-        h = self.det_network.project_strain(hp, hc, 
-                                            ra=prior_samples['ra'], 
-                                            dec=prior_samples['dec'], 
-                                            polarization=prior_samples['polarization'])
+        h = self.det_network.project_wave(hp, hc, 
+                                          ra=prior_samples['ra'], 
+                                          dec=prior_samples['dec'], 
+                                          polarization=prior_samples['polarization'])
         #compute relative time shifts
-        time_shifts = self.det_network.time_delay_from_earth_center(self, 
-                                                            ra=prior_samples['ra'], 
-                                                            dec=prior_samples['dec'])
+        time_shifts = self.det_network.time_delay_from_earth_center(ra=prior_samples['ra'], 
+                                                                    dec=prior_samples['dec'])        
         
-        time_shifts+= prior_samples['time_shift']
+        for det in h.keys():
+            time_shifts[det] += prior_samples['time_shift']
 
         #sample asd --> whiten --> add noise
-        asd = {det: self.asd_generator[det].sample(self.batch_size) for det in self.det_network}
+        asd = {det: self.asd_generator[det].sample(self.batch_size) for det in self.det_network.detectors}
         whitened_strain = self.WhitenNet(h=h, 
                                          asd=asd, 
-                                         time_shifts=time_shifts, 
+                                         time_shift=time_shifts, 
                                          add_noise=add_noise)
 
+        #standardize parameters
+        out_prior_samples = self.standardize_parameters(prior_samples)
 
-        out_prior_samples = self.standardize_parameters(prior_samples).float()
+        #convert to a single float tensor
+        out_whitened_strain = torch.stack([whitened_strain[det] for det in self.det_network.detectors], dim=1)
         
-        
-        return out_prior_samples, whitened_strain
+        return out_prior_samples.float(), out_whitened_strain.float()
     
 
 

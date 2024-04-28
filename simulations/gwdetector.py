@@ -1,5 +1,6 @@
-import os
 import yaml
+
+from tensordict import TensorDict
 
 from importlib import import_module
 
@@ -494,4 +495,4 @@ class GWDetectorNetwork():
         delays = dict()
         for name, detector in self.detectors.items():
             delays[name] = detector.time_delay_from_earth_center(ra, dec, t_gps)
-        return delays 
+        return delays
