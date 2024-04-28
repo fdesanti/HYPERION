@@ -29,8 +29,8 @@ parameters:
   p_0:
     distribution: "uniform"
     kwargs:
-      minimum: 10.0
-      maximum: 25.0
+      minimum: 8.0
+      maximum: 20.0
 
   time_shift:
     distribution: "uniform"
@@ -54,7 +54,7 @@ parameters:
     distribution: "uniform"
     kwargs:
       minimum: 10
-      maximum: 2000
+      maximum: 200
 
   ra:
     distribution: "uniform"
