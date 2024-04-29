@@ -39,15 +39,25 @@ It is therefore recommended to install pytorch before installing the requirement
 
 
 ### A note about TEOBResumS-DALI installation
-TEOBResumS-DALI can be installed with the following steps
+TEOBResumS-DALI can be installed with the following steps.
+Warning: the gcc command "make" must be installed on your system
 
 ```
-git clone https://git.ligo.org/rossella.gamba/teobresums
+git clone https://bitbucket.org/eob_ihes/teobresums.git
 cd teobresums
 git checkout dev/DALI
 cd Python
-python setup.py install
+make
 ```
+Then export the path to the Python folder to your PYTHONPATH. 
+
+```
+echo PYTHONPATH="<path_to_Python_folder>:$PYTHONPATH" > ~/.bashrc
+echo export PYTHONPATH > ~/.bashrc
+source ~/.bashrc
+```
+
+
 
 ## Usage
 
