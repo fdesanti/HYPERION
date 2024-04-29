@@ -102,7 +102,8 @@ class PosteriorSampler():
 
         bilby_kwargs = {'posterior': pd.DataFrame.from_dict(posterior),
                         'search_parameter_keys': self.inference_parameters,
-                        'parameter_labels': self.latex_labels}
+                        'parameter_labels': self.latex_labels,
+                        'outdir': self.output_dir}
         
         return CBCResult(**bilby_kwargs)
     
@@ -110,8 +111,7 @@ class PosteriorSampler():
         """Wrapper to Bilby plot skymap method."""
         
         bilby_result = self.to_bilby(bilby_posterior)
-        figname = self.output_dir / 'skymap.png'
-        return bilby_result.plot_skymap(filename=figname, **skymap_kwargs)
+        return bilby_result.plot_skymap(**skymap_kwargs)
     
     def plot_corner(self, posterior=None, injection_parameters=None, **corner_kwargs):
         """Wrapper to Bilby plot corner method."""
