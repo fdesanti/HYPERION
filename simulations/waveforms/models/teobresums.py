@@ -75,7 +75,7 @@ class  TEOBResumSDALI():
         """
         Check if the parameters are compatible with the model.
         """
-        if {'m1', 'm2'} <= parameters.keys():
+        if all(p in parameters.keys() for p in ['m1', 'm2']):
             
             m2, m1 = sorted([parameters['m1'], parameters['m2']])
 

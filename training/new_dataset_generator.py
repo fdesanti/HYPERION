@@ -201,7 +201,7 @@ class DatasetGenerator:
 
         #then we call the waveform generator
         
-        hp, hc, tcoal = self.waveform_generator(self.prior_samples.copy().to('cpu'), 
+        hp, hc, tcoal = self.waveform_generator(self.prior_samples.to('cpu'), 
                                                 n_proc=self.n_proc)
         print('[INFO] Done')
 
