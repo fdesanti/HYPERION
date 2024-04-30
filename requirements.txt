@@ -12,7 +12,7 @@ h5py
 tqdm
 
 #gw related
-bilby
+#bilby
 astropy
 
 
