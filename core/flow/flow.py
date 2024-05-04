@@ -88,7 +88,7 @@ class Flow(nn.Module):
     
      
 
-    def sample(self, num_samples, strain, batch_size = 50000, restrict_to_bounds=False, event_time = None, verbose = True, return_log_prob=False):
+    def sample(self, num_samples, strain, batch_size = 50000, restrict_to_bounds=False, post_process =True, event_time = None, verbose = True, return_log_prob=False):
         start = time()
         
         samples = []
@@ -106,7 +106,12 @@ class Flow(nn.Module):
             samples.append(flow_samples)
         samples = torch.cat(samples, dim = 0)          
 
-        processed_samples_dict = self._post_process_samples(samples, restrict_to_bounds, event_time) 
+        if post_process:
+            processed_samples_dict = self._post_process_samples(samples, restrict_to_bounds, event_time) 
+        else:
+            processed_samples_dict = dict()
+            for i, name in enumerate(self.inference_parameters):
+                processed_samples_dict[name] = samples[:,i]
 
         processed_samples_dict = TensorDict.from_dict(processed_samples_dict)
 
