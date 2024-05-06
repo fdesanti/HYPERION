@@ -15,6 +15,7 @@ class PosteriorSampler():
                  flow_checkpoint_path=None, 
                  waveform_generator=None, 
                  num_posterior_samples=10000,
+                 output_dir = None,
                  device = 'cpu'):
         
         #building flow model
@@ -32,7 +33,11 @@ class PosteriorSampler():
                                          waveform_generator=waveform_generator, 
                                          num_posterior_samples=num_posterior_samples)
         #other attributes
-        self.output_dir = Path(flow_checkpoint_path).parent.absolute()
+        if output_dir:
+            self.output_dir = output_dir  
+        else:
+            self.output_dir = Path(flow_checkpoint_path).parent.absolute()
+        
         self.device = device
         return
     
