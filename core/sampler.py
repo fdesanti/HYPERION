@@ -11,13 +11,17 @@ from bilby.gw.result import CBCResult
 class PosteriorSampler():
     
     def __init__(self, 
-                 flow_checkpoint_path, 
+                 flow = None,
+                 flow_checkpoint_path=None, 
                  waveform_generator=None, 
                  num_posterior_samples=10000,
                  device = 'cpu'):
         
         #building flow model
-        self.flow = build_flow(checkpoint_path=flow_checkpoint_path).to(device).eval()
+        if flow is not None:
+            self.flow = flow.to(device).eval()
+        else:
+            self.flow = build_flow(checkpoint_path=flow_checkpoint_path).to(device).eval()
         self.prior_metadata = self.flow.prior_metadata
         self.num_posterior_samples = num_posterior_samples
         
