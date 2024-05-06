@@ -45,7 +45,11 @@ class PosteriorSampler():
     def latex_labels(self):
         converter = {'m1':'$m_1$', 'm2':'$m_2$', 'M':'$M$ $[M_{\odot}]$', 'q':'$q$','M_chirp':'$\mathcal{M}$' ,'e0':'$e_0$', 'p_0':'$p_0$', 'distance':'$d_L$ [Mpc]',
                      'time_shift':'$\delta t_p$ [s]', 'polarization':'$\psi$', 'inclination':'$\iota$', 'dec': '$\delta$', 'ra':'$\\alpha$'}
-        return [converter[par_name] for par_name in self.inference_parameters ]
+        latex_labels = []
+        for par_name in self.inference_parameters:
+            label = converter[par_name] if par_name in converter else par_name
+            latex_labels.append(label)
+        return latex_labels
     
     @property
     def inference_parameters(self):
@@ -127,7 +131,7 @@ class PosteriorSampler():
         
         #update corner kwargs with input arguments
         default_corner_kwargs.update(corner_kwargs)
-        figname = self.output_dir / 'corner_plot.png'
+        figname = self.output_dir + '/corner_plot.png'
         return bilby_result.plot_corner(filename=figname, truth=injection_parameters, **default_corner_kwargs)
     
 
