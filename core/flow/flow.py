@@ -88,7 +88,7 @@ class Flow(nn.Module):
     
      
 
-    def sample(self, num_samples, strain, batch_size = 50000, restrict_to_bounds=False, post_process =True, event_time = None, verbose = True, return_log_prob=False):
+    def sample(self, num_samples, strain, batch_size = 50000, restrict_to_bounds=False, post_process=True, event_time = None, verbose = True, return_log_prob=False):
         start = time()
         
         samples = []
@@ -181,14 +181,16 @@ class Flow(nn.Module):
         """corrects ra shift due to Earth rotation with GMST (from pycbc.detector code)"""
         
         
-        reference_Time = Time(self.reference_time, format="gps", scale="utc")
-        #event_Time     = Time(event_time, format="gps", scale="utc")
+        reference_Time = Time(1370692818, format="gps", scale="utc")
+        event_Time     = Time(event_time, format="gps", scale="utc")
+        GMST_event     = event_Time.sidereal_time("mean", "greenwich").rad
         GMST_reference = reference_Time.sidereal_time("mean", "greenwich").rad
         
-        dphase = (event_time - self.reference_time) / sday.si.scale * (2.0 * torch.pi)
-        correction = (-GMST_reference + dphase) % (2.0 * torch.pi)
+        #dphase = (event_time -1370692818) / sday.si.scale * (2.0 * torch.pi)
+        #correction = (-GMST_reference + dphase) % (2.0 * torch.pi)
+        correction = (GMST_event - GMST_reference) #% (2*torch.pi)
                 
-        return (ra_samples + correction) % (2*torch.pi)
+        return (ra_samples - correction) % (2*torch.pi)
     
 
 
