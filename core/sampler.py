@@ -139,7 +139,7 @@ class PosteriorSampler():
         
         #update corner kwargs with input arguments
         default_corner_kwargs.update(corner_kwargs)
-        figname = self.output_dir + '/corner_plot.png'
+        figname = str(self.output_dir) + '/corner_plot.png'
         return bilby_result.plot_corner(filename=figname, truth=injection_parameters, **default_corner_kwargs)
     
 

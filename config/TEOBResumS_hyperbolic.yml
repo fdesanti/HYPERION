@@ -19,7 +19,7 @@ parameters:
     #  distribution: "uniform"
     #  kwargs:
     #    minimum: 10.0
-    #    maximum: 300.0
+    #    maximum: 200.0
 
     #q:                          # Mass ratio m1/m2 >= 1
     #  distribution: "uniform"
@@ -72,7 +72,7 @@ parameters:
     #  distribution: "uniform"
     #  kwargs:
     #   minimum: 0.0
-    #    maximum: 0.99
+    #   maximum: 0.99
 
 #=================================
 # EXTRINSIC PARAMETERS

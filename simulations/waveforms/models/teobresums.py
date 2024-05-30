@@ -33,7 +33,7 @@ class  TEOBResumSDALI():
         'srate_interp'       : float(fs),   # Srate at which to interpolate. Default = 4096.
         'use_geometric_units': "no",   # output quantities in geometric units. Default = 1
         'interp_uniform_grid': "yes",  # interpolate mode by mode on a uniform grid. Default = "no" (no interpolation)
-        'initial_frequency'  : 10,     # in Hz if use_geometric_units = 0, else in geometric units
+        'initial_frequency'  : 15,     # in Hz if use_geometric_units = 0, else in geometric units
         'ecc_freq'           : 1,      # Use periastron (0), average (1) or apastron (2) frequency for initial condition computation. Default = 1
 
         # Modes
@@ -92,7 +92,7 @@ class  TEOBResumSDALI():
         """
         Compute the waveform.
         """
-        # Update the parameters       
+        # Update the parameters      
         pars = self.kwargs.copy()
 
         waveform_parameters = self._check_compatability(waveform_parameters)
