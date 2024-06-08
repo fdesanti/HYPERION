@@ -250,11 +250,12 @@ class DatasetGenerator:
         asd = {}
         noise = {}
         for det in self.det_network.detectors:
-            asd[det], noise[det] = self.asd_generator[det].sample(self.batch_size, noise=True)
+            #asd[det], noise[det] = self.asd_generator[det].sample(self.batch_size, noise=True)
+            asd[det] = self.asd_generator[det].asd_reference
         
         whitened_strain = self.WhitenNet(h=h, 
                                          asd=asd, 
-                                         noise = noise,
+                                         #noise = noise,
                                          time_shift=time_shifts, 
                                          add_noise=add_noise)
 

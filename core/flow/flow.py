@@ -188,7 +188,7 @@ class Flow(nn.Module):
         
         #dphase = (event_time -1370692818) / sday.si.scale * (2.0 * torch.pi)
         #correction = (-GMST_reference + dphase) % (2.0 * torch.pi)
-        correction = (GMST_event - GMST_reference) #% (2*torch.pi)
+        correction = (GMST_event - GMST_reference) % (2*torch.pi)
                 
         return (ra_samples - correction) % (2*torch.pi)
     

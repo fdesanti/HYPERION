@@ -7,11 +7,11 @@
 #============================
 detectors: ["L1", "H1", "V1"]
 
-reference_gps_time: 1242442967.4 #1370692818
+reference_gps_time: 1370692818 #1242442967.4 #1370692818
 
 fs: 2048 #sampling frequency Hz for simulations & inference 
 
-ASD_reference_run: O3 #reference run for the ASDs
+ASD_reference_run: O3a #reference run for the ASDs
 
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "polarization", "inclination", "time_shift", "ra", "dec"]
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "time_shift", "ra", "dec"]
@@ -30,7 +30,7 @@ duration: 2 #duration in seconds for the simulated signals
 # FLOW and EMBEDDING NETWORK
 #============================
 flow:
-  num_coupling_layers: 36
+  num_coupling_layers: 32
 
 coupling_layers:
   num_features:     10
@@ -39,7 +39,7 @@ coupling_layers:
 
 base_distribution:
   dim:              10
-  trainable:        true
+  trainable:        false
 
 embedding_network:
   strain_shape:     [3, None]

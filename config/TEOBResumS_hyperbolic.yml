@@ -31,13 +31,13 @@ parameters:
       distribution: "uniform"
       kwargs:
         minimum: 10.0
-        maximum: 100.0
+        maximum: 130.0
 
     m2:                        
       distribution: "uniform"
       kwargs:
         minimum: 10.0
-        maximum: 100.0
+        maximum: 130.0
 
     H_hyp:                      # Initial E_eob
       distribution: "uniform"
@@ -65,14 +65,14 @@ parameters:
     #chi1:                       # Dimensionless spin of the primary
     #  distribution: "uniform"
     #  kwargs:
-    #    minimum: 0.0
-    #    maximum: 0.99
+    #    minimum: -0.2
+    #    maximum: 0.2
     
     #chi2:                       # Dimensionless spin of the secondary          
     #  distribution: "uniform"
     #  kwargs:
-    #   minimum: 0.0
-    #   maximum: 0.99
+    #   minimum: -0.2
+    #   maximum: 0.2
 
 #=================================
 # EXTRINSIC PARAMETERS
@@ -96,7 +96,7 @@ parameters:
       distribution: "uniform"
       kwargs:
         minimum: 10
-        maximum: 3000
+        maximum: 6000
 
     ra:
       distribution: "uniform"
