@@ -81,6 +81,8 @@ class  TEOBResumSDALI():
 
             parameters['M'] = m1 + m2
             parameters['q'] = m1 / m2
+            parameters.pop('m1')
+            parameters.pop('m2')
         else:
             raise ValueError('Parameters are not compatible with the model.')
         #parameters = parameters.to_dict()

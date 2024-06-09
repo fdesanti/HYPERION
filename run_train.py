@@ -69,15 +69,20 @@ if __name__ == '__main__':
         dataset_kwargs = {'waveform_generator': waveform_generator, 
                             'asd_generators':asd_samplers, 
                             'det_network': det_network,
-                            'num_preload': conf['training_options']['num_preload'],
+                            #'num_preload': conf['training_options']['num_preload'],
                             'device':device, 
                             'batch_size': BATCH_SIZE, 
                             'inference_parameters': conf['inference_parameters'],
                             'prior_filepath': PRIOR_PATH, 
-                            'n_proc': conf['training_options']['n_proc']}
+                            'n_proc': conf['training_options']['n_proc'],
+                            'use_reference_asd': conf['use_reference_asd']}
 
-        train_ds = DatasetGenerator(**dataset_kwargs, random_seed=train_conf['seeds']['train'])
-        val_ds = DatasetGenerator(**dataset_kwargs, random_seed=train_conf['seeds']['val'])        
+        train_ds = DatasetGenerator(**dataset_kwargs,
+                                    random_seed=train_conf['seeds']['train'], 
+                                    num_preload=conf['training_options']['num_preload_train'])
+        val_ds   = DatasetGenerator(**dataset_kwargs, 
+                                    random_seed=train_conf['seeds']['val'], 
+                                    num_preload=conf['training_options']['num_preload_val'])        
         
 
 

@@ -105,8 +105,8 @@ class WhitenNet:
             #compute the frequency domain signal (template) and apply time shift
             hf = rfft(ht, n=self.n, fs=self.fs) * torch.exp(-2j * torch.pi * self.freqs * time_shift[det]) 
 
-            #if noise:
-            #    hf += rfft(noise[det], n=self.n, fs=self.fs)
+            if noise:
+                hf += rfft(noise[det], n=self.n, fs=self.fs)
 
             #whiten the signal by dividing wrt the ASD
             hf_w = hf / asd[det]
@@ -117,7 +117,7 @@ class WhitenNet:
         
         #compute the optimal SNR
         #snr = network_optimal_snr(hf, self.PSDs, self.duration) / self.fs
-        if add_noise:# and not noise:
+        if add_noise and not noise:
             whitened = self.add_gaussian_noise(whitened)
         
         return whitened

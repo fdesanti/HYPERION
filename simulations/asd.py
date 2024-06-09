@@ -107,26 +107,31 @@ class ASD_Sampler():
         return self._asd_std
 
 
-    def sample(self, batch_size, noise=False):
+    def sample(self, batch_size, noise=False, use_reference_asd=False):
 
         asd_shape = (batch_size, len(self.f))
+
+        if use_reference_asd:
+            out_asd = self.asd_reference * torch.ones((batch_size, 1), device = self.device)
+
+        else:
         
-        # Generate scaled random power + phase
-        mean = torch.zeros(asd_shape, device = self.device)
-        asd_real = torch.normal(mean=mean, std=self.asd_std, generator=self.rng)
-        asd_imag = torch.normal(mean=mean, std=self.asd_std, generator=self.rng)
-    
-        # If the signal length is even, frequencies +/- 0.5 are equal
-        # so the coefficient must be real.
-            #if not (samples % 2): si[..., -1] = 0
-
-        # Regardless of signal length, the DC component must be real
-        asd_imag[..., 0] = 0
-
-        # Combine power + corrected phase to Fourier components
-        out_asd = asd_real + 1J * asd_imag
+            # Generate scaled random power + phase
+            mean = torch.zeros(asd_shape, device = self.device)
+            asd_real = torch.normal(mean=mean, std=self.asd_std, generator=self.rng)
+            asd_imag = torch.normal(mean=mean, std=self.asd_std, generator=self.rng)
         
+            # If the signal length is even, frequencies +/- 0.5 are equal
+            # so the coefficient must be real.
+                #if not (samples % 2): si[..., -1] = 0
 
+            # Regardless of signal length, the DC component must be real
+            asd_imag[..., 0] = 0
+
+            # Combine power + corrected phase to Fourier components
+            out_asd = asd_real + 1J * asd_imag
+
+                 
         #out_asd = torch.stack([self.asd_reference for _ in range(batch_size)])
         #out_asd = torch.mean(out_asd, axis = 0)
         if noise:
@@ -135,6 +140,6 @@ class ASD_Sampler():
         
         return torch.abs(out_asd)
 
-    def __call__(self, batch_size = 1, noise=False):
-        return self.sample(batch_size, noise)
+    def __call__(self, batch_size = 1, noise=False, use_reference_asd=False):
+        return self.sample(batch_size, noise, use_reference_asd)
      

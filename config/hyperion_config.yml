@@ -13,6 +13,8 @@ fs: 2048 #sampling frequency Hz for simulations & inference
 
 ASD_reference_run: O3a #reference run for the ASDs
 
+use_reference_asd: true #use the reference run for the ASDs
+
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "polarization", "inclination", "time_shift", "ra", "dec"]
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "time_shift", "ra", "dec"]
 
@@ -62,9 +64,10 @@ training_options:
 
   steps_per_epoch: 1000
 
-  val_steps_per_epoch: 100
+  val_steps_per_epoch: 250
 
-  num_preload: 2000
+  num_preload_train: 2000
+  num_preload_val: 2000
 
   n_proc: 32
 

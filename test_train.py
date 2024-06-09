@@ -61,7 +61,8 @@ if __name__ == '__main__':
                             'batch_size': 1, 
                             'inference_parameters': conf['inference_parameters'],
                             'prior_filepath': PRIOR_PATH, 
-                            'n_proc': 1}
+                            'n_proc': 1, 
+                            'use_reference_asd': conf['use_reference_asd']}
 
         test_ds = DatasetGenerator(**dataset_kwargs)
         test_ds.preload_waveforms()
@@ -74,7 +75,8 @@ if __name__ == '__main__':
         for i, det in enumerate(det_network.detectors):
             plt.subplot(3, 1, i+1)
             plt.plot(strain[0][i].cpu().numpy())
-            plt.title(det)            
+            plt.title(det)           
+        plt.show()
         plt.savefig('training_results/BHBH/strain.png', dpi=200)
 
         #set up Sampler

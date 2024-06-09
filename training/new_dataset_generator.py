@@ -39,6 +39,7 @@ class DatasetGenerator:
                  random_seed     = None,
                  num_preload     = 1000,
                  n_proc          = 10,
+                 use_reference_asd = False,
                  inference_parameters = None,
                  ):
         """
@@ -53,6 +54,8 @@ class DatasetGenerator:
         self.det_network          = det_network
         self.n_proc               = n_proc
     
+        self.use_reference_asd    = use_reference_asd
+
         assert num_preload >= batch_size, 'The number of waveform to preload must be greater than batch_size'
         self.num_preload = num_preload
 
@@ -169,7 +172,10 @@ class DatasetGenerator:
         
         out_prior_samples = []
         for parameter in self.inference_parameters:
-            standardized = self.full_prior[parameter].standardize_samples(prior_samples[parameter])
+            if parameter == 'time_shift':
+                standardized = prior_samples[parameter]
+            else:
+                standardized = self.full_prior[parameter].standardize_samples(prior_samples[parameter])
             out_prior_samples.append(standardized)
             
         out_prior_samples = torch.cat(out_prior_samples, dim=-1)
@@ -189,7 +195,7 @@ class DatasetGenerator:
         Preload a set of waveforms to speed up the generation of the dataset.
         """
         
-        print('[INFO] Preloading a new set of waveforms...')
+        print('\n[INFO] Preloading a new set of waveforms...')
 
         #first we sample the intrinsic parameters
         self.prior_samples = self.intrinsic_prior.sample(self.num_preload)
@@ -203,12 +209,13 @@ class DatasetGenerator:
         
         hp, hc, tcoal = self.waveform_generator(self.prior_samples.to('cpu'), 
                                                 n_proc=self.n_proc)
-        print('[INFO] Done')
+        print('\n[INFO] Done')
 
         
         #store the waveforms as a TensorDict
         wvfs = {'hp': hp, 'hc': hc}
         tcoals = {'tcoal': tcoal}
+
 
         self.preloaded_wvfs = TensorDict.from_dict(wvfs).to(self.device)
         self.tcoals = TensorDict.from_dict(tcoals).to(self.device)
@@ -251,7 +258,10 @@ class DatasetGenerator:
         noise = {}
         for det in self.det_network.detectors:
             #asd[det], noise[det] = self.asd_generator[det].sample(self.batch_size, noise=True)
-            asd[det] = self.asd_generator[det].asd_reference
+            #asd[det] = self.asd_generator[det].asd_reference
+            asd[det] = self.asd_generator[det].sample(self.batch_size, 
+                                                      noise = False, 
+                                                      use_reference_asd=self.use_reference_asd)
         
         whitened_strain = self.WhitenNet(h=h, 
                                          asd=asd, 
@@ -260,6 +270,7 @@ class DatasetGenerator:
                                          add_noise=add_noise)
 
         #standardize parameters
+        prior_samples['time_shift'] += self.tcoals[idxs]['tcoal'] #add tcoal to time_shift
         out_prior_samples = self.standardize_parameters(prior_samples)
 
         #convert to a single float tensor
