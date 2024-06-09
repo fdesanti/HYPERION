@@ -74,7 +74,7 @@ class WhitenNet:
             noise = torch.normal(mean=self.noise_mean, 
                                  std=self.noise_std, 
                                  generator=self.rng)
-            h[det] += noise#/self.noise_std
+            h[det] += noise/self.noise_std
             
         return h
     
@@ -113,7 +113,7 @@ class WhitenNet:
 
             #convert back to the time domain
             # we divide by the noise standard deviation to ensure to have unit variance
-            whitened[det] = irfft(hf_w, n=self.n, fs=self.fs) #/ self.noise_std
+            whitened[det] = irfft(hf_w, n=self.n, fs=self.fs) / self.noise_std
         
         #compute the optimal SNR
         #snr = network_optimal_snr(hf, self.PSDs, self.duration) / self.fs

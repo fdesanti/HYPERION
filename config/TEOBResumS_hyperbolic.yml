@@ -81,10 +81,11 @@ parameters:
   extrinsic:
 
     time_shift:
-      distribution: "uniform"
+      distribution: "delta"
       kwargs:
-        minimum: -0.1
-        maximum: 0.1
+        value: 0.0
+        #minimum: -0.1
+        #maximum: 0.1
 
     polarization:
       distribution: "uniform"

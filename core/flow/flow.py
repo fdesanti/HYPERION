@@ -164,7 +164,10 @@ class Flow(nn.Module):
         total_mask = torch.ones(num_samples, dtype=torch.bool)
 
         for name in self.inference_parameters:
-            bounds = self.prior_metadata['parameters'][name]['kwargs']
+            try: #TODO: UGLY fix this
+                bounds = self.prior_metadata['parameters'][name]['kwargs']
+            except:
+                continue
 
             min_b = eval(bounds['minimum']) if isinstance(bounds['minimum'], str) else bounds['minimum']
             max_b = eval(bounds['maximum']) if isinstance(bounds['maximum'], str) else bounds['maximum']

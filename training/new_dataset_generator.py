@@ -82,7 +82,10 @@ class DatasetGenerator:
         if not hasattr(self, '_means'):
             self._means = dict()
             for p in self.inference_parameters:
-                self._means[p] = float(self.full_prior[p].mean)
+                if p == 'tcoal':
+                    self._means[p] = 0.0
+                else:
+                    self._means[p] = float(self.full_prior[p].mean)
         return self._means
     
     @property
@@ -90,7 +93,10 @@ class DatasetGenerator:
         if not hasattr(self, '_stds'):
             self._stds = dict()
             for p in self.inference_parameters:
-                self._stds[p] = float(self.full_prior[p].std)
+                if p == 'tcoal':
+                    self._stds[p] = 1.0
+                else:
+                    self._stds[p] = float(self.full_prior[p].std)
         return self._stds
 
     @property
@@ -172,7 +178,7 @@ class DatasetGenerator:
         
         out_prior_samples = []
         for parameter in self.inference_parameters:
-            if parameter == 'time_shift':
+            if parameter == 'tcoal':
                 standardized = prior_samples[parameter]
             else:
                 standardized = self.full_prior[parameter].standardize_samples(prior_samples[parameter])
@@ -216,7 +222,7 @@ class DatasetGenerator:
         wvfs = {'hp': hp, 'hc': hc}
         tcoals = {'tcoal': tcoal}
 
-
+        
         self.preloaded_wvfs = TensorDict.from_dict(wvfs).to(self.device)
         self.tcoals = TensorDict.from_dict(tcoals).to(self.device)
         
@@ -270,7 +276,7 @@ class DatasetGenerator:
                                          add_noise=add_noise)
 
         #standardize parameters
-        prior_samples['time_shift'] += self.tcoals[idxs]['tcoal'] #add tcoal to time_shift
+        prior_samples['tcoal'] = self.tcoals[idxs]['tcoal'] #add tcoal to time_shift
         out_prior_samples = self.standardize_parameters(prior_samples)
 
         #convert to a single float tensor
