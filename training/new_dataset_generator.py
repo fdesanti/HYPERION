@@ -14,6 +14,8 @@ from ..core.distributions import q_uniform_in_components as q_prior
 
 from ..simulations import WhitenNet
 
+from ..simulations.waveforms.utilities import pc_to_Msun
+
 from ..simulations.sim_utils import (optimal_snr, 
                                      matched_filter_snr, 
                                      rescale_to_network_snr, 
@@ -245,7 +247,7 @@ class DatasetGenerator:
         #rescale luminosity distance
         hp /= prior_samples['distance']
         hc /= prior_samples['distance']
-
+                         
         #project strain onto detectors
         h = self.det_network.project_wave(hp, hc, 
                                           ra=prior_samples['ra'], 
@@ -266,7 +268,7 @@ class DatasetGenerator:
             #asd[det], noise[det] = self.asd_generator[det].sample(self.batch_size, noise=True)
             #asd[det] = self.asd_generator[det].asd_reference
             asd[det] = self.asd_generator[det].sample(self.batch_size, 
-                                                      noise = False, 
+                                                      #noise = True, 
                                                       use_reference_asd=self.use_reference_asd)
         
         whitened_strain = self.WhitenNet(h=h, 

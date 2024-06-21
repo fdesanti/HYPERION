@@ -13,7 +13,7 @@ fs: 2048 #sampling frequency Hz for simulations & inference
 
 ASD_reference_run: O3a #reference run for the ASDs
 
-use_reference_asd: true #use the reference run for the ASDs
+use_reference_asd: false #use the reference run for the ASDs
 
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "polarization", "inclination", "time_shift", "ra", "dec"]
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "time_shift", "ra", "dec"]
@@ -23,9 +23,9 @@ waveform_model: "TEOBResumSDALI"
 
 prior: "TEOBResumS_hyperbolic"
 
-inference_parameters: ["M", "q", "H_hyp", "r_hyp", "distance", "tcoal", "ra", "dec"]
+inference_parameters: ["M", "q", "H_hyp", "r_hyp", "distance", "inclination", "ra", "dec"]
 
-duration: 2 #duration in seconds for the simulated signals
+duration: 1 #duration in seconds for the simulated signals
 
 
 #============================
@@ -67,21 +67,21 @@ training_options:
   val_steps_per_epoch: 150
 
   num_preload_train: 2000
-  num_preload_val: 2000
+  num_preload_val: 1500
 
-  n_proc: 32
+  n_proc: os.cpu_count()
 
   lr_schedule:
-    scheduler: CosineAnnealingLR
-    kwargs:
-      T_max: 250 #has to be equal to num_epochs
-    
-    #scheduler: ReduceLROnPlateau
+    #scheduler: CosineAnnealingLR
     #kwargs:
-    #  factor:    0.5
-    #  patience:  15
-    #  mode:      min
-    #  threshold: 0
+    #  T_max: 250 #has to be equal to num_epochs
+    
+    scheduler: ReduceLROnPlateau
+    kwargs:
+      factor:    0.5
+      patience:  15
+      mode:      min
+      threshold: 0
     
   optimizer:
     algorithm: Adam

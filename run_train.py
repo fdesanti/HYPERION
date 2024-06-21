@@ -37,6 +37,7 @@ if __name__ == '__main__':
         device = f'cuda:{num_gpus-1}'
     else:
         device = 'cpu'
+    device = 'cuda'
     
     with torch.device(device):
         """
@@ -74,7 +75,7 @@ if __name__ == '__main__':
                             'batch_size': BATCH_SIZE, 
                             'inference_parameters': conf['inference_parameters'],
                             'prior_filepath': PRIOR_PATH, 
-                            'n_proc': conf['training_options']['n_proc'],
+                            'n_proc': eval(conf['training_options']['n_proc']),
                             'use_reference_asd': conf['use_reference_asd']}
 
         train_ds = DatasetGenerator(**dataset_kwargs,
