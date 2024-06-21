@@ -65,14 +65,14 @@ class Trainer:
         for step in range(self.steps_per_epoch):
         #for parameters, strains in self.train_ds:
             #getting the trainig batch
-            parameters, strains = self.train_ds.__getitem__()
+            parameters, strains, asd = self.train_ds.__getitem__()
             
             
             #training step
             self.optimizer.zero_grad()
             
             #get the loss
-            log_p =  -self.flow.log_prob(parameters.to(self.device), strains.to(self.device))
+            log_p =  -self.flow.log_prob(parameters.to(self.device), strains.to(self.device), asd.to(self.device))
             loss  = torch.mean(log_p)
             
             if torch.isnan(loss) or torch.isinf(loss):
@@ -118,10 +118,10 @@ class Trainer:
         #for parameters, strains in self.val_ds:
             
             #getting batch
-            parameters, strains = self.val_ds.__getitem__()
+            parameters, strains, asd = self.val_ds.__getitem__()
             
             #computing loss
-            log_p = -self.flow.log_prob(parameters.to(self.device), strains.to(self.device))
+            log_p = -self.flow.log_prob(parameters.to(self.device), strains.to(self.device), asd.to(self.device))
             loss  = torch.mean(log_p)
            
             if torch.isnan(loss) or torch.isinf(loss):

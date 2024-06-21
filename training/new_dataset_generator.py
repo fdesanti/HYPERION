@@ -270,6 +270,7 @@ class DatasetGenerator:
             asd[det] = self.asd_generator[det].sample(self.batch_size, 
                                                       #noise = True, 
                                                       use_reference_asd=self.use_reference_asd)
+        torch_asd = torch.stack([asd[det] for det in self.det_network.detectors], dim=1)
         
         whitened_strain = self.WhitenNet(h=h, 
                                          asd=asd, 
@@ -284,7 +285,7 @@ class DatasetGenerator:
         #convert to a single float tensor
         out_whitened_strain = torch.stack([whitened_strain[det] for det in self.det_network.detectors], dim=1)
         
-        return out_prior_samples.float(), out_whitened_strain.float()
+        return out_prior_samples.float(), out_whitened_strain.float(), torch_asd.float()
     
 
 
