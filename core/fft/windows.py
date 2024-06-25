@@ -1,7 +1,11 @@
 """Various wrappers and/or implementations of window functions."""
 import torch
 
-__all__ = ['hann', 'tukey']
+__all__ = ['hann', 'tukey', 'planck']
+
+def get_window(window, **kwargs):
+    """Get a window function by name."""
+    return globals()[window](**kwargs)
 
 ########################
 # Helper functions 
@@ -34,6 +38,7 @@ class HANN():
     """wrapper for torch.hann_window."""
     def __call__(self, **kwargs):
         return torch.hann_window(**kwargs)
+hann = HANN()
 
 
 def tukey(M=2048, alpha = 0.5, sym = True, device='cpu'):
@@ -89,4 +94,5 @@ def tukey(M=2048, alpha = 0.5, sym = True, device='cpu'):
     
     return _truncate(window, needs_trunc)
 
-hann = HANN()
+def planck():
+    return
