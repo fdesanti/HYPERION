@@ -23,9 +23,9 @@ waveform_model: "TEOBResumSDALI"
 
 prior: "TEOBResumS_hyperbolic"
 
-inference_parameters: ["M", "q", "H_hyp", "r_hyp", "distance", "inclination", "chi1", "chi2", "ra", "dec"]
+inference_parameters: ["M", "q", "H_hyp", "r_hyp", "distance", "inclination", "polarization", "tcoal", "ra", "dec"]
 
-duration: 1 #duration in seconds for the simulated signals
+duration: 4 #duration in seconds for the simulated signals
 
 
 #============================
@@ -56,9 +56,9 @@ embedding_network:
 # TRAINING options
 #============================
 training_options:
-  num_epochs: 250
+  num_epochs: 300
 
-  batch_size: 512
+  batch_size: 256
 
   initial_learning_rate: 0.0001
 

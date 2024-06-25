@@ -88,12 +88,12 @@ class Flow(nn.Module):
     
      
 
-    def sample(self, num_samples, strain, asd, batch_size = 50000, restrict_to_bounds=False, post_process=True, event_time = None, verbose = True, return_log_prob=False):
+    def sample(self, num_samples, strain, asd=None, batch_size = 50000, restrict_to_bounds=False, post_process=True, event_time = None, verbose = True, return_log_prob=False):
         start = time()
         
         samples = []
         
-        embedded_strain = self.embedding_network(strain, asd)
+        embedded_strain = self.embedding_network(strain)
         nsteps = num_samples//batch_size if num_samples>=batch_size else 1
         batch_samples = batch_size if num_samples>batch_size else num_samples
         

@@ -101,12 +101,13 @@ class WhitenNet:
 
         for det in h.keys():
             ht = h[det] * tukey(self.n, alpha=0.01, device=self.device)
+            
+            if noise:
+                ht += noise[det]
 
             #compute the frequency domain signal (template) and apply time shift
             hf = rfft(ht, n=self.n, fs=self.fs) * torch.exp(-2j * torch.pi * self.freqs * time_shift[det]) 
 
-            if noise:
-                hf += rfft(noise[det], n=self.n, fs=self.fs)
 
             #whiten the signal by dividing wrt the ASD
             hf_w = hf / asd[det]

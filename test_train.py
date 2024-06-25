@@ -30,7 +30,7 @@ if __name__ == '__main__':
     if torch.cuda.is_available():
         num_gpus = torch.cuda.device_count()
         device = f'cuda:{num_gpus-1}'
-        device = 'cuda'
+        #device = 'cuda'
     else:
         device = 'cpu'
     
@@ -70,7 +70,8 @@ if __name__ == '__main__':
 
         #SAMPLING --------
         num_samples = 50_000
-        parameters, strain = test_ds.__getitem__()
+        parameters, strain, asd = test_ds.__getitem__()
+        print(asd.shape)
         plt.figure(figsize=(20, 15))
         for i, det in enumerate(det_network.detectors):
             plt.subplot(3, 1, i+1)
@@ -87,7 +88,7 @@ if __name__ == '__main__':
                                    num_posterior_samples=num_samples, 
                                    device=device)
 
-        posterior = sampler.sample_posterior(strain = strain, num_samples=num_samples, restrict_to_bounds = True)
+        posterior = sampler.sample_posterior(strain = strain, asd = asd, num_samples=num_samples, restrict_to_bounds = True)
         
         #compare sampled parameters to true parameters
         true_parameters = sampler.flow._post_process_samples(parameters, restrict_to_bounds=False)

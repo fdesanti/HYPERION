@@ -148,15 +148,15 @@ class EmbeddingNetwork(nn.Module):
         self.linear = nn.LazyLinear(block_dims[0])
 
         #self.final_linear = nn.LazyLinear(strain_out_dim)
-        
+        '''
         self.ASD_embedding = nn.Sequential(
             nn.Flatten(), 
             nn.LazyLinear(4096), nn.ELU(),
             nn.LazyLinear(2048), nn.ELU(),
             nn.LazyLinear(1024), nn.ELU(),
         )
-        
-    def forward(self, strain, asd):
+        '''
+    def forward(self, strain, asd=None):
         
         #initial batch norm layer
         if self.use_batch_norm:
@@ -165,7 +165,7 @@ class EmbeddingNetwork(nn.Module):
             s = strain
             
         #ASD Embedding
-        asd_embed = self.ASD_embedding(asd*1e20)
+        #asd_embed = self.ASD_embedding(asd*1e20)
         
 
         #Morphology CNN
@@ -183,7 +183,7 @@ class EmbeddingNetwork(nn.Module):
         #print('out CNN localization', out_CNN_localization)
         
         #Combination of the two CNN blocks
-        out = torch.cat([out_CNN, out_CNN_localization, asd_embed], dim = 1)
+        out = torch.cat([out_CNN, out_CNN_localization], dim = 1)
         out = self.activation(self.linear(out))
         
         #Final Resnet
