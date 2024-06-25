@@ -5,6 +5,7 @@ Some of the functions are adapted from the GWPy library.
 """
 
 import torch
+from torchaudio.functional import fftconvolve
 from hyperion.core.fft import rfft, irfft, rfftfreq
 from hyperion.core.fft.windows import tukey, planck, get_window
 
@@ -53,7 +54,7 @@ def truncate_transfer(transfer, ncorner=None):
     ncorner = ncorner if ncorner else 0
     out = transfer.clone()
     out[:, 0:ncorner] = 0
-    out[:, ncorner:nsamp] *= planck(nsamp-ncorner, nleft=5, nright=5)
+    out[:, ncorner:nsamp] *= planck(nsamp-ncorner, nleft=5, nright=5, device=transfer.device)
     return out
 
 def truncate_impulse(impulse, ntaps, window='hann'):
@@ -81,6 +82,62 @@ def truncate_impulse(impulse, ntaps, window='hann'):
     out[:, trunc_stop:size] *= window[0:trunc_start]
     out[:, trunc_start:trunc_stop] = 0
     return out
+
+
+def convolve(signal, fir, window='hann'):
+    """
+    Convolves a time domain timeseries with a FIR filter.
+    
+    Args:
+    -----
+        signal (tensor) : input time series
+        fir    (tensor) : FIR filter
+        window (str)    : window function to apply to the FIR filter. (Default is 'hann')
+
+    Returns:
+    --------
+        conv (tensor)    : convolved time series
+        
+    Note:
+    -----
+        Instead of scipy.signal.fftconvolve, we use torchaudio.functional.fftconvolve.
+    """
+    #get sizes
+    fir_size = fir.size()[-1]
+    signal_size = signal.size()[-1]
+    
+    pad  = int(fir_size/2)
+    nfft = min(8*fir_size, signal_size)
+    
+    # condition the input data
+    in_ = signal.clone()
+    w   = get_window(window, window_length=fir_size)
+    in_[:,:pad]  *= w[:pad]
+    in_[:,-pad:] *= w[-pad:]
+    
+    # if FFT length is long enough, perform only one convolution
+    if nfft >= signal_size/2:
+        conv = fftconvolve(in_, fir, mode='same')
+    
+    # else use the overlap-save algorithm
+    else:
+        nstep = nfft - 2*pad
+        conv = torch.empty_like(in_)
+        # handle first chunk separately
+        conv[:,:nfft-pad] = fftconvolve(in_[:,:nfft], fir,
+                                      mode='same')[:,:nfft-pad]
+        # process chunks of length nstep
+        k = nfft - pad
+        while k < signal_size - nfft + pad:
+            yk = fftconvolve(in_[:,k-pad:k+nstep+pad], fir,
+                             mode='same')
+            conv[:,k:k+yk.size-2*pad] = yk[:,pad:-pad]
+            k += nstep
+        # handle last chunk separately
+        conv[:,-nfft+pad:] = fftconvolve(in_[:,-nfft:], fir,
+                                       mode='same')[:,-nfft+pad:]
+        
+    return conv
 
 
 #=====================================================
@@ -139,6 +196,12 @@ class WhitenNet:
         if not hasattr(self, '_freqs'):
             self._freqs = rfftfreq(self.n, d=1/self.fs, device=self.device)
         return self._freqs
+    
+    @property
+    def delta_f(self):
+        if not hasattr(self, '_delta_f'):
+            self._delta_f = self.freqs[1]-self.freqs[0]
+        return self._delta_f
 
     
     def add_gaussian_noise(self, h):
@@ -161,7 +224,8 @@ class WhitenNet:
         return h
     
     
-    def whiten(self, h, asd, time_shift, noise = None, add_noise=True):
+    def whiten(self, h, asd, time_shift, noise=None, add_noise=True, 
+               fduration=2, window='hann', ncorner=None):
         """
         Whiten the input signal and (optionally) add Gaussian noise.
         Whitening is performed by dividing the signal by its ASD in the frequency domain.
@@ -171,6 +235,8 @@ class WhitenNet:
             h (TensorDict)          : input signal(s) from different detectors
             asd (TensorDict)        : ASD of the noise for each detector
             time_shift (TensorDict) : time shift for each detector
+            noise (TensorDict)      : Gaussian noise to add to the input template(s) - Mutually 
+                                      exclusive with the 'add_noise' argument.
             add_noise (bool)        : whether to add Gaussian noise to the whitened signal(s)
 
         Returns:
@@ -184,19 +250,26 @@ class WhitenNet:
         for det in h.keys():
             ht = h[det] * tukey(self.n, alpha=0.01, device=self.device)
             
-            if noise:
-                ht += noise[det]
+            #if noise:
+            #    ht += noise[det]
 
             #compute the frequency domain signal (template) and apply time shift
             hf = rfft(ht, n=self.n, fs=self.fs) * torch.exp(-2j * torch.pi * self.freqs * time_shift[det]) 
 
+            ht = irfft(hf, n=self.n, fs=self.fs)
+            
+            if noise:
+                ht += noise[det]
 
             #whiten the signal by dividing wrt the ASD
-            hf_w = hf / asd[det]
+            #hf_w = hf / asd[det]
+            ntaps = int((fduration * self.fs))
+            fir   = fir_from_transfer(1/asd[det], ntaps=ntaps, window=window, ncorner=ncorner)
+            whitened[det] = convolve(ht, fir, window=window) / self.noise_std
 
             #convert back to the time domain
             # we divide by the noise standard deviation to ensure to have unit variance
-            whitened[det] = irfft(hf_w, n=self.n, fs=self.fs) / self.noise_std
+            #whitened[det] = irfft(hf_w, n=self.n, fs=self.fs) / self.noise_std
         
         #compute the optimal SNR
         #snr = network_optimal_snr(hf, self.PSDs, self.duration) / self.fs
@@ -209,3 +282,4 @@ class WhitenNet:
     def __call__(self, **whiten_kwargs):
         return self.whiten(**whiten_kwargs)
         
+

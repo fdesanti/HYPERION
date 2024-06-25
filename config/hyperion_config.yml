@@ -66,8 +66,8 @@ training_options:
 
   val_steps_per_epoch: 150
 
-  num_preload_train: 2000
-  num_preload_val: 1500
+  num_preload_train: 500
+  num_preload_val: 500
 
   n_proc: os.cpu_count()
 
