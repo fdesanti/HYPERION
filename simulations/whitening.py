@@ -39,62 +39,47 @@ def fir_from_transfer(transfer, ntaps, window='hann', ncorner=None):
 def truncate_transfer(transfer, ncorner=None):
     """Smoothly zero the edges of a frequency domain transfer function
 
-    Parameters
-    ----------
-    transfer : `numpy.ndarray`
-        transfer function to start from, must have at least ten samples
-
-    ncorner : `int`, optional
-        number of extra samples to zero off at low frequency, default: `None`
-
-    Returns
-    -------
-    out : `numpy.ndarray`
-        the smoothly truncated transfer function
-
-    Notes
+    Args:
     -----
-    By default, the input transfer function will have five samples tapered
-    off at the left and right boundaries. If `ncorner` is not `None`, then
-    `ncorner` extra samples will be zeroed on the left as a hard highpass
-    filter.
-
-    See :func:`~gwpy.signal.window.planck` for more information.
+        transfer (tensor) :  transfer function to start from, must have at least ten samples
+        ncorner (int)     :  (optional) number of extra samples to zero off at low frequency. (Default: 'None')
+        
+    Returns:
+    --------
+        out (tensor) :  the smoothly truncated transfer function
     """
-    nsamp = transfer.size
+    #recall that transfer has shape [batch_size, nsamp]
+    nsamp = transfer.size()[-1]
     ncorner = ncorner if ncorner else 0
-    out = transfer.copy()
-    out[0:ncorner] = 0
-    out[ncorner:nsamp] *= planck(nsamp-ncorner, nleft=5, nright=5)
+    out = transfer.clone()
+    out[:, 0:ncorner] = 0
+    out[:, ncorner:nsamp] *= planck(nsamp-ncorner, nleft=5, nright=5)
     return out
 
 def truncate_impulse(impulse, ntaps, window='hann'):
     """Smoothly truncate a time domain impulse response
 
-    Parameters
-    ----------
-    impulse : `numpy.ndarray`
-        the impulse response to start from
-
-    ntaps : `int`
-        number of taps in the final filter
-
-    window : `str`, `numpy.ndarray`, optional
-        window function to truncate with, default: ``'hann'``
-        see :func:`scipy.signal.get_window` for details on acceptable formats
-
-    Returns
-    -------
-    out : `numpy.ndarray`
-        the smoothly truncated impulse response
+    Args:
+    -----
+    impulse (tensor):  the impulse response to start from
+    ntaps   (int)   :  number of taps in the final filter
+    window  (str)   : (optional) window function to truncate with. (Default: 'hann')
+        
+    Returns:
+    --------
+        out (tensor): the smoothly truncated impulse response
     """
-    out = impulse.copy()
+    
+    out  = impulse.clone()
+    size = out.size()[-1]
     trunc_start = int(ntaps / 2)
-    trunc_stop = out.size - trunc_start
-    window = get_window(window, ntaps)
-    out[0:trunc_start] *= window[trunc_start:ntaps]
-    out[trunc_stop:out.size] *= window[0:trunc_start]
-    out[trunc_start:trunc_stop] = 0
+    trunc_stop  = size - trunc_start
+   
+    window = get_window(window, window_length=ntaps)
+    
+    out[:, 0:trunc_start]   *= window[trunc_start:ntaps]
+    out[:, trunc_stop:size] *= window[0:trunc_start]
+    out[:, trunc_start:trunc_stop] = 0
     return out
 
 
