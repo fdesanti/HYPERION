@@ -97,7 +97,6 @@ If you use `HYPERION`, please cite the
 [corresponding paper](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.109.102004) as follows.
 
 > De Santi et al., *Deep learning to detect gravitational waves from binary close encounters: Fast parameter estimation using normalizing flows*,
-
 > Physical Review D **109**, 102004 (2024)
 
 **Bibtex**
@@ -117,6 +116,3 @@ If you use `HYPERION`, please cite the
   doi = {10.1103/PhysRevD.109.102004},
   url = {https://link.aps.org/doi/10.1103/PhysRevD.109.102004}
 } 
-
-
-
