@@ -27,7 +27,7 @@ class ResBlock(nn.Module):
         self.dropout        = nn.Dropout(dropout_probability)
         
         if use_batch_norm:
-            self.batch_norm_layer = nn.BatchNorm1d(output_dim)
+            self.batch_norm_layer = nn.BatchNorm1d(output_dim, track_running_stats=False)
             
         if input_dim != output_dim:
             self.linear_layer = nn.Linear(input_dim, output_dim)
@@ -80,7 +80,7 @@ class EmbeddingNetwork(nn.Module):
         self.Dropout = nn.Dropout(dropout_probability)
 
         if use_batch_norm:
-            self.initial_batch_norm = nn.BatchNorm1d(self.strain_channels)
+            self.initial_batch_norm = nn.BatchNorm1d(self.strain_channels, track_running_stats=False)
         
         #=======================================================================
         # Construct CNN for morphology features extraction
@@ -88,17 +88,17 @@ class EmbeddingNetwork(nn.Module):
         self.CNN = nn.Sequential(
                  
                  nn.Conv1d(self.strain_channels, 32, kernel_size = 5, stride = 1, bias = True),
-                 nn.BatchNorm1d(32) if use_batch_norm else nn.Identity(),
+                 nn.BatchNorm1d(32, track_running_stats=False) if use_batch_norm else nn.Identity(),
                  nn.MaxPool1d(2),
                  activation, 
                  
                  nn.Conv1d(32, 64, kernel_size = 5, stride = 1, bias = True),
-                 nn.BatchNorm1d(64) if use_batch_norm else nn.Identity(),
+                 nn.BatchNorm1d(64, track_running_stats=False) if use_batch_norm else nn.Identity(),
                  nn.MaxPool1d(2),
                  activation, 
             
                  nn.Conv1d(64, 128, kernel_size = 5, stride = 1, bias = True),
-                 nn.BatchNorm1d(128) if use_batch_norm else nn.Identity(),
+                 nn.BatchNorm1d(128, track_running_stats=False) if use_batch_norm else nn.Identity(),
                  nn.MaxPool1d(2),
                  activation,
                  
@@ -118,7 +118,7 @@ class EmbeddingNetwork(nn.Module):
              [
               nn.Sequential(
                           nn.Conv1d(strain_shape[0], filter, kernel_size = kernel_size, stride = 1, bias = True), 
-                          nn.BatchNorm1d(filter) if use_batch_norm else nn.Identity(),
+                          nn.BatchNorm1d(filter, track_running_stats=False) if use_batch_norm else nn.Identity(),
                           self.activation, 
                           GlobalMaxPooling1D(),
               ) 

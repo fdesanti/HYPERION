@@ -268,7 +268,7 @@ class DatasetGenerator:
             #asd[det], noise[det] = self.asd_generator[det].sample(self.batch_size, noise=True)
             #asd[det] = self.asd_generator[det].asd_reference
             asd[det] = self.asd_generator[det].sample(self.batch_size, 
-                                                      #noise = True, 
+                                                      noise = False, 
                                                       use_reference_asd=self.use_reference_asd)
         torch_asd = torch.stack([asd[det] for det in self.det_network.detectors], dim=1)
         

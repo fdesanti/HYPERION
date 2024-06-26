@@ -217,15 +217,15 @@ class WhitenNet:
         
         for det in h.keys():
             noise = torch.normal(mean=self.noise_mean, 
-                                 std=self.noise_std, 
+                                 std =self.noise_std, 
                                  generator=self.rng)
-            h[det] += noise/self.noise_std
+            h[det] += noise#/self.noise_std
             
         return h
     
     
     def whiten(self, h, asd, time_shift, noise=None, add_noise=True, 
-               fduration=2, window='hann', ncorner=None):
+               fduration=2, window='hann', ncorner=0):
         """
         Whiten the input signal and (optionally) add Gaussian noise.
         Whitening is performed by dividing the signal by its ASD in the frequency domain.
@@ -250,22 +250,22 @@ class WhitenNet:
         for det in h.keys():
             ht = h[det] * tukey(self.n, alpha=0.01, device=self.device)
             
-            #if noise:
-            #    ht += noise[det]
+            if noise:
+                ht += noise[det]
 
             #compute the frequency domain signal (template) and apply time shift
             hf = rfft(ht, n=self.n, fs=self.fs) * torch.exp(-2j * torch.pi * self.freqs * time_shift[det]) 
 
             ht = irfft(hf, n=self.n, fs=self.fs)
             
-            if noise:
-                ht += noise[det]
+            #if noise:
+            #    ht += noise[det]
 
             #whiten the signal by dividing wrt the ASD
             #hf_w = hf / asd[det]
             ntaps = int((fduration * self.fs))
             fir   = fir_from_transfer(1/asd[det], ntaps=ntaps, window=window, ncorner=ncorner)
-            whitened[det] = convolve(ht, fir, window=window) / self.noise_std
+            whitened[det] = convolve(ht, fir, window=window) #/ self.noise_std
 
             #convert back to the time domain
             # we divide by the noise standard deviation to ensure to have unit variance
