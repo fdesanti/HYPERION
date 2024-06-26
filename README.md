@@ -91,6 +91,30 @@ resampled_posterior = flow_sampler.reweight_posterior(posterior=posterior,
 print(f'The signal vs noise Bayes Factor is {sampler.BayesFactor:.2f}')
 ```
 
+## Citation
+
+If you use `HYPERION`, please cite the 
+[corresponding paper](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.109.102004) as follows.
+
+> De Santi et al., Deep learning to detect gravitational waves from binary close encounters: Fast parameter estimation using normalizing flows. 
+> Physical Review D **109**, 102004 (2024)
+**Bibtex**
+
+```
+@article{DeSanti2024,
+  title = {Deep learning to detect gravitational waves from binary close encounters: Fast parameter estimation using normalizing flows},
+  author = {De Santi, Federico and Razzano, Massimiliano and Fidecaro, Francesco and Muccillo, Luca and Papalini, Lucia and Patricelli, Barbara},
+  journal = {Phys. Rev. D},
+  volume = {109},
+  issue = {10},
+  pages = {102004},
+  numpages = {21},
+  year = {2024},
+  month = {May},
+  publisher = {American Physical Society},
+  doi = {10.1103/PhysRevD.109.102004},
+  url = {https://link.aps.org/doi/10.1103/PhysRevD.109.102004}
+} 
 
 
 
