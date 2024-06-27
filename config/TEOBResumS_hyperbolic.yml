@@ -81,11 +81,11 @@ parameters:
   extrinsic:
 
     time_shift:
-      distribution: "delta"
+      distribution: "uniform"
       kwargs:
-        value: 0.0
-        #minimum: -0.15
-        #maximum: 0.15
+        #value: 0.0
+        minimum: -0.5
+        maximum: 0.15
 
     tcoal:
       distribution: "uniform"

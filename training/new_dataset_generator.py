@@ -279,7 +279,7 @@ class DatasetGenerator:
                                          add_noise=add_noise)
 
         #standardize parameters
-        prior_samples['tcoal'] = self.tcoals[idxs]['tcoal'] #add tcoal to time_shift
+        prior_samples['tcoal'] = self.tcoals[idxs]['tcoal'] + prior_samples['time_shift']#add tcoal to time_shift
         out_prior_samples = self.standardize_parameters(prior_samples)
 
         #convert to a single float tensor
