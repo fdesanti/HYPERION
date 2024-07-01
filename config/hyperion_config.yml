@@ -13,7 +13,7 @@ fs: 2048 #sampling frequency Hz for simulations & inference
 
 ASD_reference_run: O3a #reference run for the ASDs
 
-use_reference_asd: false #use the reference run for the ASDs
+use_reference_asd: true #use the reference run for the ASDs
 
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "polarization", "inclination", "time_shift", "ra", "dec"]
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "time_shift", "ra", "dec"]
@@ -23,7 +23,7 @@ waveform_model: "TEOBResumSDALI"
 
 prior: "TEOBResumS_hyperbolic"
 
-inference_parameters: ["M", "q", "H_hyp", "r_hyp", "distance", "inclination", "polarization", "tcoal", "ra", "dec"]
+inference_parameters: ["M", "q", "H_hyp", "r_hyp", "j_hyp", "distance", "chi1", "chi2", "inclination", "polarization", "tcoal", "ra", "dec"]
 
 duration: 2 #duration in seconds for the simulated signals
 
@@ -32,15 +32,15 @@ duration: 2 #duration in seconds for the simulated signals
 # FLOW and EMBEDDING NETWORK
 #============================
 flow:
-  num_coupling_layers: 36
+  num_coupling_layers: 42
 
 coupling_layers:
-  num_features:     10
-  num_identity:     5
-  num_transformed:  5
+  num_features:     13
+  num_identity:     6
+  num_transformed:  7
 
 base_distribution:
-  dim:              10
+  dim:              13
   trainable:        false
 
 embedding_network:
@@ -58,7 +58,7 @@ embedding_network:
 training_options:
   num_epochs: 300
 
-  batch_size: 256
+  batch_size: 512
 
   initial_learning_rate: 0.0001
 

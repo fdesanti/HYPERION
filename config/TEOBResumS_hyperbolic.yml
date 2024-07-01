@@ -3,9 +3,17 @@
 # TEOBResumS Hyperbolic capture prior
 ##########################################
 
+#For a list of the waveform parameters see
+# https://bitbucket.org/eob_ihes/teobresums/wiki/Conventions,%20parameters%20and%20output
+
 waveform_kwargs:
   # Initial conditions and output time grid
   domain              : 0         # Time domain. EOBSPA is not available for eccentric waveforms!
+
+  #nqcs
+  nqc                : 'manual'              #options are ["none", "manual", "auto"]
+  nqc_coefs_flx      : 'nrfit_spin202002'    #options are ["none", "nrfit_spin202002", "nrfit_nospin201602" ]
+  nqc_coefs_hlm      : 'nrfit_spin202002'    #options are ["none", "nrfit_spin202002", "nrfit_nospin201602", "compute" ]
   
 
 
@@ -31,13 +39,13 @@ parameters:
       distribution: "uniform"
       kwargs:
         minimum: 10.0
-        maximum: 130.0
+        maximum: 150.0
 
     m2:                        
       distribution: "uniform"
       kwargs:
         minimum: 10.0
-        maximum: 130.0
+        maximum: 150.0
 
     H_hyp:                      # Initial E_eob
       distribution: "uniform"
@@ -46,15 +54,18 @@ parameters:
         maximum: 1.01
       
     j_hyp:                      # initial pphi_eob (angular momentum)
-      distribution: "delta"
+      #distribution: "delta"
+      distribution: "uniform"
       kwargs:
-        value: 4.0
+        #value: 4.0
+        minimum: 3.95
+        maximum: 4.1
 
     r_hyp:                      # initial ratial separation
       distribution: "uniform"
       kwargs:
         minimum: 10
-        maximum: 1000
+        maximum: 200
 
     inclination:
       distribution: "sin"
@@ -62,17 +73,17 @@ parameters:
         minimum: 0.0
         maximum: torch.pi
 
-    #chi1:                       # Dimensionless spin of the primary
-    #  distribution: "uniform"
-    #  kwargs:
-    #    minimum: -0.1
-    #    maximum: 0.1
+    chi1:                       # Dimensionless spin of the primary
+      distribution: "uniform"
+      kwargs:
+        minimum: -0.1
+        maximum: 0.1
     
-    #chi2:                       # Dimensionless spin of the secondary          
-    #  distribution: "uniform"
-    #  kwargs:
-    #   minimum: -0.1
-    #   maximum: 0.1
+    chi2:                       # Dimensionless spin of the secondary          
+      distribution: "uniform"
+      kwargs:
+       minimum: -0.1
+       maximum: 0.1
 
 #=================================
 # EXTRINSIC PARAMETERS
@@ -82,9 +93,10 @@ parameters:
 
     time_shift:
       distribution: "uniform"
+      #distribution: "delta"
       kwargs:
         #value: 0.0
-        minimum: -0.5
+        minimum: -0.15
         maximum: 0.15
 
     tcoal:
