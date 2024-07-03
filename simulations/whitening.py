@@ -219,7 +219,7 @@ class WhitenNet:
             noise = torch.normal(mean=self.noise_mean, 
                                  std =self.noise_std, 
                                  generator=self.rng)
-            h[det] += noise#/self.noise_std
+            h[det] += noise #/ self.noise_std
             
         return h
     

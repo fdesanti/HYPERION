@@ -87,6 +87,7 @@ if __name__ == '__main__':
                                    waveform_generator=waveform_generator, 
                                    num_posterior_samples=num_samples, 
                                    device=device)
+        sampler.flow.eval()
 
         posterior = sampler.sample_posterior(strain = strain, asd = asd, num_samples=num_samples, restrict_to_bounds = True)
         

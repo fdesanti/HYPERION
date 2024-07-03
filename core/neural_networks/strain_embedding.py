@@ -27,7 +27,7 @@ class ResBlock(nn.Module):
         self.dropout        = nn.Dropout(dropout_probability)
         
         if use_batch_norm:
-            self.batch_norm_layer = nn.BatchNorm1d(output_dim, track_running_stats=False)
+            self.batch_norm_layer = nn.LayerNorm(output_dim)#nn.BatchNorm1d(output_dim, track_running_stats=False)
             
         if input_dim != output_dim:
             self.linear_layer = nn.Linear(input_dim, output_dim)

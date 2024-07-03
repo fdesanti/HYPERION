@@ -73,17 +73,17 @@ parameters:
         minimum: 0.0
         maximum: torch.pi
 
-    chi1:                       # Dimensionless spin of the primary
-      distribution: "uniform"
-      kwargs:
-        minimum: -0.1
-        maximum: 0.1
+    #chi1:                       # Dimensionless spin of the primary
+    #  distribution: "uniform"
+    #  kwargs:
+    #    minimum: -0.1
+    #    maximum: 0.1
     
-    chi2:                       # Dimensionless spin of the secondary          
-      distribution: "uniform"
-      kwargs:
-       minimum: -0.1
-       maximum: 0.1
+    #chi2:                       # Dimensionless spin of the secondary          
+    #  distribution: "uniform"
+    #  kwargs:
+    #   minimum: -0.1
+    #   maximum: 0.1
 
 #=================================
 # EXTRINSIC PARAMETERS
@@ -102,7 +102,7 @@ parameters:
     tcoal:
       distribution: "uniform"
       kwargs:
-        minimum: 0
+        minimum: -1
         maximum: 1
       
 
