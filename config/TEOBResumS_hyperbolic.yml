@@ -72,6 +72,12 @@ parameters:
       kwargs:
         minimum: 0.0
         maximum: torch.pi
+    
+    coalescence_angle:
+      distribution: "uniform"
+      kwargs:
+        minimum: 0.0
+        maximum: 2 * torch.pi
 
     #chi1:                       # Dimensionless spin of the primary
     #  distribution: "uniform"

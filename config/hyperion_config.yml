@@ -23,7 +23,7 @@ waveform_model: "TEOBResumSDALI"
 
 prior: "TEOBResumS_hyperbolic"
 
-inference_parameters: ["M", "q", "H_hyp", "r_hyp", "j_hyp", "distance", "inclination", "polarization", "tcoal", "ra", "dec"]
+inference_parameters: ["M", "q", "H_hyp", "r_hyp", "j_hyp", "distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
 
 duration: 2 #duration in seconds for the simulated signals
 
@@ -32,15 +32,15 @@ duration: 2 #duration in seconds for the simulated signals
 # FLOW and EMBEDDING NETWORK
 #============================
 flow:
-  num_coupling_layers: 38
+  num_coupling_layers: 42
 
 coupling_layers:
-  num_features:     11
-  num_identity:     5
+  num_features:     12
+  num_identity:     6
   num_transformed:  6
 
 base_distribution:
-  dim:              11
+  dim:              12
   trainable:        false
 
 embedding_network:
