@@ -85,13 +85,13 @@ class WaveformGenerator:
             t_pad = torch.linspace(t.min()-padd*self.delta_t, t.min(), padd, device=t.device)
             t  = torch.cat([t_pad, t])
 
-        #shift the waveform so that the merger is in the center
-        dt   = t[len(t)//2]
-        roll = int(dt*self.fs)
-        
-        t-=dt.item() #now the t=0 is in the center
-        hp = torch.roll(hp, roll)
-        hc = torch.roll(hc, roll)
+            #shift the waveform so that the merger is in the center
+            dt   = t[len(t)//2]
+            roll = int(dt*self.fs)
+            
+            t-=dt.item() #now the t=0 is in the center
+            hp = torch.roll(hp, roll)
+            hc = torch.roll(hc, roll)
 
         '''
         import matplotlib.pyplot as plt

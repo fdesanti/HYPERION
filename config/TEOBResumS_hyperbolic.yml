@@ -102,8 +102,8 @@ parameters:
       #distribution: "delta"
       kwargs:
         #value: 0.0
-        minimum: -0.5
-        maximum: 0.5
+        minimum: -0.25
+        maximum: 0.25
 
     tcoal:
       distribution: "uniform"
