@@ -4,6 +4,7 @@ import multiprocessing as mp
 from tqdm import tqdm
 from torch.nn.functional import pad
 from .models import EffectiveFlyByTemplate, TEOBResumSDALI
+from ...core.fft.windows import tukey
 
 models_dict = {'EffectiveFlyBy': EffectiveFlyByTemplate, 
                 'TEOBResumSDALI': TEOBResumSDALI}
@@ -43,6 +44,10 @@ class WaveformGenerator:
         return self.wvf_model.name
     
     @property
+    def delta_t(self):
+        return 1/self.fs
+    
+    @property
     def has_torch(self):
         return self.wvf_model.has_torch
     
@@ -59,9 +64,12 @@ class WaveformGenerator:
         Resize the waveform to the desired duration.
         """
         N = int(self.duration * self.fs)
+
+        hp *= tukey(len(hp), alpha=0.1)
+        hc *= tukey(len(hc), alpha=0.1)
         
         #signal is longer --> crop
-        if hp.shape[-1] > N:
+        if hp.shape[-1] >= N:
             t = t[-N:]
             hp = hp[-N:]
             hc = hc[-N:]
@@ -69,13 +77,28 @@ class WaveformGenerator:
         #signal is shorter --> symmetrically pad with zeros
         elif hp.shape[-1] < N:
             
-            pad_l = (N - hp.shape[-1]) // 2
-            pad_r =  N - hp.shape[-1] - pad_l
-
-            t  = pad(t,  (pad_l, pad_r))
-            hp = pad(hp, (pad_l, pad_r))
-            hc = pad(hc, (pad_l, pad_r))
+            padd = N-hp.shape[-1]
+            hp = pad(hp, (padd, 0))
+            hc = pad(hc, (padd, 0))
             
+            #extend the time array
+            t_pad = torch.linspace(t.min()-padd*self.delta_t, t.min(), padd, device=t.device)
+            t  = torch.cat([t_pad, t])
+
+        #shift the waveform so that the merger is in the center
+        dt   = t[len(t)//2]
+        roll = int(dt*self.fs)
+        
+        t-=dt.item() #now the t=0 is in the center
+        hp = torch.roll(hp, roll)
+        hc = torch.roll(hc, roll)
+
+        '''
+        import matplotlib.pyplot as plt
+        plt.plot(t, hp.cpu())
+        #plt.axvline(len(t)//2, color='r')
+        plt.show()
+        ''' 
         return t, hp, hc
 
 
@@ -140,7 +163,7 @@ class WaveformGenerator:
                     hc = results['hc']
 
                     t, hp, hc = self._resize_waveform(t, hp, hc)
-
+                    
                     t_coals.append(-t[len(t)//2])
                     hps.append(hp)
                     hcs.append(hc)

@@ -171,7 +171,6 @@ class WhitenNet:
     def n(self):
         return self.duration * self.fs
        
-       
     @property
     def delta_t(self):
         if not hasattr(self, '_delta_t'):
@@ -225,7 +224,7 @@ class WhitenNet:
     
     
     def whiten(self, h, asd, time_shift, noise=None, add_noise=True, 
-               fduration=2, window='hann', ncorner=0):
+               fduration=None, window='hann', ncorner=0):
         """
         Whiten the input signal and (optionally) add Gaussian noise.
         Whitening is performed by dividing the signal by its ASD in the frequency domain.
@@ -243,12 +242,14 @@ class WhitenNet:
         --------
             whitened (TensorDict)   : whitened signal(s) (with added noise).
         """
-    
+        if not fduration:
+            fduration = self.duration
+
         #hf = {}
         whitened = h.copy()
 
         for det in h.keys():
-            ht = h[det] * tukey(self.n, alpha=0.01, device=self.device)
+            ht = h[det] #* tukey(self.n, alpha=0.01, device=self.device)
             
             #compute the frequency domain signal (template) and apply time shift
             hf = rfft(ht, n=self.n, fs=self.fs) * torch.exp(-2j * torch.pi * self.freqs * time_shift[det]) 

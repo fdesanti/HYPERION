@@ -71,7 +71,7 @@ if __name__ == '__main__':
         #SAMPLING --------
         num_samples = 50_000
         parameters, strain, asd = test_ds.__getitem__()
-        print(asd.shape)
+        #print(asd.shape)
         plt.figure(figsize=(20, 15))
         for i, det in enumerate(det_network.detectors):
             plt.subplot(3, 1, i+1)

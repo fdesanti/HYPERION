@@ -214,7 +214,6 @@ class DatasetGenerator:
         
 
         #then we call the waveform generator
-        
         hp, hc, tcoal = self.waveform_generator(self.prior_samples.to('cpu'), 
                                                 n_proc=self.n_proc)
         print('\n[INFO] Done')
@@ -257,8 +256,10 @@ class DatasetGenerator:
         time_shifts = self.det_network.time_delay_from_earth_center(ra=prior_samples['ra'], 
                                                                     dec=prior_samples['dec'])        
         
+        
         for det in h.keys():
             time_shifts[det] += prior_samples['time_shift']
+        
 
         #sample asd --> whiten --> add noise
         #asd = {det: self.asd_generator[det].sample(self.batch_size) for det in self.det_network.detectors}
@@ -276,7 +277,7 @@ class DatasetGenerator:
                                          asd=asd, 
                                          #noise = noise,
                                          time_shift=time_shifts, 
-                                         add_noise=add_noise)
+                                         add_noise=False)
 
         #standardize parameters
         prior_samples['tcoal'] = self.tcoals[idxs]['tcoal'] + prior_samples['time_shift']#add tcoal to time_shift
