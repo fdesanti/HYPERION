@@ -87,12 +87,12 @@ class EmbeddingNetwork(nn.Module):
         #=======================================================================
         self.CNN = nn.Sequential(
                  
-                 nn.Conv1d(self.strain_channels, 32, kernel_size = 13, stride = 1, bias = True),
+                 nn.Conv1d(self.strain_channels, 32, kernel_size = 5, stride = 1, bias = True),
                  nn.BatchNorm1d(32, track_running_stats=False) if use_batch_norm else nn.Identity(),
                  nn.MaxPool1d(2),
                  activation, 
                  
-                 nn.Conv1d(32, 64, kernel_size = 7, stride = 1, bias = True),
+                 nn.Conv1d(32, 64, kernel_size = 5, stride = 1, bias = True),
                  nn.BatchNorm1d(64, track_running_stats=False) if use_batch_norm else nn.Identity(),
                  nn.MaxPool1d(2),
                  activation, 
@@ -111,8 +111,8 @@ class EmbeddingNetwork(nn.Module):
         # Construct CNN for time/space localization features extraction
         #=======================================================================
         filters      = [16, 32, 16, 32, 64, 128]
-        #kernel_sizes = [7, 7, 5, 5, 3, 3]
-        kernel_sizes = [128, 64, 32, 16, 8, 4]
+        kernel_sizes = [7, 7, 5, 5, 3, 3]
+        #kernel_sizes = [128, 64, 32, 16, 8, 4]
             
         self.CNN_localization = nn.ModuleList(
              [

@@ -11,7 +11,7 @@ reference_gps_time: 1370692818 #1242442967.4 #1370692818
 
 fs: 2048 #sampling frequency Hz for simulations & inference 
 
-ASD_reference_run: O3a #reference run for the ASDs
+ASD_reference_run: O3 #reference run for the ASDs
 
 use_reference_asd: false #use the reference run for the ASDs
 
@@ -25,7 +25,7 @@ prior: "TEOBResumS_hyperbolic"
 
 inference_parameters: ["M", "q", "H_hyp", "r_hyp", "j_hyp", "distance", "inclination", "polarization", "coalescence_angle", "time_shift", "ra", "dec"]
 
-duration: 2 #duration in seconds for the simulated signals
+duration: 1 #duration in seconds for the simulated signals
 
 
 #============================
@@ -48,7 +48,7 @@ embedding_network:
   num_blocks:       3
   block_dims:       [2048, 1024, 512, 256]
   strain_out_dim:   256
-  use_batch_norm:   true
+  use_batch_norm:   false
   dropout_probability: 0.2
 
 

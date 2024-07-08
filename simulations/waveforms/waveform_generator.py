@@ -77,21 +77,14 @@ class WaveformGenerator:
         #signal is shorter --> symmetrically pad with zeros
         elif hp.shape[-1] < N:
             
-            padd = N-hp.shape[-1]
-            hp = pad(hp, (padd, 0))
-            hc = pad(hc, (padd, 0))
+            pad_l = (N - hp.shape[-1]) // 2
+            pad_r = N - hp.shape[-1] - pad_l
+            
+            hp = pad(hp, (pad_l, pad_r))
+            hc = pad(hc, (pad_l, pad_r))
             
             #extend the time array
-            t_pad = torch.linspace(t.min()-padd*self.delta_t, t.min(), padd, device=t.device)
-            t  = torch.cat([t_pad, t])
-
-            #shift the waveform so that the merger is in the center
-            dt   = t[len(t)//2]
-            roll = int(dt*self.fs)
-            
-            t-=dt.item() #now the t=0 is in the center
-            hp = torch.roll(hp, roll)
-            hc = torch.roll(hc, roll)
+            t = torch.linspace(-self.delta_t*pad_l+t.min(), t.max()+self.delta_t*pad_r, N)
 
         '''
         import matplotlib.pyplot as plt
