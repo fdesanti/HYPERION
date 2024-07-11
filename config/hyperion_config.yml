@@ -11,9 +11,9 @@ reference_gps_time: 1370692818 #1242442967.4 #1370692818
 
 fs: 2048 #sampling frequency Hz for simulations & inference 
 
-ASD_reference_run: O3 #reference run for the ASDs
+ASD_reference_run: O3a #reference run for the ASDs
 
-use_reference_asd: false #use the reference run for the ASDs
+use_reference_asd: true #use the reference run for the ASDs
 
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "polarization", "inclination", "time_shift", "ra", "dec"]
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "time_shift", "ra", "dec"]
@@ -23,7 +23,7 @@ waveform_model: "TEOBResumSDALI"
 
 prior: "TEOBResumS_hyperbolic"
 
-inference_parameters: ["M", "q", "H_hyp", "r_hyp", "j_hyp", "distance", "inclination", "polarization", "coalescence_angle", "time_shift", "ra", "dec"]
+inference_parameters: ["M", "q", "H_hyp", "r_hyp", "j_hyp", "distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
 
 duration: 1 #duration in seconds for the simulated signals
 
@@ -32,7 +32,7 @@ duration: 1 #duration in seconds for the simulated signals
 # FLOW and EMBEDDING NETWORK
 #============================
 flow:
-  num_coupling_layers: 16
+  num_coupling_layers: 36
 
 coupling_layers:
   num_features:     12
@@ -48,8 +48,14 @@ embedding_network:
   num_blocks:       3
   block_dims:       [2048, 1024, 512, 256]
   strain_out_dim:   256
-  use_batch_norm:   false
+  use_batch_norm:   true
   dropout_probability: 0.2
+
+  CNN_filters:      [32, 64, 128]
+  CNN_kernel_sizes: [13, 7, 5]
+  CNN_localization_filters:      [16, 32, 16, 32, 64, 128]
+  CNN_localization_kernel_sizes: [128, 64, 32, 16, 8, 4]
+  #CNN_localization_kernel_sizes: [7, 7, 5, 5, 3, 3]
 
 
 #============================

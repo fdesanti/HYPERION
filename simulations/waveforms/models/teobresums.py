@@ -9,11 +9,14 @@ Instructions for the TEOBResumS waveform model:
 """
 
 import torch
+
 try:
     import EOBRun_module
+    from .teobresums_utils import *
 except ModuleNotFoundError as e: 
     print(e)
     print("[WARNING]: unable to import EOBRun_module. Please refer to the documentation to install it. TEOBResumSDALI waveform model won't work otherwise")
+
 
 
 def modes_to_k(modes):
@@ -25,7 +28,14 @@ def modes_to_k(modes):
 
 
 class  TEOBResumSDALI():
-    """Wrapper class for the TEOBResumS waveform model."""
+    """
+    Wrapper class for the TEOBResumS waveform model.
+    
+    Args:
+    -----
+        fs (float): Sampling frequency of the waveform.
+        **kwargs: Additional keyword arguments to pass to the EOBRun_module generator.
+    """
     
     def __init__(self, fs, **kwargs):
         
@@ -45,6 +55,7 @@ class  TEOBResumSDALI():
 
         # ode
         'ode_tmax'           : 20e4,
+        'ode_tstep_opt'      : "adaptive",        # Fixing uniform or adaptive. Default = 1 
         
         # nqcs
         'nqc'                : 'auto',

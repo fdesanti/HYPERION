@@ -66,7 +66,12 @@ class EmbeddingNetwork(nn.Module):
                  strain_out_dim = 256,
                  use_batch_norm = True, 
                  activation     = nn.ELU(),
-                 dropout_probability=0.0):
+                 dropout_probability=0.0, 
+                 CNN_filters      = [32, 64, 128], 
+                 CNN_kernel_sizes = [5, 5, 5],
+                 CNN_localization_filters = [16, 32, 16, 32, 64, 128],
+                 CNN_localization_kernel_sizes = [7, 7, 5, 5, 3, 3]
+                 ):
 
         super(EmbeddingNetwork, self).__init__()
         
@@ -85,6 +90,7 @@ class EmbeddingNetwork(nn.Module):
         #=======================================================================
         # Construct CNN for morphology features extraction
         #=======================================================================
+        '''
         self.CNN = nn.Sequential(
                  
                  nn.Conv1d(self.strain_channels, 32, kernel_size = 5, stride = 1, bias = True),
@@ -106,12 +112,30 @@ class EmbeddingNetwork(nn.Module):
                  nn.Flatten(),
                  nn.LazyLinear(block_dims[0]), activation
                  )
-        
+        '''
+        shapes = [self.strain_channels] + CNN_filters
+        CNN_layers = [nn.Sequential(
+                        nn.Conv1d(input_shape, filter, kernel_size = kernel_size, stride = 1, bias = True),
+                        nn.BatchNorm1d(filter, track_running_stats=False) if use_batch_norm else nn.Identity(),
+                        nn.MaxPool1d(2),
+                        activation
+                        )
+                      for input_shape, filter, kernel_size in zip(shapes, CNN_filters, CNN_kernel_sizes)
+        ]
+        CNN_layers += [nn.Sequential(
+                        nn.Dropout(dropout_probability), 
+                        nn.Flatten(), 
+                        nn.LazyLinear(block_dims[0]), 
+                        activation)
+        ]
+            
+        self.CNN = nn.Sequential(*CNN_layers)     
+             
         #=======================================================================
         # Construct CNN for time/space localization features extraction
         #=======================================================================
-        filters      = [16, 32, 16, 32, 64, 128]
-        kernel_sizes = [7, 7, 5, 5, 3, 3]
+        #filters      = [16, 32, 16, 32, 64, 128]
+        #kernel_sizes = [7, 7, 5, 5, 3, 3]
         #kernel_sizes = [128, 64, 32, 16, 8, 4]
             
         self.CNN_localization = nn.ModuleList(
@@ -122,7 +146,7 @@ class EmbeddingNetwork(nn.Module):
                           self.activation, 
                           GlobalMaxPooling1D(),
               ) 
-              for filter, kernel_size in zip(filters, kernel_sizes)    
+              for filter, kernel_size in zip(CNN_localization_filters, CNN_localization_kernel_sizes)    
              ] 
         )
         self.out_CNN_localization_block_linear = nn.Sequential(nn.LazyLinear(block_dims[0]), activation)

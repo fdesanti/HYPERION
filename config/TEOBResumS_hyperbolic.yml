@@ -58,7 +58,7 @@ parameters:
       distribution: "uniform"
       kwargs:
         #value: 4.0
-        minimum: 3.95
+        minimum: 3.99
         maximum: 4.1
 
     r_hyp:                      # initial ratial separation
