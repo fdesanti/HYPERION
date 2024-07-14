@@ -12,7 +12,6 @@ import torch
 
 try:
     import EOBRun_module
-    from .teobresums_utils import *
 except ModuleNotFoundError as e: 
     print(e)
     print("[WARNING]: unable to import EOBRun_module. Please refer to the documentation to install it. TEOBResumSDALI waveform model won't work otherwise")

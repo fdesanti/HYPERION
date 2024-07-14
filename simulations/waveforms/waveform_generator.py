@@ -84,14 +84,17 @@ class WaveformGenerator:
             hc = pad(hc, (pad_l, pad_r))
             
             #extend the time array
-            t = torch.linspace(-self.delta_t*pad_l+t.min(), t.max()+self.delta_t*pad_r, N)
+            t_l = torch.linspace(-self.delta_t*pad_l, 0, pad_l, device=t.device) + t.min()
+            t_r = torch.linspace(0, self.delta_t*pad_r,  pad_r, device=t.device) + t.max()
+            t = torch.cat([t_l, t, t_r])
 
         '''
         import matplotlib.pyplot as plt
-        plt.plot(t, hp.cpu())
+        plt.plot(t, hp)
         #plt.axvline(len(t)//2, color='r')
         plt.show()
-        ''' 
+        '''
+        
         return t, hp, hc
 
 

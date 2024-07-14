@@ -218,7 +218,7 @@ class WhitenNet:
             noise = torch.normal(mean=self.noise_mean, 
                                  std =self.noise_std, 
                                  generator=self.rng)
-            h[det] += noise / self.noise_std
+            h[det] += noise #/ self.noise_std
             
         return h
     
@@ -263,7 +263,7 @@ class WhitenNet:
             #hf_w = hf / asd[det]
             ntaps = int((fduration * self.fs))
             fir   = fir_from_transfer(1/asd[det], ntaps=ntaps, window=window, ncorner=ncorner)
-            whitened[det] = convolve(ht, fir, window=window) / self.noise_std
+            whitened[det] = convolve(ht, fir, window=window) #/ self.noise_std
 
             #convert back to the time domain
             # we divide by the noise standard deviation to ensure to have unit variance
