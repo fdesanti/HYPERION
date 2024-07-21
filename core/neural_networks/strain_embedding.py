@@ -4,8 +4,6 @@ Fully Connected Residual Neural Network implementation
 
 import torch
 import torch.nn as nn
-
-
 from .torch_layers import GlobalMaxPooling1D
 
 
