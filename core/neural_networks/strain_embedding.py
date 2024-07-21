@@ -59,6 +59,7 @@ class EmbeddingNetwork(nn.Module):
     
     def __init__(self, 
                  strain_shape : list, 
+                 fs = None,
                  num_blocks   = 3,
                  block_dims :list = [2048, 1024, 512, 256], 
                  strain_out_dim = 256,

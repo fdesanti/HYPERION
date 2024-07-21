@@ -5,7 +5,7 @@ import torch
 from . import Flow
 from . import CouplingTransform, AffineCouplingLayer, RandomPermutation
 from ..distributions   import MultivariateNormalBase
-from ..neural_networks import EmbeddingNetwork
+from ..neural_networks import EmbeddingNetwork, EmbeddingNetworkAttention, embedding_network_dict
 
 from ...config import CONF_DIR
 
@@ -44,11 +44,18 @@ def build_flow( prior_metadata           :dict = None,
     flow_kwargs              =  kwargs['flow']
     coupling_layers_kwargs   =  kwargs['coupling_layers']
     base_distribution_kwargs =  kwargs['base_distribution']
-    embedding_network_kwargs =  kwargs['embedding_network'] 
+    embedding_network_kwargs =  kwargs['embedding_network']['kwargs']
+    embedding_network_model  =  kwargs['embedding_network']['model']
+
     configuration = kwargs
 
     #NEURAL NETWORK ---------------------------------------    
-    embedding_network   = EmbeddingNetwork(**embedding_network_kwargs).float()
+    #compute the shape of the strain tensor
+    detectors = configuration['detectors']
+    duration  = configuration['duration']
+    fs        = configuration['fs']  
+    strain_shape = [len(detectors), int(duration*fs)]
+    embedding_network = embedding_network_dict[embedding_network_model](strain_shape=strain_shape, fs=fs, **embedding_network_kwargs).float()
        
     #BASE DIST ----------------------------------------------------------------------------
     base = MultivariateNormalBase(**base_distribution_kwargs)
