@@ -57,9 +57,9 @@ class  TEOBResumSDALI():
         'ode_tstep_opt'      : "adaptive",        # Fixing uniform or adaptive. Default = 1 
         
         # nqcs
-        'nqc'                : 'auto',
-        'nqc_coefs_flx'      : 'none',
-        'nqc_coefs_hlm'      : 'compute',
+        'nqc'                : 'manual',           #options are ["none", "manual", "auto"]
+        'nqc_coefs_flx'      : 'nrfit_spin202002', #options are ["none", "nrfit_spin202002", "nrfit_nospin201602"]
+        'nqc_coefs_hlm'      : 'nrfit_spin202002', #options are ["none", "nrfit_spin202002", "nrfit_nospin201602", "compute"]
 
         # Output parameters (Python)
         'arg_out'            : "no",     # Output hlm/hflm. Default = "no"
@@ -88,9 +88,10 @@ class  TEOBResumSDALI():
     
     
     @staticmethod
-    def _check_compatability(parameters):
+    def _check_masses(parameters):
         """
-        Check if the parameters are compatible with the model.
+        Check if the parameters contains single masses and convert them to
+        total mass M and mass ratio q.
         """
         if all(p in parameters.keys() for p in ['m1', 'm2']):
             
@@ -100,10 +101,7 @@ class  TEOBResumSDALI():
             parameters['q'] = m1 / m2
             parameters.pop('m1')
             parameters.pop('m2')
-        else:
-            raise ValueError('Parameters are not compatible with the model.')
-        #parameters = parameters.to_dict()
-        #out_pars = {p: parameters[p].item() for p in parameters }
+    
         return parameters
     
 
@@ -114,13 +112,10 @@ class  TEOBResumSDALI():
         # Update the parameters      
         pars = self.kwargs.copy()
 
-        waveform_parameters = self._check_compatability(waveform_parameters)
-
+        waveform_parameters = self._check_masses(waveform_parameters)
         pars.update(waveform_parameters)
-        #print(pars)
+       
         # Run the model
-
-        #print(pars)
         eob_output = EOBRun_module.EOBRunPy(pars)
         
         output = {}

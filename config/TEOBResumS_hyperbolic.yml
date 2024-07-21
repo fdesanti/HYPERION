@@ -12,8 +12,8 @@ waveform_kwargs:
 
   #nqcs
   nqc                : 'manual'              #options are ["none", "manual", "auto"]
-  nqc_coefs_flx      : 'nrfit_spin202002'    #options are ["none", "nrfit_spin202002", "nrfit_nospin201602" ]
-  nqc_coefs_hlm      : 'nrfit_spin202002'    #options are ["none", "nrfit_spin202002", "nrfit_nospin201602", "compute" ]
+  nqc_coefs_flx      : 'nrfit_spin202002'    #options are ["none", "nrfit_spin202002", "nrfit_nospin201602"]
+  nqc_coefs_hlm      : 'nrfit_spin202002'    #options are ["none", "nrfit_spin202002", "nrfit_nospin201602", "compute"]
   
 
 
