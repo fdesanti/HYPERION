@@ -2,9 +2,11 @@ import os
 import yaml
 import torch
 import seaborn as sns
+
 sns.set_theme()
 sns.set_context("talk")
 
+from optparse import OptionParser
 
 from hyperion.training import *
 from hyperion.config import CONF_DIR
@@ -15,6 +17,11 @@ from hyperion.simulations import (ASD_Sampler,
 
 
 if __name__ == '__main__':
+    parser = OptionParser()
+    parser.add_option("-p", "--preload", default=False, action="store_true", help="Load a pretrained model")
+    (options, args) = parser.parse_args()
+    
+    PRELOAD = options.preload
 
     conf_yaml = CONF_DIR + '/hyperion_config.yml'
     
@@ -30,7 +37,7 @@ if __name__ == '__main__':
     WAVEFORM_MODEL = conf['waveform_model']
     PRIOR_PATH = os.path.join(CONF_DIR, conf['prior']+'.yml')
     DURATION  = conf['duration']
-
+    
 
     if torch.cuda.is_available():
         num_gpus = torch.cuda.device_count()
@@ -85,11 +92,18 @@ if __name__ == '__main__':
                                     random_seed=train_conf['seeds']['val'], 
                                     num_preload=conf['training_options']['num_preload_val'])        
         
-
+        #checkpoint directory
+        checkpoint_dir = os.path.join('training_results', 'BHBH')
+        if not os.path.exists(checkpoint_dir):
+            os.mkdir(checkpoint_dir)
+        checkpoint_filepath = os.path.join(checkpoint_dir, 'BHBH_flow_model.pt')
 
         #set up Flow model
-        prior_metadata = train_ds.prior_metadata
-        flow = build_flow(prior_metadata).to(device)
+        if not PRELOAD:
+            prior_metadata = train_ds.prior_metadata
+            flow = build_flow(prior_metadata).to(device)
+        else:
+            flow = build_flow(checkpoint_path=checkpoint_filepath).to(device)            
 
         #set up Optimizer and Learning rate schedulers
         optim_kwargs = {'params': [p for p in flow.parameters() if p.requires_grad], 
@@ -102,11 +116,6 @@ if __name__ == '__main__':
                                         kwargs = scheduler_kwargs )
         
         #set up Trainer
-        checkpoint_dir = os.path.join('training_results', 'BHBH')
-        if not os.path.exists(checkpoint_dir):
-            os.mkdir(checkpoint_dir)
-        checkpoint_filepath = os.path.join(checkpoint_dir, 'BHBH_flow_model.pt')
-
         trainer_kwargs = {'optimizer': optimizer, 
                             'scheduler':scheduler, 
                         'checkpoint_filepath':  checkpoint_filepath,

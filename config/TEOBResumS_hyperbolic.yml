@@ -38,13 +38,13 @@ parameters:
     m1:                         
       distribution: "uniform"
       kwargs:
-        minimum: 10.0
+        minimum: 30.0
         maximum: 150.0
 
     m2:                        
       distribution: "uniform"
       kwargs:
-        minimum: 10.0
+        minimum: 30.0
         maximum: 150.0
 
     H_hyp:                      # Initial E_eob

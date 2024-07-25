@@ -21,9 +21,10 @@ use_reference_asd: false #use the reference run for the ASDs
 #waveform: "EffectiveFlyByTemplate"
 waveform_model: "TEOBResumSDALI"
 
-prior: "TEOBResumS_hyperbolic"
+prior: "TEOBResumS_eccentric"
 
-inference_parameters: ["M", "q", "H_hyp", "r_hyp", "j_hyp", "distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
+#inference_parameters: ["M", "q", "H_hyp", "r_hyp", "j_hyp", "distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
+inference_parameters: ["M", "q", "ecc", "distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
 
 duration: 2 #duration in seconds for the simulated signals
 
@@ -32,21 +33,21 @@ duration: 2 #duration in seconds for the simulated signals
 # FLOW and EMBEDDING NETWORK
 #============================
 flow:
-  num_coupling_layers: 36
+  num_coupling_layers: 32
 
 coupling_layers:
-  num_features:     12
-  num_identity:     6
-  num_transformed:  6
+  num_features:     10
+  num_identity:     5
+  num_transformed:  5
 
 base_distribution:
-  dim:              12
+  dim:              10
   trainable:        false
 
 embedding_network:
   model:            "CNN+ResNet+Attention"
   kwargs:
-    num_blocks:       3
+    num_blocks:       5
     block_dims:       [2048, 1024, 512, 256]
     strain_out_dim:   256
     use_batch_norm:   false
@@ -54,7 +55,10 @@ embedding_network:
 
     #slicer kwargs
     overlap : 10
-    segment_len: 0.1
+    segment_len: 0.05
+
+    #attention kwargs
+    num_heads: 32
 
     CNN_filters:      [32, 64, 128]
     CNN_kernel_sizes: [5, 5, 5]
@@ -69,7 +73,7 @@ embedding_network:
 training_options:
   num_epochs: 600
 
-  batch_size: 512
+  batch_size: 256
 
   initial_learning_rate: 0.0001
 
@@ -77,8 +81,8 @@ training_options:
 
   val_steps_per_epoch: 150
 
-  num_preload_train: 5000
-  num_preload_val: 1000
+  num_preload_train: 1000
+  num_preload_val: 500
 
   n_proc: os.cpu_count()
 

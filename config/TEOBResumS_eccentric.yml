@@ -1,52 +1,113 @@
 
 ##########################################
-# TEOBResumS Eccentric population prior
+# TEOBResumS Eccentric prior
 ##########################################
-fs : 2048
 
+#For a list of the waveform parameters see
+# https://bitbucket.org/eob_ihes/teobresums/wiki/Conventions,%20parameters%20and%20output
 
-parameters:
+waveform_kwargs:
+  # Initial conditions and output time grid
+  domain              : 0    # Time domain. EOBSPA is not available for eccentric waveforms!
+  ecc_freq            : 1    # Use periastron (0), average (1) or apastron (2) frequency for initial condition computation. Default = 1
+  initial_frequency   : 10    # Initial frequency in Hz. Default = 0.02
+  use_mode_lm         : [1]
 
-  M:
-    distribution: "uniform"
-    kwargs:
-      minimum: 10.0
-      maximum: 300.0
-
+  #nqcs
+  nqc                : 'manual'              #options are ["none", "manual", "auto"]
+  nqc_coefs_flx      : 'nrfit_spin202002'    #options are ["none", "nrfit_spin202002", "nrfit_nospin201602"]
+  nqc_coefs_hlm      : 'nrfit_spin202002'    #options are ["none", "nrfit_spin202002", "nrfit_nospin201602", "compute"]
   
 
-  ecc:
-    distribution: "uniform"
-    kwargs:
-      minimum: 0.65
-      maximum: 0.95
 
-  time_shift:
-    distribution: "uniform"
-    minimum: -0.25
-    maximum: 0.25
+#=================================
+# INTRINSIC PARAMETERS
+#=================================
 
-  polarization:
-    distribution: "uniform"
-    minimum: 0.0
-    maximum: 3.141592653589793
+parameters:
+  intrinsic:
+    m1:                         
+      distribution: "uniform"
+      kwargs:
+        minimum: 50.0
+        maximum: 150.0
 
-  inclination:
-    distribution: "sin"
-    minimum: 0.0
-    maximum: 3.141592653589793
+    m2:                        
+      distribution: "uniform"
+      kwargs:
+        minimum: 50.0
+        maximum: 150.0
 
-  distance:
-    distribution: "uniform"
-    minimum: 10
-    maximum: 2000
-
-  ra:
-    distribution: "uniform"
-    minimum: 0.0
-    maximum: 6.283185307179586
+    ecc:
+      distribution: "uniform"
+      kwargs:
+        minimum: 0.6
+        maximum: 0.9
+      
+    inclination:
+      distribution: "sin"
+      kwargs:
+        minimum: 0.0
+        maximum: torch.pi
     
-  dec:
-    distribution: "cos"
-    minimum: -1.5707963267948966
-    maximum: 1.5707963267948966
+    coalescence_angle:
+      distribution: "uniform"
+      kwargs:
+        minimum: 0.0
+        maximum: 2 * torch.pi
+
+    #chi1:                       # Dimensionless spin of the primary
+    #  distribution: "uniform"
+    #  kwargs:
+    #    minimum: -0.1
+    #    maximum: 0.1
+    
+    #chi2:                       # Dimensionless spin of the secondary          
+    #  distribution: "uniform"
+    #  kwargs:
+    #   minimum: -0.1
+    #   maximum: 0.1
+
+#=================================
+# EXTRINSIC PARAMETERS
+#=================================
+
+  extrinsic:
+
+    time_shift:
+      distribution: "uniform"
+      #distribution: "delta"
+      kwargs:
+        #value: 0.0
+        minimum: -0.25
+        maximum: 0.25
+
+    tcoal:
+      distribution: "uniform"
+      kwargs:
+        minimum: -1
+        maximum: 1
+      
+    polarization:
+      distribution: "uniform"
+      kwargs:
+        minimum: 0.0
+        maximum: torch.pi
+
+    distance:
+      distribution: "uniform"
+      kwargs:
+        minimum: 10
+        maximum: 6000
+
+    ra:
+      distribution: "uniform"
+      kwargs:
+        minimum: 0.0
+        maximum: 2 * torch.pi
+      
+    dec:
+      distribution: "cos"
+      kwargs:
+        minimum: -torch.pi / 2
+        maximum:  torch.pi / 2

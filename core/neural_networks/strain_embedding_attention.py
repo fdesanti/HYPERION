@@ -48,7 +48,7 @@ class Slicer(nn.Module):
         
         segments = torch.stack(segments, dim = -2).unsqueeze(-1)
 
-        return segments.view(x.shape[0], 1, self.num_segments, self.segment_len) # (batch_size, 1, num_segments, segment_len)
+        return segments.view(x.shape[0], x.shape[1], self.num_segments, self.segment_len) # (batch_size, num_channels, num_segments, segment_len)
        
 
 class EmbeddingNetworkAttention(nn.Module):
@@ -63,6 +63,7 @@ class EmbeddingNetworkAttention(nn.Module):
                  dropout_probability=0.0, 
                  CNN_filters      = [32, 64, 128], 
                  CNN_kernel_sizes = [1, 5, 5],
+                 num_heads        = 32,
                  **slicer_kwargs
                  ):
         
@@ -83,7 +84,7 @@ class EmbeddingNetworkAttention(nn.Module):
         #=======================================================================
         # Construct CNN for morphology features extraction
         #=======================================================================
-        shapes = [1] + CNN_filters
+        shapes = [self.strain_channels] + CNN_filters
         CNN_layers = [nn.Sequential(
                       nn.Conv1d(in_channel, filter, kernel_size = kernel_size, stride = 1, bias = True),
                       nn.BatchNorm1d(filter, track_running_stats=False) if use_batch_norm else nn.Identity(),
@@ -94,7 +95,9 @@ class EmbeddingNetworkAttention(nn.Module):
         self.CNN = nn.Sequential(*CNN_layers)
 
         #Multihead Attention Layer
-        self.MHA = nn.MultiheadAttention(embed_dim=CNN_filters[-1], num_heads=32, batch_first=True)
+        self.MHA = nn.MultiheadAttention(embed_dim=CNN_filters[-1], 
+                                         num_heads=num_heads, 
+                                         batch_first=True)
 
         #=======================================================================
         # Construct ResNet blocks
@@ -136,7 +139,7 @@ class EmbeddingNetworkAttention(nn.Module):
         for i in range(self.num_segments):
             x_i = sliced_strain[:, :, i, :]
             x_i = self.CNN(x_i)
-            x_i = GlobalMaxPooling1D(data_format='channel_first')(x_i)
+            x_i = nn.Flatten()(x_i)#GlobalMaxPooling1D()(x_i)
             x_out.append(x_i)
         x_out = torch.stack(x_out, dim=1) # (batch_size, num_segments, CNN_filters[-1])
         
@@ -150,8 +153,12 @@ class EmbeddingNetworkAttention(nn.Module):
 
         if self.use_batch_norm:
             strain = self.initial_batch_norm(strain)
-
-        embedded_strain = torch.cat([self._single_detector_embedding(strain[:, i, ...]) for i in range(self.strain_channels)], dim = -1)
+        '''
+        embedded_strain = torch.stack([self._single_detector_embedding(strain[:, i, ...]) 
+                                for i in range(self.strain_channels)], dim=-1).sum(dim=-1)
+        '''
+        
+        
 
         embedded_strain = self.pre_resnet_linear(embedded_strain)
 
