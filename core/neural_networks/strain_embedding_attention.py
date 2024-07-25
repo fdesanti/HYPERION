@@ -128,7 +128,7 @@ class EmbeddingNetworkAttention(nn.Module):
         return self.slicer.segment_len
         
     
-    def _single_detector_embedding(self, strain):
+    def _strain_embedding(self, strain):
         """
         Embeds a single channel of the strain tensor
         """
@@ -139,7 +139,7 @@ class EmbeddingNetworkAttention(nn.Module):
         for i in range(self.num_segments):
             x_i = sliced_strain[:, :, i, :]
             x_i = self.CNN(x_i)
-            x_i = nn.Flatten()(x_i)#GlobalMaxPooling1D()(x_i)
+            x_i = GlobalMaxPooling1D(data_format='channel_last')(x_i)
             x_out.append(x_i)
         x_out = torch.stack(x_out, dim=1) # (batch_size, num_segments, CNN_filters[-1])
         
@@ -158,8 +158,8 @@ class EmbeddingNetworkAttention(nn.Module):
                                 for i in range(self.strain_channels)], dim=-1).sum(dim=-1)
         '''
         
+        embedded_strain = self._strain_embedding(strain)
         
-
         embedded_strain = self.pre_resnet_linear(embedded_strain)
 
         #Final Resnet

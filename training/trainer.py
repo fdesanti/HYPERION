@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from gwskysim.gwskysim.utilities.gwlogger import GWLogger
 
-
+from ..core.flow import build_flow
 
 
 class Trainer:
@@ -220,7 +220,9 @@ class Trainer:
                 val_loss = self._test_on_epoch(epoch)
             
             if np.isnan(train_loss) or np.isnan(val_loss):
-                self.log.error(f'Epoch {epoch} skipped due to nan loss\n')
+                self.log.error(f'Epoch {epoch} skipped due to nan loss')
+                self.log.info(f'Loading previously saved model\n')
+                self.flow = build_flow(checkpoint_path=self.checkpoint_filepath).to(self.device)
                 continue #we skip to next iteration
         
             self.log.info(f'Epoch = {epoch}  |  avg train loss = {train_loss:.3f}  |  avg val loss = {val_loss:.3f}')
