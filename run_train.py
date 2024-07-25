@@ -126,5 +126,5 @@ if __name__ == '__main__':
 
         flow_trainer = Trainer(flow, train_ds, val_ds, device=device, **trainer_kwargs)
         
-        flow_trainer.train(NUM_EPOCHS)
+        flow_trainer.train(NUM_EPOCHS, overwrite_history=False if PRELOAD else True)
         

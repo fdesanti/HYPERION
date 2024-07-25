@@ -71,13 +71,13 @@ embedding_network:
 # TRAINING options
 #============================
 training_options:
-  num_epochs: 600
+  num_epochs: 300
 
   batch_size: 256
 
   initial_learning_rate: 0.0001
 
-  steps_per_epoch: 10
+  steps_per_epoch: 1000
   val_steps_per_epoch: 150
 
   num_preload_train: 1000
