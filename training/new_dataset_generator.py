@@ -84,10 +84,7 @@ class DatasetGenerator:
         if not hasattr(self, '_means'):
             self._means = dict()
             for p in self.inference_parameters:
-                if p == 'tcoal':
-                    self._means[p] = 0.0
-                else:
-                    self._means[p] = float(self.full_prior[p].mean)
+                self._means[p] = float(self.full_prior[p].mean)
         return self._means
     
     @property
@@ -95,10 +92,7 @@ class DatasetGenerator:
         if not hasattr(self, '_stds'):
             self._stds = dict()
             for p in self.inference_parameters:
-                if p == 'tcoal':
-                    self._stds[p] = 1.0
-                else:
-                    self._stds[p] = float(self.full_prior[p].std)
+                self._stds[p] = float(self.full_prior[p].std)
         return self._stds
 
     @property
@@ -180,10 +174,7 @@ class DatasetGenerator:
         
         out_prior_samples = []
         for parameter in self.inference_parameters:
-            if parameter == 'tcoal':
-                standardized = prior_samples[parameter]
-            else:
-                standardized = self.full_prior[parameter].standardize_samples(prior_samples[parameter])
+            standardized = self.full_prior[parameter].standardize_samples(prior_samples[parameter])
             out_prior_samples.append(standardized)
             
         out_prior_samples = torch.cat(out_prior_samples, dim=-1)
@@ -275,9 +266,9 @@ class DatasetGenerator:
         
         whitened_strain = self.WhitenNet(h=h, 
                                          asd=asd, 
-                                         #noise = noise,
+                                         noise = None,
                                          time_shift=time_shifts, 
-                                         add_noise=add_noise)
+                                         add_noise=False)
 
         #standardize parameters
         prior_samples['tcoal'] = self.tcoals[idxs]['tcoal'] + prior_samples['time_shift']#add tcoal to time_shift
@@ -287,10 +278,3 @@ class DatasetGenerator:
         out_whitened_strain = torch.stack([whitened_strain[det] for det in self.det_network.detectors], dim=1)
         
         return out_prior_samples.float(), out_whitened_strain.float(), torch_asd.float()
-    
-
-
-
-
-
-

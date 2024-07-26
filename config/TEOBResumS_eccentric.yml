@@ -85,8 +85,8 @@ parameters:
     tcoal:
       distribution: "uniform"
       kwargs:
-        minimum: -1
-        maximum: 1
+        minimum: -2
+        maximum: 2
       
     polarization:
       distribution: "uniform"

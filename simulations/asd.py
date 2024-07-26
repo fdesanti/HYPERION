@@ -103,7 +103,7 @@ class ASD_Sampler():
     @property
     def asd_std(self):
         if not hasattr(self, '_asd_std'):
-            self._asd_std = 0.5 * self.asd_reference * self.df ** 0.5
+            self._asd_std = self.asd_reference * self.df ** 0.5
         return self._asd_std
 
 
@@ -113,29 +113,29 @@ class ASD_Sampler():
 
         if use_reference_asd:
             out_asd = self.asd_reference * torch.ones((batch_size, 1), device = self.device)
+            out_asd = (out_asd + 1j * out_asd) / np.sqrt(2)
 
         else:
         
             # Generate scaled random power + phase
-            mean = torch.zeros(asd_shape, device = self.device)
+            mean = torch.zeros(asd_shape, device = self.device, dtype=torch.float64)
             asd_real = torch.normal(mean=mean, std=self.asd_std, generator=self.rng)
             asd_imag = torch.normal(mean=mean, std=self.asd_std, generator=self.rng)
-        
+            
             # If the signal length is even, frequencies +/- 0.5 are equal
             # so the coefficient must be real.
-                #if not (samples % 2): si[..., -1] = 0
+            if not (self.noise_points % 2): asd_imag[..., -1] = 0
 
             # Regardless of signal length, the DC component must be real
             asd_imag[..., 0] = 0
 
             # Combine power + corrected phase to Fourier components
-            out_asd = asd_real + 1J * asd_imag
-
-                 
+            out_asd = asd_real + 1J * asd_imag 
+        
         #out_asd = torch.stack([self.asd_reference for _ in range(batch_size)])
         #out_asd = torch.mean(out_asd, axis = 0)
         if noise:
-            noise_from_asd = self.noise_points * torch.fft.irfft(out_asd, n=self.noise_points, axis=-1)
+            noise_from_asd = torch.fft.irfft(out_asd, n=self.noise_points)
             return torch.abs(out_asd), noise_from_asd
         
         return torch.abs(out_asd)

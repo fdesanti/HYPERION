@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 import multiprocessing as mp
 
 from tqdm import tqdm
@@ -59,7 +60,7 @@ class WaveformGenerator:
         self._duration = value
            
 
-    def _resize_waveform(self, t, hp, hc):
+    def _resize_waveform(self, times, t_wvf, hp, hc):
         """
         Resize the waveform to the desired duration.
         """
@@ -70,7 +71,7 @@ class WaveformGenerator:
         
         #signal is longer --> crop
         if hp.shape[-1] >= N:
-            t = t[-N:]
+            t_wvf = t_wvf[-N:]
             hp = hp[-N:]
             hc = hc[-N:]
         
@@ -84,18 +85,22 @@ class WaveformGenerator:
             hc = pad(hc, (pad_l, pad_r))
             
             #extend the time array
-            t_l = torch.linspace(-self.delta_t*pad_l, 0, pad_l, device=t.device) + t.min()
-            t_r = torch.linspace(0, self.delta_t*pad_r,  pad_r, device=t.device) + t.max()
-            t = torch.cat([t_l, t, t_r])
+            t_l = torch.linspace(-self.delta_t*pad_l, 0, pad_l, device=t_wvf.device) + t_wvf.min()
+            t_r = torch.linspace(0, self.delta_t*pad_r,  pad_r, device=t_wvf.device) + t_wvf.max()
+            t_wvf = torch.cat([t_l, t_wvf, t_r])
 
+        tcoal = np.interp(0, t_wvf, times)
         '''
         import matplotlib.pyplot as plt
-        plt.plot(t, hp)
+        #plt.plot(t, hp)
         #plt.axvline(len(t)//2, color='r')
-        plt.show()
+        print(tcoal)
+        plt.figure()
+        plt.plot(times, hp)
+        plt.axvline(tcoal, color='r')        
+        plt.savefig('waveform.png')
         '''
-        
-        return t, hp, hc
+        return hp, hc, tcoal
 
 
     def get_td_waveform(self, pars):
@@ -146,29 +151,33 @@ class WaveformGenerator:
         
         # Otherwise, we exploit multiprocessing
         else:
+            #define the analysis time segment array [-duration/2, duration/2]
+            times = np.linspace(-self.duration/2, self.duration/2, int(self.duration*self.fs))
             with mp.Pool(n_proc) as p:
                 self.parameters = parameters
                 
                 hps = []
                 hcs = []
-                t_coals = []
+                tcoals = []
                 
                 for results in tqdm(p.imap(self._get_td_waveform_mp, range(N)), total=N, ncols = 100, ascii=' ='):
-                    t = results['t']
+                    t = results['t']  #this is the time array referred to the waveform
+                                      #it has 0 places in the merger
                     hp = results['hp']
                     hc = results['hc']
 
-                    t, hp, hc = self._resize_waveform(t, hp, hc)
+                    #resize the waveform to the desired duration and get the time of coalescence
+                    hp, hc, tcoal = self._resize_waveform(times, t, hp, hc)
                     
-                    t_coals.append(-t[len(t)//2])
+                    tcoals.append(tcoal)
                     hps.append(hp)
                     hcs.append(hc)
                 
                 hps = torch.stack(hps)
                 hcs = torch.stack(hcs)
-                t_coals = torch.tensor(t_coals).unsqueeze(-1)
+                tcoals = torch.tensor(tcoals).unsqueeze(-1)
 
-        return hps, hcs, t_coals
+        return hps, hcs, tcoals
         
         
         
