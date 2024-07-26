@@ -268,7 +268,7 @@ class DatasetGenerator:
                                          asd=asd, 
                                          noise = None,
                                          time_shift=time_shifts, 
-                                         add_noise=False)
+                                         add_noise=add_noise)
 
         #standardize parameters
         prior_samples['tcoal'] = self.tcoals[idxs]['tcoal'] + prior_samples['time_shift']#add tcoal to time_shift

@@ -166,13 +166,13 @@ class Flow(nn.Module):
         for name in self.inference_parameters:
             try: #TODO: UGLY fix this
                 bounds = self.prior_metadata['parameters'][name]['kwargs']
+                min_b = eval(bounds['minimum']) if isinstance(bounds['minimum'], str) else bounds['minimum']
+                max_b = eval(bounds['maximum']) if isinstance(bounds['maximum'], str) else bounds['maximum']
+                total_mask *= ((processed_samples_dict[name]<=max_b) * (processed_samples_dict[name]>=min_b))
             except:
                 continue
 
-            min_b = eval(bounds['minimum']) if isinstance(bounds['minimum'], str) else bounds['minimum']
-            max_b = eval(bounds['maximum']) if isinstance(bounds['maximum'], str) else bounds['maximum']
             
-            total_mask *= ((processed_samples_dict[name]<=max_b) * (processed_samples_dict[name]>=min_b))
 
         for name in self.inference_parameters:
             restricted_samples_dict [name] = processed_samples_dict[name][total_mask]
