@@ -227,7 +227,7 @@ class WhitenNet:
     
     
     def whiten(self, h, asd, time_shift, noise=None, add_noise=True, 
-               fduration=2, window='hann', ncorner=0):
+               fduration=None, window='hann', ncorner=0):
         """
         Whiten the input signal and (optionally) add Gaussian noise.
         Whitening is performed by dividing the signal by its ASD in the frequency domain.
@@ -261,22 +261,23 @@ class WhitenNet:
 
             #if noise:
             #    hf += rfft(noise[det], n=self.n, fs=self.fs)
-                
-            #ht = irfft(hf, n=self.n, norm=self.n)
+            
+            #gwpy whitening method
+            ht = irfft(hf, n=self.n, norm=self.n)
+            ntaps = int((fduration * self.fs))
+            fir   = fir_from_transfer(1/asd[det], ntaps=ntaps, window=window, ncorner=ncorner)
+            whitened[det] = convolve(ht, fir, window=window) / self.noise_std
 
             #import matplotlib.pyplot as plt
             #plt.plot(noise[det][0].cpu().numpy())
             #plt.show()
 
             #whiten the signal by dividing wrt the ASD
-            hf_w = hf / asd[det]
-            #ntaps = int((fduration * self.fs))
-            #fir   = fir_from_transfer(1/asd[det], ntaps=ntaps, window=window, ncorner=ncorner)
-            #whitened[det] = convolve(ht, fir, window=window) / self.noise_std
-
+            #hf_w = hf / asd[det]
+            
             #convert back to the time domain
             # we divide by the noise standard deviation to ensure to have unit variance
-            whitened[det] = irfft(hf_w, n=self.n, norm=self.n) / self.noise_std
+            #whitened[det] = irfft(hf_w, n=self.n, norm=self.n) / self.noise_std
         
         #compute the optimal SNR
         #snr = network_optimal_snr(hf, self.PSDs, self.duration) / self.fs
