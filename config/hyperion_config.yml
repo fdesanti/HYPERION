@@ -13,7 +13,7 @@ fs: 2048 #sampling frequency Hz for simulations & inference
 
 ASD_reference_run: O3_GW190521 #reference run for the ASDs
 
-use_reference_asd: False #use the reference run for the ASDs
+use_reference_asd: True #use the reference run for the ASDs
 
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "polarization", "inclination", "time_shift", "ra", "dec"]
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "time_shift", "ra", "dec"]
@@ -84,6 +84,8 @@ training_options:
   num_preload_val: 500
 
   n_proc: os.cpu_count()
+
+  add_noise: True
 
   lr_schedule:
     #scheduler: CosineAnnealingLR

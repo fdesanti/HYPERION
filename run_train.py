@@ -117,11 +117,12 @@ if __name__ == '__main__':
         
         #set up Trainer
         trainer_kwargs = {'optimizer': optimizer, 
-                            'scheduler':scheduler, 
+                          'scheduler':scheduler, 
                         'checkpoint_filepath':  checkpoint_filepath,
                         'steps_per_epoch':      train_conf['steps_per_epoch'],
                         'val_steps_per_epoch' : train_conf['val_steps_per_epoch'],
                         'verbose':              train_conf['verbose'], 
+                        'add_noise':            train_conf['add_noise']
                         }
 
         flow_trainer = Trainer(flow, train_ds, val_ds, device=device, **trainer_kwargs)

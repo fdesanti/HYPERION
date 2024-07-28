@@ -26,6 +26,7 @@ class Trainer:
                 steps_per_epoch     = None,
                 val_steps_per_epoch = None,
                 verbose = True,
+                add_noise = True
                 ):
         
         self.device     = device
@@ -34,6 +35,7 @@ class Trainer:
         self.val_ds     = validation_dataset
         self.optimizer  = optimizer
         self.scheduler  = scheduler
+        self.add_noise  = add_noise
         
         self.checkpoint_filepath = checkpoint_filepath
         self.checkpoint_dir      = os.path.dirname(checkpoint_filepath)
@@ -65,7 +67,7 @@ class Trainer:
         for step in range(self.steps_per_epoch):
         #for parameters, strains in self.train_ds:
             #getting the trainig batch
-            parameters, strains, asd = self.train_ds.__getitem__()
+            parameters, strains, asd = self.train_ds.__getitem__(add_noise=self.add_noise)
             
             
             #training step
@@ -118,7 +120,7 @@ class Trainer:
         #for parameters, strains in self.val_ds:
             
             #getting batch
-            parameters, strains, asd = self.val_ds.__getitem__()
+            parameters, strains, asd = self.val_ds.__getitem__(add_noise=self.add_noise)
             
             #computing loss
             log_p = -self.flow.log_prob(parameters.to(self.device), strains.to(self.device), asd.to(self.device))

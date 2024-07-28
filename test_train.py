@@ -74,12 +74,13 @@ if __name__ == '__main__':
 
         #SAMPLING --------
         num_samples = 50_000
-        parameters, strain, asd = test_ds.__getitem__()
+        parameters, strain, asd = test_ds.__getitem__(add_noise=conf['training_options']['add_noise'])
         #print(asd.shape)
         plt.figure(figsize=(20, 15))
+        t = torch.arange(0, DURATION, 1/conf['fs']) - DURATION/2
         for i, det in enumerate(det_network.detectors):
             plt.subplot(3, 1, i+1)
-            plt.plot(strain[0][i].cpu().numpy())
+            plt.plot(t.cpu().numpy(), strain[0][i].cpu().numpy())
             plt.title(det)           
         plt.show()
         plt.savefig('training_results/BHBH/strain.png', dpi=200)

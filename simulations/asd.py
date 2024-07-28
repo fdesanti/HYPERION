@@ -73,7 +73,10 @@ class ASD_Sampler():
         
         #reference ASD from interpolation
         self.asd_reference = torch.from_numpy(np.interp(self.f.cpu().numpy(), asd_f, asd)).to(device)
-        
+        #import matplotlib.pyplot as plt
+        #plt.loglog(self.f.cpu(), self.asd_reference.cpu().numpy())
+        #plt.show()
+
         #other attributes
         self.device = device
 
@@ -114,6 +117,10 @@ class ASD_Sampler():
         if use_reference_asd:
             out_asd = self.asd_reference * torch.ones((batch_size, 1), device = self.device)
             out_asd = (out_asd + 1j * out_asd) / np.sqrt(2)
+            #import matplotlib.pyplot as plt
+            #plt.loglog(self.f.cpu(), abs(out_asd[0].cpu().numpy()))
+            #plt.loglog(self.f.cpu(), self.asd_reference.cpu().numpy())
+            #plt.show()
 
         else:
         

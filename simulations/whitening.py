@@ -264,15 +264,19 @@ class WhitenNet:
                 
             ht = irfft(hf, n=self.n, fs=self.fs)
 
+            #import matplotlib.pyplot as plt
+            #plt.plot(ht[0].cpu().numpy())
+            #plt.show()
+
             #whiten the signal by dividing wrt the ASD
-            #hf_w = hf / asd[det]
-            ntaps = int((fduration * self.fs))
-            fir   = fir_from_transfer(1/asd[det], ntaps=ntaps, window=window, ncorner=ncorner)
-            whitened[det] = convolve(ht, fir, window=window) / self.noise_std
+            hf_w = hf / asd[det]
+            #ntaps = int((fduration * self.fs))
+            #fir   = fir_from_transfer(1/asd[det], ntaps=ntaps, window=window, ncorner=ncorner)
+            #whitened[det] = convolve(ht, fir, window=window) / self.noise_std
 
             #convert back to the time domain
             # we divide by the noise standard deviation to ensure to have unit variance
-            #whitened[det] = irfft(hf_w, n=self.n, fs=self.fs) / self.noise_std
+            whitened[det] = irfft(hf_w, n=self.n, fs=self.fs) / self.noise_std
         
         #compute the optimal SNR
         #snr = network_optimal_snr(hf, self.PSDs, self.duration) / self.fs

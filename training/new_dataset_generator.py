@@ -247,7 +247,10 @@ class DatasetGenerator:
         time_shifts = self.det_network.time_delay_from_earth_center(ra=prior_samples['ra'], 
                                                                     dec=prior_samples['dec'])        
         
-        
+        #import matplotlib.pyplot as plt
+        #plt.figure()
+        #plt.plot(h['L1'][0].cpu().numpy())
+        #plt.show()
         for det in h.keys():
             time_shifts[det] += prior_samples['time_shift']
         

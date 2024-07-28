@@ -102,16 +102,15 @@ parameters:
       #distribution: "delta"
       kwargs:
         #value: 0.0
-        minimum: -0.25
-        maximum: 0.25
+        minimum: -0.1
+        maximum: 0.1
 
     #this is used only to standardize the samples coming from the simulations
     #with this delta distribution you have 0 mean and 1 std
     tcoal:
-      distribution: "uniform" 
+      distribution: "delta" 
       kwargs:
-        minimum: -1.0
-        maximum: 1.0
+        value: 0.0
       
 
     polarization:
