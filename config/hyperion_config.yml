@@ -11,7 +11,7 @@ reference_gps_time: 1370692818 #1242442967.4 #1370692818
 
 fs: 2048 #sampling frequency Hz for simulations & inference 
 
-ASD_reference_run: O3 #reference run for the ASDs
+ASD_reference_run: O3_GW190521 #reference run for the ASDs
 
 use_reference_asd: False #use the reference run for the ASDs
 
@@ -21,10 +21,10 @@ use_reference_asd: False #use the reference run for the ASDs
 #waveform: "EffectiveFlyByTemplate"
 waveform_model: "TEOBResumSDALI"
 
-prior: "TEOBResumS_eccentric"
+prior: "TEOBResumS_hyperbolic"
 
-#inference_parameters: ["M", "q", "H_hyp", "r_hyp", "j_hyp", "distance", "inclination", "tcoal", "ra", "dec"]
-inference_parameters: ["M", "q", "ecc", "distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
+inference_parameters: ["M", "q", "H_hyp", "r_hyp", "j_hyp", "distance", "inclination", "tcoal", "ra", "dec"]
+#inference_parameters: ["M", "q", "ecc", "distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
 
 duration: 4 #duration in seconds for the simulated signals
 

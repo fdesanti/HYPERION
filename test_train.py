@@ -44,7 +44,11 @@ if __name__ == '__main__':
         
         asd_samplers = dict()
         for ifo in conf['detectors']:
-            asd_samplers[ifo] = ASD_Sampler(ifo, device=device, fs=conf['fs'], duration=DURATION)
+            asd_samplers[ifo] = ASD_Sampler(ifo, 
+                                            device=device, 
+                                            fs=conf['fs'], 
+                                            duration=DURATION, 
+                                            reference_run=conf['ASD_reference_run'])
         
         with open(PRIOR_PATH, 'r') as f:
             prior_conf = yaml.safe_load(f)
