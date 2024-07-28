@@ -257,15 +257,15 @@ class WhitenNet:
                 ht += noise[det]
             
             #compute the frequency domain signal (template) and apply time shift
-            hf = rfft(ht, n=self.n, fs=self.fs) * torch.exp(-2j * torch.pi * self.freqs * time_shift[det]) 
+            hf = rfft(ht, n=self.n, norm=self.n) * torch.exp(-2j * torch.pi * self.freqs * time_shift[det]) 
 
             #if noise:
             #    hf += rfft(noise[det], n=self.n, fs=self.fs)
                 
-            ht = irfft(hf, n=self.n, fs=self.fs)
+            #ht = irfft(hf, n=self.n, norm=self.n)
 
             #import matplotlib.pyplot as plt
-            #plt.plot(ht[0].cpu().numpy())
+            #plt.plot(noise[det][0].cpu().numpy())
             #plt.show()
 
             #whiten the signal by dividing wrt the ASD
@@ -276,7 +276,7 @@ class WhitenNet:
 
             #convert back to the time domain
             # we divide by the noise standard deviation to ensure to have unit variance
-            whitened[det] = irfft(hf_w, n=self.n, fs=self.fs) / self.noise_std
+            whitened[det] = irfft(hf_w, n=self.n, norm=self.n) / self.noise_std
         
         #compute the optimal SNR
         #snr = network_optimal_snr(hf, self.PSDs, self.duration) / self.fs

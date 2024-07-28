@@ -50,7 +50,7 @@ embedding_network:
     num_blocks:       5
     block_dims:       [2048, 1024, 512, 256]
     strain_out_dim:   256
-    use_batch_norm:   false
+    use_batch_norm:   true
     dropout_probability: 0.2
 
     #slicer kwargs
@@ -88,16 +88,16 @@ training_options:
   add_noise: True
 
   lr_schedule:
-    #scheduler: CosineAnnealingLR
-    #kwargs:
-    #  T_max: 250 #has to be equal to num_epochs
-    
-    scheduler: ReduceLROnPlateau
+    scheduler: CosineAnnealingLR
     kwargs:
-      factor:    0.5
-      patience:  15
-      mode:      min
-      threshold: 0
+      T_max: 300 #has to be equal to num_epochs
+    
+    #scheduler: ReduceLROnPlateau
+    #kwargs:
+    #  factor:    0.5
+    #  patience:  15
+    #  mode:      min
+    #  threshold: 0
     
   optimizer:
     algorithm: Adam
