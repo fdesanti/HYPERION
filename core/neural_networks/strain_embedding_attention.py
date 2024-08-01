@@ -79,7 +79,7 @@ class EmbeddingNetworkAttention(nn.Module):
         
         self.use_batch_norm = use_batch_norm
         if use_batch_norm:
-            self.initial_batch_norm = nn.BatchNorm1d(self.strain_channels, track_running_stats=False)
+            self.initial_batch_norm = nn.BatchNorm1d(self.strain_channels)
 
         #=======================================================================
         # Construct CNN for morphology features extraction
@@ -108,7 +108,7 @@ class EmbeddingNetworkAttention(nn.Module):
             for _ in range(num_blocks):
                 self.residual_blocks.append( ResBlock(input_dim=input_dim, 
                                                       output_dim=block_dim, 
-                                                      use_batch_norm=False, 
+                                                      use_batch_norm=use_batch_norm, 
                                                       activation=activation,
                                                       dropout_probability= dropout_probability) )
                 input_dim = block_dim
