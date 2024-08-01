@@ -1,4 +1,7 @@
-"""FFT Wrappers to torch.fft.fft to reproduce same results as pycbc"""
+"""
+FFT Wrappers to torch.fft.fft to reproduce same results as pycbc/gwpy
+(See e.g. the fft() method in gwpy.timeseries.TimeSeries class)
+"""
 
 import torch
 

@@ -2,11 +2,11 @@ import torch
 from tensordict import TensorDict
 from torch.distributions import Gamma
 
-N_ = int(1e6)
+N_ = int(1e7)
 
-###########################
+#=======================================
 # Rand Wrapper Class
-###########################
+#=======================================
 class Rand():
     """
     Wrapper class to torch.rand to explot a random generator with a fixed seed
@@ -26,9 +26,9 @@ class Rand():
 
 
 
-################################
+#=======================================
 # Analytical Prior Distributions
-################################
+#=======================================
 class BasePrior():
     """Base class for Prior Distributions"""
     
@@ -287,9 +287,27 @@ class PowerLawPrior(BasePrior):
         return samples
     
     
-###########################
+class GammaPrior(BasePrior):
+    def __init__(self, concentration=1.0, rate=1.0, device = 'cpu', seed = None):
+        super(GammaPrior, self).__init__(0, concentration, device, seed)
+        self.concentration = torch.as_tensor(concentration, device = device)
+        self.rate = torch.as_tensor(rate, device = device)
+        self.Gamma = Gamma(self.concentration, self.rate)
+        return
+    
+    def sample(self, sample_shape, standardize = False, dtype=None ):
+        
+        if isinstance(sample_shape, int):
+            sample_shape = (1, sample_shape)
+            return self.Gamma.sample(sample_shape).squeeze()
+        else:
+            return self.Gamma.sample(sample_shape)
+
+    
+    
+#=======================================
 # GW Prior Distributions
-###########################    
+#=======================================    
     
 class M_uniform_in_components(BasePrior):
     """Class that manages total Mass M prior from uniform distributed masses"""
@@ -382,22 +400,51 @@ class q_uniform_in_components(BasePrior):
         return q
     
     
+class Mchirp_uniform_in_components(BasePrior):
+    """
+    Class that manages Chirp Mass Mchirp prior from uniform distributed masses.
     
-class GammaPrior(BasePrior):
-    def __init__(self, concentration=1.0, rate=1.0, device = 'cpu', seed = None):
-        super(GammaPrior, self).__init__(0, concentration, device, seed)
-        self.concentration = torch.as_tensor(concentration, device = device)
-        self.rate = torch.as_tensor(rate, device = device)
-        self.Gamma = Gamma(self.concentration, self.rate)
+    Note:
+    -----
+        This prior differs from the usual p(Mchirp) \propto Mchirp given that 
+        we sample Mchirp from uniformly distributed masses m1, m2.
+    """
+    
+    def __init__(self, m1, m2):
+        assert isinstance(m1, UniformPrior), "m1 is not an instance of UniformPrior"
+        assert isinstance(m2, UniformPrior), "m2 is not an instance of UniformPrior"
+        
+        self.m1 = m1
+        self.m2 = m2
+        minimum = float((m1.minimum*m2.minimum)**(3/5)/(m1.minimum+m2.minimum)**(1/5))
+        maximum = float((m1.maximum*m2.maximum)**(3/5)/(m1.maximum+m2.maximum)**(1/5))
+        super(Mchirp_uniform_in_components, self).__init__(minimum, maximum, m1.device)
         return
     
-    def sample(self, sample_shape, standardize = False, dtype=None ):
-        
-        if isinstance(sample_shape, int):
-            sample_shape = (1, sample_shape)
-            return self.Gamma.sample(sample_shape).squeeze()
-        else:
-            return self.Gamma.sample(sample_shape)
+    @property
+    def name(self):
+        return 'Mchirp'
+    
+    @property
+    def mean(self):
+        if not hasattr(self, '_mean'):
+            self._mean = self.sample(N_).mean()
+        return self._mean
+    
+    @property
+    def std(self):
+        if not hasattr(self, '_std'):
+            self._std = self.sample(N_).std()
+        return self._std
+    
+    def sample(self, sample_shape, standardize = False, dtype=None):
+        m1 = self.m1.sample(sample_shape, dtype=dtype)
+        m2 = self.m2.sample(sample_shape, dtype=dtype)
+        Mchirp = (m1*m2)**(3/5)/(m1+m2)**(1/5)
+        if standardize:
+            Mchirp = self.standardize_samples(Mchirp)
+        return Mchirp
+    
 
 
 prior_dict_ = {'uniform'  : UniformPrior, 
@@ -406,11 +453,14 @@ prior_dict_ = {'uniform'  : UniformPrior,
                'sin'      : SinePrior, 
                'power-law': PowerLawPrior, 
                'gamma'    : GammaPrior,
-               'M' : M_uniform_in_components, 
-               'q' : q_uniform_in_components}
+               'M'        : M_uniform_in_components, 
+               'q'        : q_uniform_in_components,
+               'Mchirp'   : Mchirp_uniform_in_components}
 
 
-    
+#=======================================
+# Multivariate Prior
+#=======================================  
 class MultivariatePrior():
     """
     Class that manages a multivariate (i.e. multiparameter) Prior
