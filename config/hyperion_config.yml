@@ -21,10 +21,10 @@ use_reference_asd: False #use the reference run for the ASDs
 #waveform: "EffectiveFlyByTemplate"
 waveform_model: "TEOBResumSDALI"
 
-prior: "TEOBResumS_hyperbolic"
+prior: "TEOBResumS_eccentric"
 
-inference_parameters: ["M", "q", "H_hyp", "r_hyp", "j_hyp", "distance", "inclination", "polarization", "coalescence_angle","tcoal", "ra", "dec"]
-#inference_parameters: ["M", "q", "ecc", "distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
+#inference_parameters: ["M", "q", "H_hyp", "r_hyp", "j_hyp", "distance", "inclination", "polarization", "coalescence_angle","tcoal", "ra", "dec"]
+inference_parameters: ["M", "q", "ecc", "distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
 
 duration: 4 #duration in seconds for the simulated signals
 
@@ -33,15 +33,15 @@ duration: 4 #duration in seconds for the simulated signals
 # FLOW and EMBEDDING NETWORK
 #============================
 flow:
-  num_coupling_layers: 36
+  num_coupling_layers: 32
 
 coupling_layers:
-  num_features:     12
-  num_identity:     6
-  num_transformed:  6
+  num_features:     10
+  num_identity:     5
+  num_transformed:  5
 
 base_distribution:
-  dim:              12
+  dim:              10
   trainable:        false
 
 embedding_network:

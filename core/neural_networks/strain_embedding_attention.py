@@ -108,7 +108,7 @@ class EmbeddingNetworkAttention(nn.Module):
             for _ in range(num_blocks):
                 self.residual_blocks.append( ResBlock(input_dim=input_dim, 
                                                       output_dim=block_dim, 
-                                                      use_batch_norm=use_batch_norm, 
+                                                      use_batch_norm=False, 
                                                       activation=activation,
                                                       dropout_probability= dropout_probability) )
                 input_dim = block_dim
