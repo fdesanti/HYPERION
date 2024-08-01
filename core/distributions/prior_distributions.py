@@ -34,14 +34,37 @@ class BasePrior():
     
     def __init__(self, minimum=None, maximum=None , device = 'cpu', seed = None):
 
-        assert maximum >= minimum, f"high must be >= than low, given {maximum} and {minimum} respectively"
         
         self.device  = device
-        self.minimum = torch.tensor(minimum).to(device)
-        self.maximum = torch.tensor(maximum).to(device)
+        self.minimum = minimum
+        self.maximum = maximum
         self.rand = Rand(seed, device)
+        
+        assert self.maximum >= self.minimum, f"maximum must be >= than minimum, given {maximum} and {minimum} respectively"
+
         return
     
+    @property
+    def minimum(self):
+        return self._minimum
+    @minimum.setter
+    def minimum(self, value):
+        if value:
+            self._minimum = torch.tensor(value).to(self.device)
+        else:
+            self._minimum = self.sample((N_)).min()
+    
+    @property
+    def maximum(self):
+        return self._maximum
+    @maximum.setter
+    def maximum(self, value):
+        if value:
+            self._maximum = torch.tensor(value).to(self.device)
+        else:
+            self._maximum = self.sample((N_)).max()
+        
+        
     @property
     def mean(self):
         #print('default')
@@ -288,20 +311,47 @@ class PowerLawPrior(BasePrior):
     
     
 class GammaPrior(BasePrior):
-    def __init__(self, concentration=1.0, rate=1.0, device = 'cpu', seed = None):
-        super(GammaPrior, self).__init__(0, concentration, device, seed)
-        self.concentration = torch.as_tensor(concentration, device = device)
-        self.rate = torch.as_tensor(rate, device = device)
+    """Gamma Prior distribution
+    Wrapper to torch.distributions.Gamma
+    
+    Args:
+    -----
+        concentration (float): concentration parameter
+        rate (float)         : rate parameter
+        scale (float)        : scaling factor. (Default: 1)
+    
+    Note:
+    -----
+        The scaling factor is used to rescale the samples from the Gamma distribution and 
+        it is useful when this prior is used as an SNR distribution
+    """
+    
+    def __init__(self, concentration=1.0, rate=1.0, scale=1, device = 'cpu', seed = None):
+        self.concentration = torch.as_tensor(concentration, device = device).float()
+        self.rate  = torch.as_tensor(rate,  device=device).float()
+        self.scale = torch.as_tensor(scale, device=device).float()
         self.Gamma = Gamma(self.concentration, self.rate)
+        
+        super(GammaPrior, self).__init__(None, None, device, seed)
         return
     
-    def sample(self, sample_shape, standardize = False, dtype=None ):
+    def sample(self, sample_shape, standardize=False, dtype=None):
         
+        #check shape: torch.distributions does not accept 1D samples
         if isinstance(sample_shape, int):
             sample_shape = (1, sample_shape)
-            return self.Gamma.sample(sample_shape).squeeze()
+            samples = self.Gamma.sample(sample_shape).squeeze()
         else:
-            return self.Gamma.sample(sample_shape)
+            samples = self.Gamma.sample(sample_shape)
+        
+        #multiply by the scaling factor
+        samples *= self.scale
+        
+        #eventually standardize
+        if standardize:
+            samples = self.standardize_samples(samples)
+        
+        return samples
 
     
     
