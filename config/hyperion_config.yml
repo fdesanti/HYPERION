@@ -13,7 +13,7 @@ fs: 2048 #sampling frequency Hz for simulations & inference
 
 ASD_reference_run: O3_GW190521 #reference run for the ASDs
 
-use_reference_asd: True #use the reference run for the ASDs
+use_reference_asd: False #use the reference run for the ASDs
 
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "polarization", "inclination", "time_shift", "ra", "dec"]
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "time_shift", "ra", "dec"]
@@ -23,7 +23,7 @@ waveform_model: "TEOBResumSDALI"
 
 prior: "TEOBResumS_hyperbolic"
 
-inference_parameters: ["M", "q", "H_hyp", "r_hyp", "j_hyp", "distance", "inclination", "tcoal", "ra", "dec"]
+inference_parameters: ["M", "q", "H_hyp", "r_hyp", "j_hyp", "distance", "inclination", "polarization", "coalescence_angle","tcoal", "ra", "dec"]
 #inference_parameters: ["M", "q", "ecc", "distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
 
 duration: 4 #duration in seconds for the simulated signals
@@ -36,12 +36,12 @@ flow:
   num_coupling_layers: 32
 
 coupling_layers:
-  num_features:     10
-  num_identity:     5
-  num_transformed:  5
+  num_features:     12
+  num_identity:     6
+  num_transformed:  6
 
 base_distribution:
-  dim:              10
+  dim:              12
   trainable:        false
 
 embedding_network:
@@ -88,16 +88,16 @@ training_options:
   add_noise: True
 
   lr_schedule:
-    scheduler: CosineAnnealingLR
-    kwargs:
-      T_max: 300 #has to be equal to num_epochs
-    
-    #scheduler: ReduceLROnPlateau
+    #scheduler: CosineAnnealingLR
     #kwargs:
-    #  factor:    0.5
-    #  patience:  15
-    #  mode:      min
-    #  threshold: 0
+    #  T_max: 300 #has to be equal to num_epochs
+    
+    scheduler: ReduceLROnPlateau
+    kwargs:
+      factor:    0.5
+      patience:  20
+      mode:      min
+      threshold: 0
     
   optimizer:
     algorithm: Adam

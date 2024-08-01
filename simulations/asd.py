@@ -4,7 +4,7 @@ import torch
 import numpy as np
 
 from ..config import CONF_DIR
-from ..core.fft import rfftfreq
+from ..core.fft import rfftfreq, irfft
 
 
 class ASD_Sampler():
@@ -142,7 +142,11 @@ class ASD_Sampler():
         #out_asd = torch.stack([self.asd_reference for _ in range(batch_size)])
         #out_asd = torch.mean(out_asd, axis = 0)
         if noise:
-            noise_from_asd = torch.fft.irfft(out_asd, n=self.noise_points)
+            noise_from_asd = irfft(out_asd, n=self.noise_points)
+            #import matplotlib.pyplot as plt
+            #plt.loglog(self.f.cpu(), abs(out_asd[0].cpu().numpy()))
+            #plt.plot(noise_from_asd[0].cpu().numpy())
+            #plt.show()
             return torch.abs(out_asd), noise_from_asd
         
         return torch.abs(out_asd)
