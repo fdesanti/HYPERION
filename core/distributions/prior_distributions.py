@@ -32,14 +32,13 @@ class Rand():
 class BasePrior():
     """Base class for Prior Distributions"""
     
-    def __init__(self, minimum=None, maximum=None , device = 'cpu', seed = None):
+    def __init__(self, minimum=None, maximum=None, device = 'cpu', seed = None):
 
         
         self.device  = device
+        self.rand    = Rand(seed, device)
         self.minimum = minimum
         self.maximum = maximum
-        self.rand = Rand(seed, device)
-        
         assert self.maximum >= self.minimum, f"maximum must be >= than minimum, given {maximum} and {minimum} respectively"
 
         return
@@ -49,7 +48,7 @@ class BasePrior():
         return self._minimum
     @minimum.setter
     def minimum(self, value):
-        if value:
+        if value is not None:
             self._minimum = torch.tensor(value).to(self.device)
         else:
             self._minimum = self.sample((N_)).min()
@@ -59,7 +58,7 @@ class BasePrior():
         return self._maximum
     @maximum.setter
     def maximum(self, value):
-        if value:
+        if value is not None:
             self._maximum = torch.tensor(value).to(self.device)
         else:
             self._maximum = self.sample((N_)).max()
@@ -221,7 +220,7 @@ class SinePrior(BasePrior):
     """Uniform in Sine Prior distribution"""
     
     def __init__(self, minimum=0, maximum=torch.pi , device = 'cpu', seed = None):
-        """Cosine prior with bounds
+        """Sine prior with bounds
         """
         super(SinePrior, self).__init__(minimum, maximum, device, seed)
         return
