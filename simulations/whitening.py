@@ -226,7 +226,7 @@ class WhitenNet:
         return h
     
     
-    def whiten(self, h, asd, time_shift, noise=None, add_noise=True, 
+    def whiten(self, h, asd, time_shift=None, noise=None, add_noise=True, 
                fduration=None, window='hann', ncorner=0):
         """
         Whiten the input signal and (optionally) add Gaussian noise.
@@ -236,7 +236,7 @@ class WhitenNet:
         -----
             h (TensorDict)          : input signal(s) from different detectors
             asd (TensorDict)        : ASD of the noise for each detector
-            time_shift (TensorDict) : time shift for each detector
+            time_shift (TensorDict) : time shift for each detector. (Default is None)
             noise (TensorDict)      : Gaussian noise to add to the input template(s) - Mutually 
                                       exclusive with the 'add_noise' argument.
             add_noise (bool)        : whether to add Gaussian noise to the whitened signal(s)
@@ -256,8 +256,9 @@ class WhitenNet:
             if noise:
                 ht += noise[det]
             
-            #compute the frequency domain signal (template) and apply time shift
-            hf = rfft(ht, n=self.n, norm=self.n) * torch.exp(-2j * torch.pi * self.freqs * time_shift[det]) 
+            #compute the frequency domain signal (template) and (optionally) apply time shift
+            shift = time_shift[det] if time_shift is not None else 0
+            hf = rfft(ht, n=self.n, norm=self.n) * torch.exp(-2j * torch.pi * self.freqs * shift) 
 
             #if noise:
             #    hf += rfft(noise[det], n=self.n, fs=self.fs)
