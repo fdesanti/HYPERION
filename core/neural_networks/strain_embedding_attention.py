@@ -55,6 +55,7 @@ class EmbeddingNetworkAttention(nn.Module):
 
     def __init__(self, 
                  strain_shape : list, 
+                 fs           : int,
                  num_blocks   = 3,
                  block_dims :list = [2048, 1024, 512, 256], 
                  strain_out_dim = 256,
@@ -63,15 +64,18 @@ class EmbeddingNetworkAttention(nn.Module):
                  dropout_probability=0.0, 
                  CNN_filters      = [32, 64, 128], 
                  CNN_kernel_sizes = [1, 5, 5],
-                 num_heads        = 32,
-                 **slicer_kwargs, 
+                 **kwargs,
                  ):
         
         super(EmbeddingNetworkAttention, self).__init__()
         
-        fs = slicer_kwargs.get('fs', 2048)
-        overlap = slicer_kwargs.get('overlap', 0.0)
-        segment_len = slicer_kwargs.get('segment_len', 0.1)
+        #slicer kwargs
+        overlap = kwargs.get('overlap', 15.0)
+        segment_len = kwargs.get('segment_len', 0.1)
+        
+        #attention kwargs
+        num_heads   = kwargs.get('num_heads', 32)
+        add_bias_kv = kwargs.get('add_bias_kv', False)
 
 
         self.strain_channels, self.strain_length = strain_shape
@@ -97,6 +101,8 @@ class EmbeddingNetworkAttention(nn.Module):
         #Multihead Attention Layer
         self.MHA = nn.MultiheadAttention(embed_dim=CNN_filters[-1], 
                                          num_heads=num_heads, 
+                                         add_bias_kv=add_bias_kv,
+                                         dropout=dropout_probability,
                                          batch_first=True)
 
         #=======================================================================

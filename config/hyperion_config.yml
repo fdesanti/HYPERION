@@ -53,12 +53,13 @@ embedding_network:
     use_batch_norm:   true
     dropout_probability: 0.2
 
-    #slicer kwargs
+    #slicer kwargs:
     overlap : 15
     segment_len: 0.1
 
     #attention kwargs
     num_heads: 32
+    add_bias_kv: true
 
     CNN_filters:      [32, 64, 128]
     CNN_kernel_sizes: [5, 5, 5]
