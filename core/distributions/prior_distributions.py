@@ -522,10 +522,23 @@ class MultivariatePrior():
     
     """
     
-    def __init__(self, prior_dict, seed = None, device = 'cpu'):
+    def __init__(self, prior_dict, seed=None, device='cpu'):
         
-        self.priors = self._load_priors(prior_dict, seed, device)
-        self.names  = list(prior_dict.keys())
+        """
+        Constructor Args:
+        -----------------
+            prior_dict (dict): dictionary containing Prior distribution instances / dictionary metadata
+            seed (int): seed for reproducibility
+            device (str): either "cpu" or "cuda" for the device to run the code. (Default: 'cpu')        
+        """
+        
+        self.prior_dict = prior_dict
+        self.seed   = seed
+        self.device = device
+        
+        self.priors = self._load_priors(self.prior_dict, self.seed, self.device)
+        self.names  = list(self.prior_dict.keys())
+
         return
     
     @staticmethod
@@ -553,6 +566,14 @@ class MultivariatePrior():
             priors[par] = prior_dict_[dist_name](**kwargs)
 
         return priors
+    
+    def add_prior(self, new_prior_dict, seed=None):
+        
+        prior_dict = self.prior_dict.copy()
+        prior_dict.update(new_prior_dict)    
+        self.__init__(prior_dict, seed, self.device)
+        
+        return self
     
     def log_prob(self, samples):
         """Samples must be a dictionary containing a set of parameter samples of shape [Nbatch, 1]"""
