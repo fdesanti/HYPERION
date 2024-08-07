@@ -83,7 +83,8 @@ if __name__ == '__main__':
                             'inference_parameters': conf['inference_parameters'],
                             'prior_filepath': PRIOR_PATH, 
                             'n_proc': eval(conf['training_options']['n_proc']),
-                            'use_reference_asd': conf['use_reference_asd']}
+                            'use_reference_asd': conf['use_reference_asd'], 
+                            'whiten_kwargs': conf['training_options']['whiten_kwargs']}
 
         train_ds = DatasetGenerator(**dataset_kwargs,
                                     random_seed=train_conf['seeds']['train'], 

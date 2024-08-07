@@ -42,7 +42,8 @@ class DatasetGenerator:
                  num_preload     = 1000,
                  n_proc          = 10,
                  use_reference_asd = False,
-                 inference_parameters = None,
+                 inference_parameters = None, 
+                 whiten_kwargs = None,
                  ):
         """
         Constructor.
@@ -55,8 +56,11 @@ class DatasetGenerator:
         self.inference_parameters = inference_parameters
         self.det_network          = det_network
         self.n_proc               = n_proc
-    
         self.use_reference_asd    = use_reference_asd
+        #self.whiten_kwargs        = whiten_kwargs
+        #print(self.whiten_kwargs)
+        self.whitening_method     = whiten_kwargs.get('method', 'gwpy')
+        self.whitening_normalize  = whiten_kwargs.get('normalize', True)
 
         assert num_preload >= batch_size, 'The number of waveform to preload must be greater than batch_size'
         self.num_preload = num_preload
@@ -269,9 +273,11 @@ class DatasetGenerator:
         
         whitened_strain = self.WhitenNet(h=h, 
                                          asd=asd, 
-                                         noise = None,
+                                         noise=None,
                                          time_shift=time_shifts, 
-                                         add_noise=add_noise)
+                                         add_noise=add_noise, 
+                                         method=self.whitening_method,
+                                         normalize=self.whitening_normalize)
 
         #standardize parameters
         prior_samples['tcoal'] = self.tcoals[idxs]['tcoal'] + prior_samples['time_shift']#add tcoal to time_shift

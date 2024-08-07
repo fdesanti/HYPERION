@@ -64,7 +64,7 @@ class EmbeddingNetworkAttention(nn.Module):
                  CNN_filters      = [32, 64, 128], 
                  CNN_kernel_sizes = [1, 5, 5],
                  num_heads        = 32,
-                 **slicer_kwargs
+                 **slicer_kwargs, 
                  ):
         
         super(EmbeddingNetworkAttention, self).__init__()
@@ -79,7 +79,7 @@ class EmbeddingNetworkAttention(nn.Module):
         
         self.use_batch_norm = use_batch_norm
         if use_batch_norm:
-            self.initial_batch_norm = nn.BatchNorm1d(self.strain_channels)
+            self.initial_batch_norm = nn.BatchNorm1d(self.strain_channels, track_running_stats=False)
 
         #=======================================================================
         # Construct CNN for morphology features extraction

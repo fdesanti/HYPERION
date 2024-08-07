@@ -9,7 +9,7 @@
 waveform_kwargs:
   # Initial conditions and output time grid
   domain              : 0         # Time domain. EOBSPA is not available for eccentric waveforms!
-  initial_frequency   : 10        # Initial frequency in Hz. Default = 0.02
+  initial_frequency   : 5      # Initial frequency in Hz. Default = 0.02
   #nqcs
   nqc                : 'manual'              #options are ["none", "manual", "auto"]
   nqc_coefs_flx      : 'nrfit_spin202002'    #options are ["none", "nrfit_spin202002", "nrfit_nospin201602"]
@@ -38,34 +38,34 @@ parameters:
     m1:                         
       distribution: "uniform"
       kwargs:
-        minimum: 30.0
+        minimum: 50.0
         maximum: 150.0
 
     m2:                        
       distribution: "uniform"
       kwargs:
-        minimum: 30.0
+        minimum: 50.0
         maximum: 150.0
 
     H_hyp:                      # Initial E_eob
       distribution: "uniform"
       kwargs:
-        minimum: 1.0
+        minimum: 1.001
         maximum: 1.01
       
     j_hyp:                      # initial pphi_eob (angular momentum)
-      #distribution: "delta"
-      distribution: "uniform"
+      distribution: "delta"
+      #distribution: "uniform"
       kwargs:
-        #value: 4.0
-        minimum: 3.99
-        maximum: 4.1
+        value: 4.0
+        #minimum: 3.95
+        #maximum: 4.05
 
     r_hyp:                      # initial ratial separation
       distribution: "uniform"
       kwargs:
         minimum: 10
-        maximum: 500
+        maximum: 100
 
     inclination:
       distribution: "sin"
@@ -102,8 +102,8 @@ parameters:
       #distribution: "delta"
       kwargs:
         #value: 0.0
-        minimum: -0.1
-        maximum: 0.1
+        minimum: -0.25
+        maximum: 0.25
 
     #this is used only to standardize the samples coming from the simulations
     #with this delta distribution you have 0 mean and 1 std

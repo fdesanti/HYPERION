@@ -203,7 +203,7 @@ class WhitenNet:
         return self._delta_f
 
     
-    def add_gaussian_noise(self, h):
+    def add_gaussian_noise(self, h, normalize):
         """
         Adds gaussian noise to the whitened signal(s).
         To ensure that noise follows a N(0, 1) distribution we divide by the noise standard deviation
@@ -212,6 +212,7 @@ class WhitenNet:
         Args:
         -----
             h (dict of torch.Tensor): whitened signals
+            normalized (bool)       : whether to normalize the noise to have unit variance
         """
         
         for det in h.keys():
@@ -219,7 +220,10 @@ class WhitenNet:
             noise = torch.normal(mean=torch.ones_like(h[det])*self.noise_mean, 
                                  std =torch.ones_like(h[det])*self.noise_std, 
                                  generator=self.rng)
-            h[det] += noise / self.noise_std
+            if normalize:
+                noise /= self.noise_std
+            
+            h[det] += noise 
             
             #h[det] += torch.randn_like(h[det])
             
@@ -227,7 +231,7 @@ class WhitenNet:
     
     
     def whiten(self, h, asd, time_shift=None, noise=None, add_noise=True, 
-               fduration=None, window='hann', ncorner=0):
+               fduration=None, window='hann', ncorner=0, normalize=True, method='gwpy'):
         """
         Whiten the input signal and (optionally) add Gaussian noise.
         Whitening is performed by dividing the signal by its ASD in the frequency domain.
@@ -240,17 +244,23 @@ class WhitenNet:
             noise (TensorDict)      : Gaussian noise to add to the input template(s) - Mutually 
                                       exclusive with the 'add_noise' argument.
             add_noise (bool)        : whether to add Gaussian noise to the whitened signal(s)
+            normalize (bool)       : whether to normalize the whitened signal(s) to have unit variance
+            method (str)            : method to use for whitening
+                                      If "gwpy" constructs the FIR as in gwpy.
+                                      Otherwise when "pycbc" just divide the frequency domain
+                                      with the ASD. (Default is 'gwpy')
 
         Returns:
         --------
             whitened (TensorDict)   : whitened signal(s) (with added noise).
         """
-        if not fduration:
-            fduration = self.duration
+        
+        fft_norm = self.n if method == 'gwpy' else self.fs
 
-        #hf = {}
+        #define the output whitened strain tensordict
+        #we copy h so that it lies on the same device as the input
         whitened = h.copy()
-
+        
         for det in h.keys():
             ht = h[det] #* tukey(self.n, alpha=0.01, device=self.device)
             if noise:
@@ -258,32 +268,34 @@ class WhitenNet:
             
             #compute the frequency domain signal (template) and (optionally) apply time shift
             shift = time_shift[det] if time_shift is not None else 0
-            hf = rfft(ht, n=self.n, norm=self.n) * torch.exp(-2j * torch.pi * self.freqs * shift) 
+            hf = rfft(ht, n=self.n, norm=fft_norm) * torch.exp(-2j * torch.pi * self.freqs * shift) 
 
             #if noise:
             #    hf += rfft(noise[det], n=self.n, fs=self.fs)
             
             #gwpy whitening method
-            ht = irfft(hf, n=self.n, norm=self.n)
-            ntaps = int((fduration * self.fs))
-            fir   = fir_from_transfer(1/asd[det], ntaps=ntaps, window=window, ncorner=ncorner)
-            whitened[det] = convolve(ht, fir, window=window) / self.noise_std
-
-            #import matplotlib.pyplot as plt
-            #plt.plot(noise[det][0].cpu().numpy())
-            #plt.show()
-
-            #whiten the signal by dividing wrt the ASD
-            #hf_w = hf / asd[det]
+            if method == 'gwpy':
+                if not fduration:
+                    fduration = self.duration
+                ht = irfft(hf, n=self.n, norm=fft_norm)
+                ntaps = int((fduration * self.fs))
+                fir   = fir_from_transfer(1/asd[det], ntaps=ntaps, window=window, ncorner=ncorner)
+                whitened[det] = convolve(ht, fir, window=window)
             
-            #convert back to the time domain
-            # we divide by the noise standard deviation to ensure to have unit variance
-            #whitened[det] = irfft(hf_w, n=self.n, norm=self.n) / self.noise_std
+            else:
+                #whiten the signal by dividing wrt the ASD
+                hf_w = hf / asd[det]
+                
+                #convert back to the time domain
+                # we divide by the noise standard deviation to ensure to have unit variance
+                whitened[det] = irfft(hf_w, n=self.n, norm=fft_norm) 
+            
+            if normalize:
+                whitened[det] /= self.noise_std
         
-        #compute the optimal SNR
-        #snr = network_optimal_snr(hf, self.PSDs, self.duration) / self.fs
+        
         if add_noise and not noise:
-            whitened = self.add_gaussian_noise(whitened)
+            whitened = self.add_gaussian_noise(whitened, normalize)
         
         return whitened
     
