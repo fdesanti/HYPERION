@@ -1,8 +1,11 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+
 from torch.distributions import Normal as torchNormal
 from torch.distributions import VonMises as torchVonMises
 from torch.distributions import MultivariateNormal as torchMultivariateNormal
+
 
 class MultivariateNormalBase(nn.Module):
     """Multivariate Normal the base distribution for the flow. 
@@ -39,7 +42,7 @@ class MultivariateNormalBase(nn.Module):
         
         if self.trainable:
             self.mean = nn.Parameter(torch.zeros(self.dim))
-            self.var  = nn.Parameter(torch.eye(self.dim))
+            self.var  = nn.Parameter(torch.randint(1, 6, (self.dim,)) * torch.eye(self.dim))
         else:
             self.register_buffer("mean", torch.zeros(self.dim))
             self.register_buffer("var",  torch.eye(self.dim))
@@ -54,13 +57,66 @@ class MultivariateNormalBase(nn.Module):
         if samples.shape[1] != self.dim:
             raise ValueError(f'Wrong samples dim. Expected (batch_size, {self.dim}) and got {samples.dim}')
         
-    
         return self.MultivariateNormal.log_prob(samples)
     
     def sample(self, num_samples):
         
         #by default .samples returns [1, num_samples, dim] so we delete 1 dimension
         return self.MultivariateNormal.sample((1,num_samples)).squeeze(0)
+    
+
+
+class MultivariateGaussianMixture(nn.Module):
+    """Mixture of Multivariate Normal the base distribution for the flow."""
+
+    def __init__(self, 
+                 num_components :int  =  2,
+                 dim            :int  =  10,
+                 trainable      :bool = True,
+                 ):
+        super(MultivariateGaussianMixture, self).__init__()
+        self.num_components = num_components
+        self.dim            = dim
+        self.trainable      = trainable
+
+        #initialize the mixture components
+        self.mixture_components = nn.ModuleList([MultivariateNormalBase(dim, trainable) for _ in range(num_components)])
+        
+        if trainable:
+            self.mixture_weights = nn.Parameter(torch.randn(num_components))
+        else:
+            self.register_buffer("mixture_weights", torch.ones(num_components)/num_components)
+        return
+    
+    def log_prob(self, samples):
+        """assumes that samples have dim (Nbatch, self.dim) ie 1 sample per batch"""
+        
+        if samples.shape[1] != self.dim:
+            raise ValueError(f'Wrong samples dim. Expected (batch_size, {self.dim}) and got {samples.dim}')
+        
+        weights  = F.softmax(self.mixture_weights, dim=0)
+
+        log_prob = [weights[i].log() + self.mixture_components[i].log_prob(samples) for i in range(self.num_components)]
+        
+        return torch.sum(torch.stack(log_prob, axis=0), axis=0)
+    
+    def sample(self, num_samples):
+        #sample the component
+        weights  = F.softmax(self.mixture_weights, dim=0)
+        component_samples = torch.multinomial(weights, num_samples, replacement = True)
+        
+        #sample from the components
+        samples = torch.empty((num_samples, self.dim), device = self.mixture_components[0].mean.device)
+        '''
+        for i in range(num_samples):
+            samples[i] = self.mixture_components[component_samples[i]].sample(1)
+        '''
+
+        for i in range(self.num_components):
+            mask = component_samples == i
+            samples[mask, :] = self.mixture_components[i].sample(mask.sum())
+
+        return samples
 
     
 
@@ -86,7 +142,7 @@ class VonMisesNormal(nn.Module):
     
     def __init__(self, 
                  parameters = {'Normal': [0.0, 1.0], 'VonMises': [0.0, 1.0]},
-                 dim      = {'Normal': 8, 'VonMises': 0},
+                 dim        = {'Normal': 8, 'VonMises': 0},
                  trainable  = False,
                  ):
         super(VonMisesNormal, self).__init__()
@@ -104,7 +160,7 @@ class VonMisesNormal(nn.Module):
         #----------------------------------------------------------------
 
         
-        self.parameters     = parameters
+        self.parameters   = parameters
         self.Normal_dim   = dim['Normal']
         self.VonMises_dim = dim['VonMises']
         
@@ -144,9 +200,9 @@ class VonMisesNormal(nn.Module):
     
     
     def _create_Normal_and_VonMises_masks(self):
-        true  = torch.ones(self.Normal_dim, dtype = torch.bool)
-        false = torch.zeros(self.VonMises_dim, dtype = torch.bool)
-        Normal_mask = torch.cat([true, false], axis = 0)
+        true          = torch.ones(self.Normal_dim, dtype = torch.bool)
+        false         = torch.zeros(self.VonMises_dim, dtype = torch.bool)
+        Normal_mask   = torch.cat([true, false], axis = 0)
         VonMises_mask = ~Normal_mask
         return Normal_mask, VonMises_mask
         
@@ -186,5 +242,6 @@ class VonMisesNormal(nn.Module):
         
         return samples
 
-    
-    
+base_distributions_dict = {'MultivariateNormalBase'     : MultivariateNormalBase,
+                           'MultivariateGaussianMixture': MultivariateGaussianMixture,
+                           'VonMisesNormal'             : VonMisesNormal}

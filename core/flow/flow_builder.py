@@ -4,7 +4,7 @@ import torch
 
 from . import Flow
 from . import CouplingTransform, AffineCouplingLayer, RandomPermutation
-from ..distributions   import MultivariateNormalBase
+from ..distributions   import MultivariateNormalBase, base_distributions_dict
 from ..neural_networks import EmbeddingNetwork, EmbeddingNetworkAttention, embedding_network_dict
 
 from ...config import CONF_DIR
@@ -58,7 +58,13 @@ def build_flow( prior_metadata           :dict = None,
     embedding_network = embedding_network_dict[embedding_network_model](strain_shape=strain_shape, fs=fs, **embedding_network_kwargs).float()
        
     #BASE DIST ----------------------------------------------------------------------------
-    base = MultivariateNormalBase(**base_distribution_kwargs)
+    #FIXME - add in deepfaset 
+    try:
+        dist_name = base_distribution_kwargs['dist_name']
+        kw        = base_distribution_kwargs['kwargs']
+        base      = base_distributions_dict[dist_name](**kw)
+    except:
+        base = MultivariateNormalBase(**base_distribution_kwargs)
     
 
     #COUPLING TRANSFORM ----------------------------------------------------------------

@@ -1,4 +1,5 @@
 import os
+import sys
 import yaml
 import torch
 import matplotlib.pyplot as plt
@@ -16,6 +17,8 @@ from hyperion.core import PosteriorSampler
 
 if __name__ == '__main__':
 
+    model_dir = sys.argv[1] if len(sys.argv) > 1 else 'BHBH'
+
     conf_yaml = CONF_DIR + '/hyperion_config.yml'
     
     with open(conf_yaml, 'r') as yaml_file:
@@ -25,8 +28,6 @@ if __name__ == '__main__':
     PRIOR_PATH = os.path.join(CONF_DIR, conf['prior']+'.yml')
     DURATION  = conf['duration']
 
-    
-    
     if torch.cuda.is_available():
         num_gpus = torch.cuda.device_count()
         device = f'cuda:{num_gpus-1}'
@@ -66,7 +67,8 @@ if __name__ == '__main__':
                             'inference_parameters': conf['inference_parameters'],
                             'prior_filepath': PRIOR_PATH, 
                             'n_proc': 1, 
-                            'use_reference_asd': conf['use_reference_asd']}
+                            'use_reference_asd': conf['use_reference_asd'], 
+                            'whiten_kwargs': conf['training_options']['whiten_kwargs']}
 
         test_ds = DatasetGenerator(**dataset_kwargs)
         test_ds.preload_waveforms()
@@ -86,7 +88,7 @@ if __name__ == '__main__':
         plt.savefig('training_results/BHBH/strain.png', dpi=200)
 
         #set up Sampler
-        checkpoint_path = 'training_results/BHBH/BHBH_flow_model.pt'
+        checkpoint_path = f'training_results/{model_dir}/BHBH_flow_model.pt'
         
         sampler = PosteriorSampler(flow_checkpoint_path=checkpoint_path, 
                                    waveform_generator=waveform_generator, 

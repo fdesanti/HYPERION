@@ -41,8 +41,11 @@ coupling_layers:
   num_transformed:  5
 
 base_distribution:
-  dim:              11
-  trainable:        false
+  dist_name:         "MultivariateNormalBase"
+  kwargs:
+    dim:              11
+    trainable:        false
+    #num_components:   2
 
 embedding_network:
   model:            "CNN+ResNet+Attention"
@@ -51,7 +54,6 @@ embedding_network:
     block_dims:       [2048, 1024, 512, 256]
     strain_out_dim:   256
     use_batch_norm:   true
-    track_running_stats: true
     dropout_probability: 0.2
 
     #slicer kwargs:
@@ -62,9 +64,9 @@ embedding_network:
     num_heads: 32
     add_bias_kv: true
 
-    CNN_filters:      [32, 64, 128]
-    CNN_kernel_sizes: [5, 5, 5]
-    #CNN_localization_filters:      [16, 32, 16, 32, 64, 128]
+    CNN_filters                   : [32, 64, 128]
+    CNN_kernel_sizes              : [5, 5, 5]
+    #CNN_localization_filters     : [16, 32, 16, 32, 64, 128]
     #CNN_localization_kernel_sizes: [128, 64, 32, 16, 8, 4]
     #CNN_localization_kernel_sizes: [7, 7, 5, 5, 3, 3]
 
