@@ -51,6 +51,7 @@ embedding_network:
     block_dims:       [2048, 1024, 512, 256]
     strain_out_dim:   256
     use_batch_norm:   true
+    track_running_stats: true
     dropout_probability: 0.2
 
     #slicer kwargs:

@@ -76,6 +76,9 @@ class EmbeddingNetworkAttention(nn.Module):
         #attention kwargs
         num_heads   = kwargs.get('num_heads', 32)
         add_bias_kv = kwargs.get('add_bias_kv', False)
+        
+        #batch norm kwargs
+        track_running_stats = kwargs.get('track_running_stats', True)
 
 
         self.strain_channels, self.strain_length = strain_shape
@@ -83,7 +86,7 @@ class EmbeddingNetworkAttention(nn.Module):
         
         self.use_batch_norm = use_batch_norm
         if use_batch_norm:
-            self.initial_batch_norm = nn.BatchNorm1d(self.strain_channels, track_running_stats=False)
+            self.initial_batch_norm = nn.BatchNorm1d(self.strain_channels, track_running_stats=track_running_stats)
 
         #=======================================================================
         # Construct CNN for morphology features extraction
