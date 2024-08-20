@@ -180,7 +180,7 @@ class PosteriorSampler():
         
         return self._IS_results['stats']['weights'], self._IS_results['stats']['valid_samples']
     
-    def reweight_posterior(self, posterior, num_samples = None, importance_weights=None, importance_sampling_kwargs=None):
+    def reweight_posterior(self, posterior=None, num_samples=None, importance_weights=None, importance_sampling_kwargs=None):
         """
         Sample from the importance reweighted posterior.
         
@@ -195,6 +195,9 @@ class PosteriorSampler():
                 A dictionary containing the reweighted samples from the posterior distribution.
         """
         
+        if posterior is None:
+            print('[INFO]: Using previously sampled posterior.')
+            posterior = self.posterior
        
         if importance_weights is None:
             if importance_sampling_kwargs is None:
