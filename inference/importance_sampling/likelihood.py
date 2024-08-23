@@ -1,4 +1,7 @@
 import torch
+import multiprocess as mp
+mp.set_start_method('spawn', force=True) # It only works with 'spawn' method when doing inference
+#REVIEW - 'spawn' is slower than 'fork' => check if it is possible to use 'fork' method
 
 from ...core.fft import rfft, rfftfreq
 

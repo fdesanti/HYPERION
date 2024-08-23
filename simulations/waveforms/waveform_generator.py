@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import multiprocess as mp
-mp.set_start_method('spawn', force=True)  # Oppure 'fork' se su Unix
+#mp.set_start_method('spawn', force=True)  # Default 'fork' used for training
 
 
 from tqdm import tqdm
