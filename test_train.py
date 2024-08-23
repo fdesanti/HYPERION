@@ -76,7 +76,13 @@ if __name__ == '__main__':
 
         #SAMPLING --------
         num_samples = 50_000
-        parameters, strain, asd = test_ds.__getitem__(add_noise=conf['training_options']['add_noise'])
+        
+        _ , strain, _ = test_ds.__getitem__(add_noise=conf['training_options']['add_noise'], idxs=torch.tensor([1]), return_strain=True)
+        
+        parameters, whitened_strain, asd = test_ds.__getitem__(add_noise=conf['training_options']['add_noise'], idxs=torch.tensor([1]))
+
+        
+        
         #print(asd.shape)
         plt.figure(figsize=(20, 15))
         t = torch.arange(0, DURATION, 1/conf['fs']) - DURATION/2
@@ -85,7 +91,7 @@ if __name__ == '__main__':
             plt.plot(t.cpu().numpy(), strain[0][i].cpu().numpy())
             plt.title(det)           
         plt.show()
-        plt.savefig('training_results/BHBH/strain.png', dpi=200)
+        plt.savefig(f'training_results/{model_dir}/strain.png', dpi=200)
 
         #set up Sampler
         checkpoint_path = f'training_results/{model_dir}/BHBH_flow_model.pt'
@@ -96,7 +102,7 @@ if __name__ == '__main__':
                                    device=device)
         sampler.flow.eval()
 
-        posterior = sampler.sample_posterior(strain = strain, asd = asd, num_samples=num_samples, restrict_to_bounds = True)
+        posterior = sampler.sample_posterior(strain = whitened_strain, asd = asd, num_samples=num_samples, restrict_to_bounds = True)
         
         #compare sampled parameters to true parameters
         true_parameters = sampler.flow._post_process_samples(parameters, restrict_to_bounds=False)
@@ -109,3 +115,6 @@ if __name__ == '__main__':
         
         #generate corner plot
         sampler.plot_corner(injection_parameters=true_parameters)
+        
+        
+        

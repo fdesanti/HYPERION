@@ -77,13 +77,13 @@ class Trainer:
             log_p =  -self.flow.log_prob(parameters.to(self.device), strains.to(self.device), asd.to(self.device))
             loss  = torch.mean(log_p)
             
+            if self.verbose:
+                    print(f'Epoch = {epoch} |  Step = {step+1} / {self.steps_per_epoch}  |  Loss = {loss.item():.3f}', end='\r')
+            
             if torch.isnan(loss) or torch.isinf(loss):
                 #do not update model's weights
                 fail_counter += 1
             else:
-                if self.verbose:
-                    print(f'Epoch = {epoch} |  Step = {step+1} / {self.steps_per_epoch}  |  Loss = {loss.item():.3f}', end='\r')
-            
                 #updating weights
                 loss.backward()
                 avg_train_loss += loss.item() #item() returns loss as a number instead of a tensor
@@ -126,14 +126,13 @@ class Trainer:
             log_p = -self.flow.log_prob(parameters.to(self.device), strains.to(self.device), asd.to(self.device))
             loss  = torch.mean(log_p)
            
-            if torch.isnan(loss) or torch.isinf(loss):
-                fail_counter += 1
+            if self.verbose:
                 print(f'Epoch = {epoch}  |  Validation Step = {step+1} / {self.val_steps_per_epoch}  |  Loss = {loss.item():.3f}', end='\r')
             
+            if torch.isnan(loss) or torch.isinf(loss):
+                fail_counter += 1            
             else:
                 avg_val_loss += loss.item() #item() returns loss as a number instead of a tensor
-                if self.verbose:
-                    print(f'Epoch = {epoch}  |  Validation Step = {step+1} / {self.val_steps_per_epoch}  |  Loss = {loss.item():.3f}', end='\r')
             #if step> self.val_steps_per_epoch:
             #    break
             #step+=1

@@ -44,10 +44,10 @@ class ImportanceSampling():
 
     """
     def __init__(self, 
-                     flow   = None, 
+                     flow, 
+                     waveform_generator, 
                      device = 'cpu', 
                      num_posterior_samples = 1000, 
-                     waveform_generator    = None, 
                      reference_posterior_samples = None):
         
         """
@@ -99,7 +99,7 @@ class ImportanceSampling():
     
     @property
     def det_names(self):
-        return self.waveform_generator.det_names
+        return self.waveform_generator.det_network.names
     
     @property
     def N(self):
@@ -203,32 +203,30 @@ class ImportanceSampling():
         '''
         
         #add parameters not estimated by HYPERION
+        
         thetas['m2'] = thetas['q'] * thetas['M'] / (1 + thetas['q'])  #m2 = qM/(1+q)   m1 = M-m2
         thetas['m1'] = thetas['M'] - thetas['m2']
         thetas.pop('M')
         thetas.pop('q')
+        #FIXME - in the case of TEOBResumS j_hyp might be missing/it's better to manage
+        #        priors with the MultiVariate Prior class
         #compute log Prior
-
+        '''
         #sample parameters not estimated by HYPERION
         unsampled_parameters = self.priors.names - thetas.keys()
         for name in unsampled_parameters:
             thetas[name] = self.priors.priors[name].sample([self.num_posterior_samples])
-        
+        '''
         
         #compute log prior and valid samples
         logP = self.priors.log_prob(thetas).double()
         valid_samples = logP!=-torch.inf
         
         #select valid-only posterior samples
-        if isinstance (thetas, TensorDict):
-            thetas = dict(thetas[valid_samples].unsqueeze(1))
-        else:
-            for key in thetas.keys():
-                thetas[key] = thetas[key][valid_samples].unsqueeze(1)
+        print(valid_samples)
+        thetas = thetas[valid_samples].to('cpu')
         
-        #add reference time         
-        thetas['t0_p'] = torch.tensor(event_time)
-
+    
         #compute log Likelihood
         #logL = torch.empty_like(logP)
         logL = self.likelihood.log_Likelihood(strain=strain, psd=psd, waveform_parameters=thetas)
@@ -314,7 +312,7 @@ class ImportanceSampling():
         torch_strain = torch.stack([whitened_strain[det] for det in self.det_names]).unsqueeze(0)
         #torch_strain = torch.from_numpy(torch_strain).float().unsqueeze(0).to(self.device)
         
-        with torch.no_grad():
+        with torch.inference_mode():
             self.flow.eval()
             thetas, log_posterior = self.flow.sample(self.num_posterior_samples, strain  = torch_strain, 
                                                     restrict_to_bounds=False, event_time = event_time, #restrict to bounds can be set to False given that if sample exceed prior bounds it is taken into account by prior weights

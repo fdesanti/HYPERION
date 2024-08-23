@@ -285,5 +285,4 @@ class DatasetGenerator:
 
         #convert to a single float tensor
         out_whitened_strain = torch.stack([whitened_strain[det] for det in self.det_network.detectors], dim=1)
-        
         return out_prior_samples.float(), out_whitened_strain.float(), torch_asd.float()

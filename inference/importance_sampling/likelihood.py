@@ -16,7 +16,7 @@ class GWLikelihood():
     
     def __init__(self, waveform_generator, device = 'cpu'):
 
-        self.waveform_generator = waveform_generator
+        self.waveform_generator=waveform_generator
         self.device = device
         
         return
@@ -134,7 +134,7 @@ class GWLikelihood():
         frequency_domain_template = self.get_frequency_domain_template(det_names=list(strain.keys()), parameters=waveform_parameters)
     
         for det_name in strain.keys():
-            frequency_domain_strain = rfft(strain[det_name], n = strain[det_name].shape[-1], fs = self.fs)
+            frequency_domain_strain = rfft(strain[det_name], n=strain[det_name].shape[-1], fs=self.fs)
             '''
             logL += self._gaussian_likelihood(frequency_domain_strain, 
                                               frequency_domain_template[det_name], 
@@ -204,7 +204,7 @@ class GWLikelihood():
                 Dictionary (with det_names as keys) containing the projected frequency domain template 
         
         """
-        template = self.waveform_generator(**parameters)
+        template = self.waveform_generator(parameters, project_onto_detectors=True)
         
         '''
         import matplotlib.pyplot as plt

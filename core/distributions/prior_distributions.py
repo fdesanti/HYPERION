@@ -168,7 +168,7 @@ class DeltaPrior(BasePrior):
         diff = abs(check - samples)
         
         log_prob = torch.zeros(samples.shape)
-        log_prob[diff !=0] = -torch.inf
+        #log_prob[diff !=0] = -torch.inf
         
         return log_prob
 

@@ -1,6 +1,8 @@
 import torch
 import numpy as np
-import multiprocessing as mp
+import multiprocess as mp
+mp.set_start_method('spawn', force=True)  # Oppure 'fork' se su Unix
+
 
 from tqdm import tqdm
 from torch.nn.functional import pad
@@ -29,6 +31,7 @@ class WaveformGenerator:
                  waveform_model, 
                  fs = 2048,
                  duration = 4,
+                 det_network:dict = None,
                  **waveform_model_kwargs):
 
         assert waveform_model in models_dict.keys(), f"Waveform model {waveform_model} not found. \
@@ -36,7 +39,8 @@ class WaveformGenerator:
         
         self.fs = fs
         self.duration = duration
-        self.wvf_model = models_dict[waveform_model](fs, **waveform_model_kwargs)
+        self.det_network = det_network
+        self.wvf_model   = models_dict[waveform_model](fs, **waveform_model_kwargs)
     
         return
 
@@ -58,7 +62,7 @@ class WaveformGenerator:
     @duration.setter
     def duration(self, value):
         self._duration = value
-           
+                
 
     def _resize_waveform(self, times, t_wvf, hp, hc):
         """
@@ -141,21 +145,22 @@ class WaveformGenerator:
     
 
 
-    def __call__(self, parameters, n_proc=None):
+    def __call__(self, parameters, n_proc=None, project_onto_detectors=False):
         
         # Check if the model is a torch model so that
         # it can handle batches of parameters and / or if parameters are batched
         N = parameters.numel()
         if self.has_torch or N<=1:
-            return self.wvf_model(**parameters)
+            return self.wvf_model(parameters)
         
         # Otherwise, we exploit multiprocessing
         else:
             #define the analysis time segment array [-duration/2, duration/2]
             times = np.linspace(-self.duration/2, self.duration/2, int(self.duration*self.fs))
+            
+            n_proc = mp.cpu_count() if n_proc is None else n_proc
             with mp.Pool(n_proc) as p:
                 self.parameters = parameters
-                
                 hps = []
                 hcs = []
                 tcoals = []
@@ -177,6 +182,14 @@ class WaveformGenerator:
                 hcs = torch.stack(hcs)
                 tcoals = torch.tensor(tcoals).unsqueeze(-1)
 
+        if project_onto_detectors:
+            #project the waveform onto the detectors
+            projected_template = self.det_network.project_waveform(hps, hcs, 
+                                                         parameters['ra'], 
+                                                         parameters['dec'], 
+                                                         parameters['polarization'])
+            return projected_template, tcoals
+        
         return hps, hcs, tcoals
         
         
