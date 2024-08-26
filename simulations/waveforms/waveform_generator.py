@@ -174,30 +174,21 @@ class WaveformGenerator:
                     #resize the waveform to the desired duration and get the time of coalescence
                     hp, hc, tcoal = self._resize_waveform(times, t, hp, hc)
                     
-                    tcoals.append(tcoal)
                     hps.append(hp)
                     hcs.append(hc)
+                    tcoals.append(tcoal)
                 
-                hps = torch.stack(hps)
-                hcs = torch.stack(hcs)
+                hps    = torch.stack(hps)
+                hcs    = torch.stack(hcs)
                 tcoals = torch.tensor(tcoals).unsqueeze(-1)
 
         if project_onto_detectors:
             #project the waveform onto the detectors
-            projected_template = self.det_network.project_wave(hps, hcs, 
-                                                               parameters['ra'], 
-                                                               parameters['dec'], 
-                                                               parameters['polarization'])
+            projected_template = self.det_network.project_wave(hps, 
+                                                               hcs, 
+                                                               parameters['ra'].unsqueeze(-1), 
+                                                               parameters['dec'].unsqueeze(-1), 
+                                                               parameters['polarization'].unsqueeze(-1))
             return projected_template, tcoals
         
         return hps, hcs, tcoals
-    
-
-        
-        
-        
-        
-        
-        
-        
-        

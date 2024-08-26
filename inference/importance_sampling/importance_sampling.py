@@ -79,7 +79,7 @@ class ImportanceSampling():
         
         self.reference_posterior_samples = reference_posterior_samples
 
-        self.likelihood = GWLikelihood(waveform_generator)
+        self.likelihood = GWLikelihood(waveform_generator, device=device)
         
         return
 
@@ -210,6 +210,9 @@ class ImportanceSampling():
         thetas.pop('q')
         #FIXME - in the case of TEOBResumS j_hyp might be missing/it's better to manage
         #        priors with the MultiVariate Prior class
+        if not 'j_hyp' in thetas.keys():
+            thetas['j_hyp'] = torch.tensor([4.0]*len(thetas['m1'])).to(self.device)
+        
         #compute log Prior
         '''
         #sample parameters not estimated by HYPERION

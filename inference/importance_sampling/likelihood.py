@@ -135,9 +135,11 @@ class GWLikelihood():
         """
         logL = 0
         frequency_domain_template = self.get_frequency_domain_template(det_names=list(strain.keys()), parameters=waveform_parameters)
-    
+
+        
         for det_name in strain.keys():
-            frequency_domain_strain = rfft(strain[det_name], n=strain[det_name].shape[-1], fs=self.fs)
+            print(f'[INFO] Computing log likelihood for {det_name}')
+            frequency_domain_strain = rfft(strain[det_name], n=strain[det_name].shape[-1], norm=self.fs)
             '''
             logL += self._gaussian_likelihood(frequency_domain_strain, 
                                               frequency_domain_template[det_name], 
@@ -207,7 +209,11 @@ class GWLikelihood():
                 Dictionary (with det_names as keys) containing the projected frequency domain template 
         
         """
-        template = self.waveform_generator(parameters, project_onto_detectors=True)
+        template, tcoal = self.waveform_generator(parameters, project_onto_detectors=True)
+        
+        time_delays = self.waveform_generator.det_network.time_delay_from_earth_center(parameters['ra'], 
+                                                                                       parameters['dec'])
+        tcoal  = tcoal.squeeze(1).to(self.device)-parameters['tcoal'].to(self.device)
         
         '''
         import matplotlib.pyplot as plt
@@ -217,11 +223,13 @@ class GWLikelihood():
                 plt.plot(template[d][i].cpu().numpy())
             plt.show()
         '''
+        n = self.waveform_generator.duration * self.fs
         frequency_domain_template = dict()
         for det_name in det_names:
-            hf  = rfft(template['strain'][det_name], fs = self.fs)
-            dt = template["time_delay"][det_name]
-
+            hf  = rfft(template[det_name], n=n, norm=self.fs)
+            
+            dt = (tcoal + time_delays[det_name]).unsqueeze(-1)
+                        
             #take into account the time shift
             frequency_domain_template[det_name] = hf * torch.exp(-1j * 2 * torch.pi * self.frequencies * dt) 
         

@@ -121,10 +121,10 @@ class PosteriorSampler():
         
         return CBCResult(**bilby_kwargs)
     
-    def plot_skymap(self, bilby_posterior=None, **skymap_kwargs):
+    def plot_skymap(self, posterior=None, **skymap_kwargs):
         """Wrapper to Bilby plot skymap method."""
         
-        bilby_result = self.to_bilby(bilby_posterior)
+        bilby_result = self.to_bilby(posterior)
         return bilby_result.plot_skymap(**skymap_kwargs)
     
     def plot_corner(self, posterior=None, injection_parameters=None, **corner_kwargs):

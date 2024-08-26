@@ -340,7 +340,12 @@ class GWDetector(object):
     def time_delay_from_earth_center(self, ra, dec, t_gps=None):
         """Returns the time delay from Earth Center"""
         #define earth center on right device (if torch is used)
-        kw = {'device':self.device} if self.use_torch else {}
+        if self.use_torch:
+            ra  = ra.to(self.device)
+            dec = dec.to(self.device)
+            kw  = {'device':self.device}
+        else: 
+            kw = {}
         earth_center = self.xp.zeros(3, **kw)
         return self.time_delay_from_location(earth_center, ra, dec, t_gps)
     
