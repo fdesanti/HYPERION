@@ -322,6 +322,15 @@ class GWDetector(object):
         #t_gpss = hp.get_sampled_time()
         if t_gps is None:
             t_gps = self.reference_time
+        
+        if self.use_torch: 
+            #check device and move to the right one 
+            hp           = hp.to(self.device)
+            hc           = hc.to(self.device)
+            ra           = ra.to(self.device)
+            dec          = dec.to(self.device)
+            polarization = polarization.to(self.device)
+            
         f_plus, f_cross = self.antenna_pattern_functions(ra, dec, polarization, t_gps)
 
         h_signal = hp*f_plus + hc*f_cross
@@ -421,20 +430,31 @@ class GWDetectorNetwork():
         else:
             self.detectors = {}
 
-            default_kwargs = {'use_torch': False, 
-                              'device': 'cpu', 
-                              'reference_time':1370692818, 
-                              'config_file_path' : None}
-            default_kwargs.update(kwargs)
+            self.default_kwargs = {'use_torch'       : False, 
+                                   'device'          : 'cpu',
+                                   'reference_time'  : 1370692818,
+                                   'config_file_path': None}
+            self.default_kwargs.update(kwargs)
             
             for name in names:
-                self.detectors[name] = GWDetector(name, **default_kwargs)
-
+                self.detectors[name] = GWDetector(name, **self.default_kwargs)
+                
         return 
     
     @property
     def names(self):
         return list(self.detectors.keys())
+    
+    @property
+    def device(self):
+        return self.default_kwargs['device']
+    
+    def set_new_device(self, new_device):
+        self.default_kwargs['device'] = new_device
+        #update the device for each detector
+        for ifo in self.names:
+            self.detectors[ifo].device = new_device
+        return
     
     def set_reference_time(self, reference_time):
         """Set the reference time for the detectors in the network"""

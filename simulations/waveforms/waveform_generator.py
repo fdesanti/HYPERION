@@ -184,13 +184,15 @@ class WaveformGenerator:
 
         if project_onto_detectors:
             #project the waveform onto the detectors
-            projected_template = self.det_network.project_waveform(hps, hcs, 
-                                                         parameters['ra'], 
-                                                         parameters['dec'], 
-                                                         parameters['polarization'])
+            projected_template = self.det_network.project_wave(hps, hcs, 
+                                                               parameters['ra'], 
+                                                               parameters['dec'], 
+                                                               parameters['polarization'])
             return projected_template, tcoals
         
         return hps, hcs, tcoals
+    
+
         
         
         
