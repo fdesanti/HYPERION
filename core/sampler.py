@@ -105,7 +105,7 @@ class PosteriorSampler():
             raise ValueError('Bayes Factor has not been computed yet. Run the "compute_BayesFactor" method.')
         return self._BayesFactor
     
-    def to_bilby(self, posterior=None):
+    def to_bilby(self, posterior=None, injection_parameters=None):
         """Export sampler results to a bilby CBC result object."""
         
         if posterior is None:
@@ -117,7 +117,8 @@ class PosteriorSampler():
         bilby_kwargs = {'posterior': pd.DataFrame.from_dict(posterior),
                         'search_parameter_keys': self.inference_parameters,
                         'parameter_labels': self.latex_labels,
-                        'outdir': self.output_dir}
+                        'outdir': self.output_dir, 
+                        'injection_parameters': injection_parameters}
         
         return CBCResult(**bilby_kwargs)
     
@@ -127,10 +128,10 @@ class PosteriorSampler():
         bilby_result = self.to_bilby(posterior)
         return bilby_result.plot_skymap(**skymap_kwargs)
     
-    def plot_corner(self, posterior=None, injection_parameters=None, **corner_kwargs):
+    def plot_corner(self, posterior=None, injection_parameters=None, figname=None, **corner_kwargs):
         """Wrapper to Bilby plot corner method."""
 
-        bilby_result = self.to_bilby(posterior)
+        bilby_result = self.to_bilby(posterior, injection_parameters)
 
         fontsize_kwargs = {'fontsize': 20}
         default_corner_kwargs = {'title_kwargs':fontsize_kwargs, 'label_kwargs':fontsize_kwargs, 
@@ -139,7 +140,7 @@ class PosteriorSampler():
         
         #update corner kwargs with input arguments
         default_corner_kwargs.update(corner_kwargs)
-        figname = str(self.output_dir) + '/corner_plot.png'
+        figname = str(self.output_dir) + '/corner_plot.png' if figname is None else figname
         return bilby_result.plot_corner(filename=figname, truth=injection_parameters, **default_corner_kwargs)
     
 

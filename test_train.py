@@ -112,13 +112,11 @@ if __name__ == '__main__':
             print(f"{par}: {posterior[par].cpu().median():.2f} vs {true_parameters[par]:.2f}")
         
         #generate corner plot
-        #sampler.plot_corner(injection_parameters=true_parameters)
+        sampler.plot_corner(injection_parameters=true_parameters)
 
-        bilby_posterior = sampler.to_bilby()
-        print(bilby_posterior.posterior)
-        bilby_posterior.injection_parameters = true_parameters
-        
-        print(bilby_posterior.injection_parameters)
+        bilby_posterior = sampler.to_bilby(injection_parameters=true_parameters)
+        #print(bilby_posterior.posterior)        
+        #print(bilby_posterior.injection_parameters)
 
         
         
