@@ -26,16 +26,16 @@ import numpy as np
 
 if __name__ == '__main__':
     
-    model_name = 'BHBH' if len(sys.argv) < 2 else sys.argv[1]
-    print(f'----> Running {model_name} model')
+    model_dir = sys.argv[1] if len(sys.argv) > 1 else 'training_results/BHBH'
+    print(f'----> Running model saved at {model_dir}')
 
-    conf_yaml = CONF_DIR + '/hyperion_config.yml'
+    conf_yaml = model_dir + '/hyperion_config.yml'
     
     with open(conf_yaml, 'r') as yaml_file:
         conf = yaml.safe_load(yaml_file)
 
     WAVEFORM_MODEL = conf['waveform_model']
-    PRIOR_PATH = os.path.join(CONF_DIR, conf['prior']+'.yml')
+    PRIOR_PATH = os.path.join(model_dir, 'prior.yml')
     DURATION  = conf['duration']
 
     
@@ -102,7 +102,7 @@ if __name__ == '__main__':
          #whitened_strain[det].plot(epoch = gps)
          plt.figure(figsize=(15, 5))
          plt.plot(whitened_strain[det])
-         plt.savefig(f'training_results/{model_name}/{det}_whitened_strain.png')
+         plt.savefig(f'{model_dir}/{det}_whitened_strain.png')
          plt.close()
     torch_whitened_stacked_strain = torch.stack([torch_whitened_strain[det] for det in ['L1', 'H1', 'V1']]).unsqueeze(0).to(device).float()
     print(whitened_strain)
@@ -143,7 +143,7 @@ if __name__ == '__main__':
         '''
 
         #set up Sampler
-        checkpoint_path = f'training_results/{model_name}/BHBH_flow_model.pt'
+        checkpoint_path = f'{model_dir}/BHBH_flow_model.pt'
         
         sampler = PosteriorSampler(flow_checkpoint_path=checkpoint_path, 
                                    waveform_generator=waveform_generator, 
@@ -168,32 +168,22 @@ if __name__ == '__main__':
 
         print(sampler.IS_results)
 
-        valid_samples = sampler.IS_results['stats']['valid_samples']
-        log_prior = sampler.IS_results['stats']['logP'][valid_samples]
+        valid_samples  = sampler.IS_results['stats']['valid_samples']
+        log_prior      = sampler.IS_results['stats']['logP'][valid_samples]
         log_likelihood = sampler.IS_results['stats']['logL']
-        log_posterior = sampler.IS_results['stats']['log_posterior'][valid_samples]
-        weights = sampler.IS_results['stats']['weights']
+        log_posterior  = sampler.IS_results['stats']['log_posterior'][valid_samples]
+        weights        = sampler.IS_results['stats']['weights']
 
         plt.figure()
         plt.scatter(log_posterior.cpu().numpy(), (log_prior+log_likelihood).cpu().numpy(),  c=weights.cpu().numpy(), cmap='viridis', s=1)
         plt.xlabel('log posterior')
         plt.ylabel('log prior + log likelihood')
         plt.colorbar()
-        plt.savefig(f'training_results/{model_name}/posterior_vs_prior_likelihood.png')
+        plt.savefig(f'{model_dir}/posterior_vs_prior_likelihood.png')
         plt.show()
         plt.close()
        
-        print('max weight', weights.max())
 
-        
-        #compare sampled parameters to true parameters
-        #true_parameters = sampler.flow._post_process_samples(parameters, restrict_to_bounds=False)
-        #true_parameters = TensorDict.from_dict(true_parameters)
-        #true_parameters = {key: true_parameters[key].cpu().item() for key in true_parameters.keys()}
-
-        #print('Sampled parameters vs true parameters medians')
-        #for par in true_parameters:
-        #    print(f"{par}: {posterior[par].cpu().median():.2f} vs {true_parameters[par]:.2f}")
         '''
         #generate corner plot
         from astropy.cosmology import Planck18, z_at_value

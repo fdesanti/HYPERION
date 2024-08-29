@@ -99,6 +99,18 @@ if __name__ == '__main__':
             os.mkdir(checkpoint_dir)
         checkpoint_filepath = os.path.join(checkpoint_dir, 'BHBH_flow_model.pt')
 
+        #write configuaration file to checkpoint directory
+        conf_yaml_write = os.path.join(checkpoint_dir, 'hyperion_config.yml')
+        with open(conf_yaml_write, 'w') as yaml_file:
+            yaml.dump(conf, yaml_file)
+        
+        #write prior file to checkpoint directory
+        conf_prior_write = os.path.join(checkpoint_dir, 'prior.yml')
+        with open(conf_prior_write, 'w') as yaml_file:
+            with open(PRIOR_PATH, 'r') as prior:
+                prior = yaml.safe_load(prior)
+            yaml.dump(prior, yaml_file)
+
         #set up Flow model
         if not PRELOAD:
             prior_metadata = train_ds.prior_metadata
