@@ -176,9 +176,9 @@ class PosteriorSampler():
 
         
         """
-        self._IS_results = self.IS.compute_model_evidence(**importance_sampling_kwargs)
+        self.IS_results = self.IS.compute_model_evidence(**importance_sampling_kwargs)
         
-        return self._IS_results['stats']['weights'], self._IS_results['stats']['valid_samples']
+        return self.IS_results['stats']['weights'], self.IS_results['stats']['valid_samples']
     
     def reweight_posterior(self, posterior=None, num_samples=None, importance_weights=None, importance_sampling_kwargs=None):
         """

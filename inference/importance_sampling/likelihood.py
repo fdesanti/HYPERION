@@ -139,15 +139,15 @@ class GWLikelihood():
         
         for det_name in strain.keys():
             print(f'[INFO] Computing log likelihood for {det_name}')
-            frequency_domain_strain = rfft(strain[det_name], n=strain[det_name].shape[-1], norm=self.fs)
+            frequency_domain_strain = rfft(strain[det_name], n=strain[det_name].shape[-1], norm=strain[det_name].shape[-1])
             '''
             logL += self._gaussian_likelihood(frequency_domain_strain, 
                                               frequency_domain_template[det_name], 
                                               psd[det_name]) 
             '''
-            logL += self._single_detector_noise_logLikelihood(frequency_domain_strain, 
-                                                              frequency_domain_template[det_name], 
-                                                              psd[det_name])
+            logL += self._single_detector_noise_logLikelihood(frequency_domain_strain.double(), 
+                                                              frequency_domain_template[det_name].double(), 
+                                                              psd[det_name].double())
             
         return logL.real
     
@@ -174,18 +174,19 @@ class GWLikelihood():
                 Detector Log Likelihood. (The shape of the tensor is the same of frequency_domain_template)
              
         """
-        '''
-        import matplotlib.pyplot as plt
-        plt.plot(frequency_domain_strain.cpu().numpy())
-        plt.plot(frequency_domain_template.cpu().numpy()/psd.cpu().numpy())
-        plt.show()
-        '''
-        #print((frequency_domain_strain - frequency_domain_template)/psd)
-        logL_det = - (2. / self.duration) * torch.linalg.vecdot(frequency_domain_strain - frequency_domain_template,
-                                                               (frequency_domain_strain - frequency_domain_template) / psd )
         
-        #logL_det = - (2. / self.duration) * torch.sum(frequency_domain_strain - frequency_domain_template * \
+        #import matplotlib.pyplot as plt
+        #plt.plot(frequency_domain_strain.cpu().numpy())
+        #plt.plot(frequency_domain_template.cpu().numpy()/psd.cpu().numpy())
+        #plt.loglog(psd.cpu().numpy())
+        #plt.show()
+        
+        #print((frequency_domain_strain - frequency_domain_template)/psd)
+        #logL_det = - (2. / self.duration) * torch.linalg.vecdot(frequency_domain_strain - frequency_domain_template,
         #                                                       (frequency_domain_strain - frequency_domain_template) / psd )
+        
+        logL_det = - (2. / self.duration) * torch.sum(frequency_domain_strain - frequency_domain_template * \
+                                                     (frequency_domain_strain - frequency_domain_template) / psd, -1)
 
         #print(frequency_domain_strain.shape, frequency_domain_template.shape, psd.shape, logL_det.shape)
         return logL_det.real

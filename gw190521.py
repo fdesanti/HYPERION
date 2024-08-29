@@ -54,7 +54,7 @@ if __name__ == '__main__':
     
     sampling_frequency = 2048
     
-    gps-=0.5#0.12
+    gps-=0.4#0.12
     
     t0=gps-1
     t1=gps+1
@@ -164,7 +164,26 @@ if __name__ == '__main__':
         reweighted_poterior = sampler.reweight_posterior(importance_sampling_kwargs=is_kwargs, num_samples=50000)
         
         sampler.plot_corner(posterior=reweighted_poterior)
-        sampler.plot_skymap(posterior=reweighted_poterior, jobs=2, maxpts=2_000)
+        #sampler.plot_skymap(posterior=reweighted_poterior, jobs=2, maxpts=2_000)
+
+        print(sampler.IS_results)
+
+        valid_samples = sampler.IS_results['stats']['valid_samples']
+        log_prior = sampler.IS_results['stats']['logP'][valid_samples]
+        log_likelihood = sampler.IS_results['stats']['logL']
+        log_posterior = sampler.IS_results['stats']['log_posterior'][valid_samples]
+        weights = sampler.IS_results['stats']['weights']
+
+        plt.figure()
+        plt.scatter(log_posterior.cpu().numpy(), (log_prior+log_likelihood).cpu().numpy(),  c=weights.cpu().numpy(), cmap='viridis', s=1)
+        plt.xlabel('log posterior')
+        plt.ylabel('log prior + log likelihood')
+        plt.colorbar()
+        plt.savefig(f'training_results/{model_name}/posterior_vs_prior_likelihood.png')
+        plt.show()
+        plt.close()
+       
+        print('max weight', weights.max())
 
         
         #compare sampled parameters to true parameters

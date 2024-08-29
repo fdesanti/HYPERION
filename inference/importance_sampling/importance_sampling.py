@@ -240,8 +240,12 @@ class ImportanceSampling():
         log_weights =  logP[valid_samples] + torch.nan_to_num(logL) - log_posterior[valid_samples]
         
         weights = torch.nan_to_num(torch.exp(log_weights.max()/log_weights))
-        weights /= weights.mean()
-        
+        #wei
+
+        #weights = torch.exp(log_weights - torch.logsumexp(log_weights, 0))
+        #weights = torch.exp(log_weights - torch.max(log_weights))
+
+        weights = (weights-weights.min())/(weights.max()-weights.min())
         
         #print(f'log weights {log_weights} / weights {weights}')
         eff = self.sample_efficiency(weights)

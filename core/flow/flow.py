@@ -122,7 +122,7 @@ class Flow(nn.Module):
             print(f"---> Sampling took {end-start:.3f} seconds")
         
         if return_log_prob:
-            log_posterior = self.base_distribution.log_prob(samples) + inverse_logabsdet 
+            log_posterior = self.base_distribution.log_prob(samples) - inverse_logabsdet 
             #log_posterior = self.log_prob(samples, strain, evidence=True) 
             
             log_std = torch.sum(torch.log(torch.tensor([self.stds[p] for p in self.inference_parameters])))

@@ -76,10 +76,8 @@ if __name__ == '__main__':
 
         #SAMPLING --------
         num_samples = 50_000
-        
-        _ , strain, _ = test_ds.__getitem__(add_noise=conf['training_options']['add_noise'], idxs=torch.tensor([1]), return_strain=True)
-        
-        parameters, whitened_strain, asd = test_ds.__getitem__(add_noise=conf['training_options']['add_noise'], idxs=torch.tensor([1]))
+                
+        parameters, whitened_strain, asd = test_ds.__getitem__(add_noise=conf['training_options']['add_noise'])
 
         
         
@@ -88,7 +86,7 @@ if __name__ == '__main__':
         t = torch.arange(0, DURATION, 1/conf['fs']) - DURATION/2
         for i, det in enumerate(det_network.detectors):
             plt.subplot(3, 1, i+1)
-            plt.plot(t.cpu().numpy(), strain[0][i].cpu().numpy())
+            plt.plot(t.cpu().numpy(), whitened_strain[0][i].cpu().numpy())
             plt.title(det)           
         plt.show()
         plt.savefig(f'training_results/{model_dir}/strain.png', dpi=200)
@@ -114,7 +112,14 @@ if __name__ == '__main__':
             print(f"{par}: {posterior[par].cpu().median():.2f} vs {true_parameters[par]:.2f}")
         
         #generate corner plot
-        sampler.plot_corner(injection_parameters=true_parameters)
+        #sampler.plot_corner(injection_parameters=true_parameters)
+
+        bilby_posterior = sampler.to_bilby()
+        print(bilby_posterior.posterior)
+        bilby_posterior.injection_parameters = true_parameters
+        
+        print(bilby_posterior.injection_parameters)
+
         
         
         
