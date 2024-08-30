@@ -14,19 +14,19 @@ from gwskysim.gwskysim.utilities.gwlogger import GWLogger
 from ..core.flow import build_flow
 
 
-class Trainer:
+class Trainer: 
     def __init__(self,
-                flow: torch.nn.Module,
-                training_dataset: torch.utils.data.DataLoader,
-                validation_dataset: torch.utils.data.DataLoader,
-                optimizer: torch.optim.Optimizer,
-                scheduler: torch.optim.lr_scheduler,
-                device: str,
+                flow               : torch.nn.Module,
+                training_dataset   : torch.utils.data.DataLoader,
+                validation_dataset : torch.utils.data.DataLoader,
+                optimizer          : torch.optim.Optimizer,
+                scheduler          : torch.optim.lr_scheduler,
+                device             : str,
                 checkpoint_filepath: str,
                 steps_per_epoch     = None,
                 val_steps_per_epoch = None,
-                verbose = True,
-                add_noise = True
+                verbose             = True,
+                add_noise           = True
                 ):
         
         self.device     = device

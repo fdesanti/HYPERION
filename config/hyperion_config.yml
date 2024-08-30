@@ -90,7 +90,7 @@ training_options:
   n_proc: os.cpu_count()
 
   whiten_kwargs:
-    method: "pycbc"
+    method: "gwpy"
     normalize: True
 
   add_noise: True
