@@ -145,7 +145,7 @@ class DatasetGenerator:
         #    In this way we store however the metadata (eg. min and max values) without compromising the simulation 
 
         for p in ['M', 'Mchirp', 'q']:
-            
+
             if p in self.inference_parameters:
 
                 self.full_prior[p] = prior_dict_[p](self.full_prior['m1'], self.full_prior['m2'])
@@ -161,15 +161,21 @@ class DatasetGenerator:
         return 
     
 
-    def _compute_M_and_q(self, prior_samples):
+    def _compute_M_Mchirp_and_q(self, prior_samples):
 
         #sorting m1 and m2 so that m2 <= m1
         m1, m2 = prior_samples['m1'], prior_samples['m2']
         m1, m2 = q_prior._sort_masses(m1, m2)
         
         #m1 and m2 have shape [Nbatch]
-        prior_samples['M'] = (m1+m2)
-        prior_samples['q'] = (m2/m1)
+        if 'Mchirp' in self.inference_parameters:
+            prior_samples['Mchirp'] = (m1*m2)**(3/5)/(m1+m2)**(1/5)
+        
+        if 'M' in self.inference_parameters:
+            prior_samples['M'] = (m1+m2)
+        
+        if 'q' in self.inference_parameters:
+            prior_samples['q'] = (m2/m1)
 
         return prior_samples
          
@@ -206,22 +212,18 @@ class DatasetGenerator:
         #first we sample the intrinsic parameters
         self.prior_samples = self.intrinsic_prior.sample(self.num_preload)
         
+        #compute M, Mchirp and/or q and update prior samples
+        self.prior_samples = self._compute_M_Mchirp_and_q(self.prior_samples)
         
-        if all(p in self.inference_parameters for p in ['M', 'q']):
-            self.prior_samples = self._compute_M_and_q(self.prior_samples)
-        
-
         #then we call the waveform generator
         hp, hc, tcoal = self.waveform_generator(self.prior_samples.to('cpu'), 
                                                 n_proc=self.n_proc)
-        print('\n[INFO] Done')
+        print('\n[INFO] Done.')
 
-        
         #store the waveforms as a TensorDict
         wvfs = {'hp': hp, 'hc': hc}
         tcoals = {'tcoal': tcoal}
 
-        
         self.preloaded_wvfs = TensorDict.from_dict(wvfs).to(self.device)
         self.tcoals = TensorDict.from_dict(tcoals).to(self.device)
         
