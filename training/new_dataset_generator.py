@@ -143,8 +143,11 @@ class DatasetGenerator:
         #    this is intended when the inference parameters contain parameters that are combination of the default's one
         #    (Eg. the total mass M =m1+m2 or q=m2/m1 that have no simple joint distribution) 
         #    In this way we store however the metadata (eg. min and max values) without compromising the simulation 
-        if ('M' in self.inference_parameters) and ('q' in self.inference_parameters):
-            for p in ['M', 'q']:
+
+        for p in ['M', 'Mchirp', 'q']:
+            
+            if p in self.inference_parameters:
+
                 self.full_prior[p] = prior_dict_[p](self.full_prior['m1'], self.full_prior['m2'])
                 min, max = float(self.full_prior[p].minimum), float(self.full_prior[p].maximum)
                 

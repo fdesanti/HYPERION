@@ -1,4 +1,3 @@
-
 ##########################################
 # TEOBResumS Hyperbolic capture prior
 ##########################################
@@ -22,18 +21,8 @@ waveform_kwargs:
 #=================================
 
 parameters:
-  intrinsic:
-    #M:                          # Total mass of the binary system
-    #  distribution: "uniform"
-    #  kwargs:
-    #    minimum: 10.0
-    #    maximum: 200.0
 
-    #q:                          # Mass ratio m1/m2 >= 1
-    #  distribution: "uniform"
-    #  kwargs:
-    #    minimum: 1.0
-    #    maximum: 18.0
+  intrinsic:
 
     m1:                         
       distribution: "uniform"
@@ -54,12 +43,12 @@ parameters:
         maximum: 1.01
       
     j_hyp:                      # initial pphi_eob (angular momentum)
-      #distribution: "delta"
-      distribution: "uniform"
+      distribution: "delta"
+      #distribution: "uniform"
       kwargs:
-      #  value: 4.0
-        minimum: 3.95
-        maximum: 4.05
+        value: 4.0
+      #  minimum: 3.95
+      #  maximum: 4.05
 
     r_hyp:                      # initial ratial separation
       distribution: "uniform"

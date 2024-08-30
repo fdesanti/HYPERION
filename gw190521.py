@@ -25,6 +25,8 @@ from tqdm import tqdm
 import numpy as np
 
 if __name__ == '__main__':
+
+    
     
     model_dir = sys.argv[1] if len(sys.argv) > 1 else 'training_results/BHBH'
     print(f'----> Running model saved at {model_dir}')
@@ -38,6 +40,8 @@ if __name__ == '__main__':
     PRIOR_PATH = os.path.join(model_dir, 'prior.yml')
     DURATION  = conf['duration']
 
+    detectors = conf['detectors']
+
     
     
     if torch.cuda.is_available():
@@ -50,17 +54,17 @@ if __name__ == '__main__':
     gps = 1242442967.4 #event_gps("GW190521")
     print('GW190521 GPS time', gps)
     start = int(gps) - 32
-    end = int(gps) + 8
+    end   = int(gps) + 8
     
     sampling_frequency = 2048
     
-    gps-=0.4#0.12
+    gps-=0.25#0.12
     
-    t0=gps-1
-    t1=gps+1
+    t0=gps-DURATION/2
+    t1=gps+DURATION/2
 
     strain = dict()
-    for det in tqdm(['L1', 'H1', 'V1']):
+    for det in tqdm(detectors):
         fname = f'gw190521_data/GW190521_data_{det}_start_{start}_end_{end}.csv'
         #
         try:
@@ -78,7 +82,7 @@ if __name__ == '__main__':
     torch_noisy_strain = dict()
     torch_whitened_strain = dict()
     
-    for det in tqdm(['L1', 'H1', 'V1']):
+    for det in tqdm(detectors):
          asds[det] = strain[det].crop(start, end).asd(4,2, detrend='linear').to_pycbc()
          #torch_asd[det] = ASD_Sampler(det, reference_run = 'O3a', fs = 2048, duration=1).asd_reference
          
@@ -104,7 +108,7 @@ if __name__ == '__main__':
          plt.plot(whitened_strain[det])
          plt.savefig(f'{model_dir}/{det}_whitened_strain.png')
          plt.close()
-    torch_whitened_stacked_strain = torch.stack([torch_whitened_strain[det] for det in ['L1', 'H1', 'V1']]).unsqueeze(0).to(device).float()
+    torch_whitened_stacked_strain = torch.stack([torch_whitened_strain[det] for det in detectors]).unsqueeze(0).to(device).float()
     print(whitened_strain)
     #torch_asd = torch.stack([torch_asd[det] for det in torch_asd.keys()], dim=0).unsqueeze(0).to(device).float()
     #print(torch_asd.shape)
@@ -145,28 +149,30 @@ if __name__ == '__main__':
         #set up Sampler
         checkpoint_path = f'{model_dir}/BHBH_flow_model.pt'
         
-        sampler = PosteriorSampler(flow_checkpoint_path=checkpoint_path, 
-                                   waveform_generator=waveform_generator, 
-                                   num_posterior_samples=num_samples, 
-                                   device=device)
+        sampler = PosteriorSampler(flow_checkpoint_path  = checkpoint_path, 
+                                   waveform_generator    = waveform_generator,
+                                   num_posterior_samples = num_samples,
+                                   device                = device)
 
         #print(sampler.flow.configuration)        
 
         posterior = sampler.sample_posterior(strain = torch_whitened_stacked_strain,#/np.sqrt(2/2048),
-                                             #asd = torch_asd,
-                                             num_samples=num_samples, 
-                                             restrict_to_bounds = False, 
-                                             event_time = gps)
+                                             #asd               = torch_asd,
+                                             num_samples        = num_samples,
+                                             restrict_to_bounds = False,
+                                             event_time         = gps)
         
                 
         print('[INFO]: Peforming Importance Sampling...')
+        sampler.plot_corner(figname=f'{model_dir}/corner.png')
+
         is_kwargs = {'whitened_strain':torch_whitened_strain, 'strain':torch_noisy_strain, 'psd':torch_psd, 'event_time':gps}
         reweighted_poterior = sampler.reweight_posterior(importance_sampling_kwargs=is_kwargs, num_samples=50000)
-        
-        sampler.plot_corner(posterior=reweighted_poterior)
+        print(sampler.IS_results)
+        sampler.plot_corner(posterior=reweighted_poterior, figname=f'{model_dir}/corner_reweighted.png')
         #sampler.plot_skymap(posterior=reweighted_poterior, jobs=2, maxpts=2_000)
 
-        print(sampler.IS_results)
+        
 
         valid_samples  = sampler.IS_results['stats']['valid_samples']
         log_prior      = sampler.IS_results['stats']['logP'][valid_samples]

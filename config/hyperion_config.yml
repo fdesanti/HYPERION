@@ -23,7 +23,7 @@ waveform_model: "TEOBResumSDALI"
 
 prior: "TEOBResumS_hyperbolic"
 
-inference_parameters: ["M", "q", "H_hyp", "j_hyp", "r_hyp", "distance", "inclination", "polarization", "coalescence_angle","tcoal", "ra", "dec"]
+inference_parameters: ["M", "Mchirp", "q", "H_hyp", "r_hyp", "distance", "inclination", "polarization", "coalescence_angle","tcoal", "ra", "dec"]
 #inference_parameters: ["M", "q", "ecc", "distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
 
 duration: 2 #duration in seconds for the simulated signals
@@ -84,7 +84,7 @@ training_options:
   steps_per_epoch: 1000
   val_steps_per_epoch: 150
 
-  num_preload_train: 1500
+  num_preload_train: 2000
   num_preload_val: 1000
 
   n_proc: os.cpu_count()
