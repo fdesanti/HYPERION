@@ -58,7 +58,7 @@ if __name__ == '__main__':
     
     sampling_frequency = 2048
     
-    gps-=0.25#0.12
+    gps-=0.4#0.12
     
     t0=gps-DURATION/2
     t1=gps+DURATION/2
@@ -169,10 +169,6 @@ if __name__ == '__main__':
         is_kwargs = {'whitened_strain':torch_whitened_strain, 'strain':torch_noisy_strain, 'psd':torch_psd, 'event_time':gps}
         reweighted_poterior = sampler.reweight_posterior(importance_sampling_kwargs=is_kwargs, num_samples=50000)
         print(sampler.IS_results)
-        sampler.plot_corner(posterior=reweighted_poterior, figname=f'{model_dir}/corner_reweighted.png')
-        #sampler.plot_skymap(posterior=reweighted_poterior, jobs=2, maxpts=2_000)
-
-        
 
         valid_samples  = sampler.IS_results['stats']['valid_samples']
         log_prior      = sampler.IS_results['stats']['logP'][valid_samples]
@@ -188,6 +184,9 @@ if __name__ == '__main__':
         plt.savefig(f'{model_dir}/posterior_vs_prior_likelihood.png')
         plt.show()
         plt.close()
+
+        sampler.plot_corner(posterior=reweighted_poterior, figname=f'{model_dir}/corner_reweighted.png')
+        sampler.plot_skymap(posterior=reweighted_poterior, jobs=2, maxpts=2_000)
        
 
         '''

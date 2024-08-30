@@ -25,10 +25,11 @@ class IS_Priors(MultivariatePrior):
         self.flow = flow        
         
         priors = flow.prior_metadata['parameters'].copy()
-        if 'M' in priors:
-            priors.pop('M')
-        if 'q' in priors:
-            priors.pop('q')
+
+        for p in ['M', 'Mchirp', 'q']:
+            if p in priors:
+                priors.pop(p)
+
         super(IS_Priors, self).__init__(priors, device=device)
         return
     
@@ -203,11 +204,23 @@ class ImportanceSampling():
         '''
         
         #add parameters not estimated by HYPERION
+
+        if 'M' in thetas.keys() and 'q' in thetas.keys():
         
-        thetas['m2'] = thetas['q'] * thetas['M'] / (1 + thetas['q'])  #m2 = qM/(1+q)   m1 = M-m2
-        thetas['m1'] = thetas['M'] - thetas['m2']
-        thetas.pop('M')
-        thetas.pop('q')
+            thetas['m2'] = thetas['q'] * thetas['M'] / (1 + thetas['q'])  #m2 = qM/(1+q)   m1 = M-m2
+            thetas['m1'] = thetas['M'] - thetas['m2']
+            thetas.pop('M')
+            thetas.pop('q')
+            if 'Mchirp' in thetas.keys():
+                thetas.pop('Mchirp')
+        
+        elif 'Mchirp' in thetas.keys() and 'q' in thetas.keys():
+            thetas['m1'] = (thetas['Mchirp'] * (1 + thetas['q'])**(1/5)) * thetas['q']**(-3/5)
+            thetas['m2'] = thetas['m1'] * thetas['q']
+            thetas.pop('Mchirp')
+            thetas.pop('q')
+        
+        
         #FIXME - in the case of TEOBResumS j_hyp might be missing/it's better to manage
         #        priors with the MultiVariate Prior class
         if not 'j_hyp' in thetas.keys():
@@ -226,7 +239,6 @@ class ImportanceSampling():
         valid_samples = logP!=-torch.inf
         
         #select valid-only posterior samples
-        print(valid_samples)
         thetas = thetas[valid_samples].to('cpu')
         
     
