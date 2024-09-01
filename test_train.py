@@ -61,17 +61,17 @@ if __name__ == '__main__':
         waveform_generator = WaveformGenerator(WAVEFORM_MODEL, fs=conf['fs'], duration=DURATION, **wvf_kwargs)
 
         #setup dataset generator
-        dataset_kwargs = {'waveform_generator': waveform_generator, 
-                            'asd_generators':asd_samplers, 
-                            'det_network': det_network,
-                            'num_preload': 2,
-                            'device':device, 
-                            'batch_size': 1, 
+        dataset_kwargs = {'waveform_generator'    : waveform_generator, 
+                            'asd_generators'      : asd_samplers,
+                            'det_network'         : det_network,
+                            'num_preload'         : 2,
+                            'device'              : device,
+                            'batch_size'          : 1,
                             'inference_parameters': conf['inference_parameters'],
-                            'prior_filepath': PRIOR_PATH, 
-                            'n_proc': 1, 
-                            'use_reference_asd': conf['use_reference_asd'], 
-                            'whiten_kwargs': conf['training_options']['whiten_kwargs']}
+                            'prior_filepath'      : PRIOR_PATH,
+                            'n_proc'              : 1,
+                            'use_reference_asd'   : conf['use_reference_asd'],
+                            'whiten_kwargs'       : conf['training_options']['whiten_kwargs']}
 
         test_ds = DatasetGenerator(**dataset_kwargs)
         test_ds.preload_waveforms()

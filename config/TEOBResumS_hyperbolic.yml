@@ -43,12 +43,12 @@ parameters:
         maximum: 1.01
       
     j_hyp:                      # initial pphi_eob (angular momentum)
-      distribution: "delta"
-      #distribution: "uniform"
+      #distribution: "delta"
+      distribution: "uniform"
       kwargs:
-        value: 4.0
-      #  minimum: 3.95
-      #  maximum: 4.05
+      #  value: 4.0
+        minimum: 3.95
+        maximum: 4.05
 
     r_hyp:                      # initial ratial separation
       distribution: "uniform"

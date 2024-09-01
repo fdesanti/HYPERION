@@ -18,10 +18,11 @@ from hyperion.simulations import (ASD_Sampler,
 
 if __name__ == '__main__':
     parser = OptionParser()
-    parser.add_option("-p", "--preload", default=False, action="store_true", help="Load a pretrained model")
+    parser.add_option("-p", "--preload_trained", default=False, action="store_true", help="Load a pretrained model in training_results/BHBH directory. \
+                                                                                           WARNING: At the moment, hyperion_config & prior must match the pretrained model.")
     (options, args) = parser.parse_args()
     
-    PRELOAD = options.preload
+    PRELOAD = options.preload_trained
 
     conf_yaml = CONF_DIR + '/hyperion_config.yml'
     
@@ -30,13 +31,13 @@ if __name__ == '__main__':
         train_conf = conf['training_options']
 
     
-    NUM_EPOCHS = int(train_conf['num_epochs'])
-    BATCH_SIZE = int(train_conf['batch_size'])
+    NUM_EPOCHS            = int(train_conf['num_epochs'])
+    BATCH_SIZE            = int(train_conf['batch_size'])
     INITIAL_LEARNING_RATE = float(train_conf['initial_learning_rate'])
 
     WAVEFORM_MODEL = conf['waveform_model']
-    PRIOR_PATH = os.path.join(CONF_DIR, conf['prior']+'.yml')
-    DURATION  = conf['duration']
+    PRIOR_PATH     = os.path.join(CONF_DIR, conf['prior']+'.yml')
+    DURATION       = conf['duration']
     
 
     if torch.cuda.is_available():
@@ -75,16 +76,16 @@ if __name__ == '__main__':
         SETUP DATASET GENERATOR ===========================================================
         """
         dataset_kwargs = {'waveform_generator': waveform_generator, 
-                            'asd_generators':asd_samplers, 
-                            'det_network': det_network,
-                            #'num_preload': conf['training_options']['num_preload'],
-                            'device':device, 
-                            'batch_size': BATCH_SIZE, 
-                            'inference_parameters': conf['inference_parameters'],
-                            'prior_filepath': PRIOR_PATH, 
-                            'n_proc': eval(conf['training_options']['n_proc']),
-                            'use_reference_asd': conf['use_reference_asd'], 
-                            'whiten_kwargs': conf['training_options']['whiten_kwargs']}
+                              'asd_generators'      : asd_samplers,
+                              'det_network'         : det_network,
+                            #'num_preload'          : conf['training_options']['num_preload'],
+                              'device'              : device,
+                              'batch_size'          : BATCH_SIZE,
+                              'inference_parameters': conf['inference_parameters'],
+                              'prior_filepath'      : PRIOR_PATH,
+                              'n_proc'              : eval(conf['training_options']['n_proc']),
+                              'use_reference_asd'   : conf['use_reference_asd'],
+                              'whiten_kwargs'       : conf['training_options']['whiten_kwargs']}
 
         train_ds = DatasetGenerator(**dataset_kwargs,
                                     random_seed=train_conf['seeds']['train'], 
@@ -129,13 +130,13 @@ if __name__ == '__main__':
                                         kwargs = scheduler_kwargs )
         
         #set up Trainer
-        trainer_kwargs = {'optimizer': optimizer, 
-                          'scheduler':scheduler, 
-                        'checkpoint_filepath':  checkpoint_filepath,
-                        'steps_per_epoch':      train_conf['steps_per_epoch'],
-                        'val_steps_per_epoch' : train_conf['val_steps_per_epoch'],
-                        'verbose':              train_conf['verbose'], 
-                        'add_noise':            train_conf['add_noise']
+        trainer_kwargs = {'optimizer'        : optimizer, 
+                        'scheduler'          : scheduler,
+                        'checkpoint_filepath': checkpoint_filepath,
+                        'steps_per_epoch'    : train_conf['steps_per_epoch'],
+                        'val_steps_per_epoch': train_conf['val_steps_per_epoch'],
+                        'verbose'            : train_conf['verbose'],
+                        'add_noise'          : train_conf['add_noise']
                         }
 
         flow_trainer = Trainer(flow, train_ds, val_ds, device=device, **trainer_kwargs)

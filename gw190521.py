@@ -56,9 +56,9 @@ if __name__ == '__main__':
     start = int(gps) - 32
     end   = int(gps) + 8
     
-    sampling_frequency = 2048
+    sampling_frequency = conf['fs']
     
-    gps-=0.4#0.12
+    gps-=0.40#0.12
     
     t0=gps-DURATION/2
     t1=gps+DURATION/2

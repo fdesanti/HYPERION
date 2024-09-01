@@ -54,16 +54,16 @@ class Slicer(nn.Module):
 class EmbeddingNetworkAttention(nn.Module):
 
     def __init__(self, 
-                 strain_shape : list, 
-                 fs           : int,
-                 num_blocks   = 3,
-                 block_dims :list = [2048, 1024, 512, 256], 
-                 strain_out_dim = 256,
-                 use_batch_norm = False, 
-                 activation     = nn.ELU(),
-                 dropout_probability=0.0, 
-                 CNN_filters      = [32, 64, 128], 
-                 CNN_kernel_sizes = [1, 5, 5],
+                 strain_shape: list,
+                 fs          : int,
+                 num_blocks          = 3,
+                 block_dims  :list   = [2048, 1024, 512, 256],
+                 strain_out_dim      = 256,
+                 use_batch_norm      = False,
+                 activation          = nn.ELU(),
+                 dropout_probability = 0.0,
+                 CNN_filters         = [32, 64, 128],
+                 CNN_kernel_sizes    = [1, 5, 5],
                  **kwargs,
                  ):
         
