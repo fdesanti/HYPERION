@@ -63,7 +63,11 @@ if __name__ == '__main__':
             prior_conf = yaml.safe_load(f)
             wvf_kwargs = prior_conf['waveform_kwargs']
         
-        waveform_generator = WaveformGenerator(WAVEFORM_MODEL, fs=conf['fs'], duration=DURATION, **wvf_kwargs)
+        waveform_generator = WaveformGenerator(WAVEFORM_MODEL, 
+                                               fs=conf['fs'], 
+                                               duration=DURATION, 
+                                               det_network=det_network,
+                                               **wvf_kwargs)
 
         #Setup dataset generator
         dataset_kwargs = {  'waveform_generator'  : waveform_generator, 
@@ -117,3 +121,9 @@ if __name__ == '__main__':
         
         #generate corner plot
         sampler.plot_corner(injection_parameters=true_parameters)
+        
+        #plot reconstructed_waveform
+        if not 'j_hyp' in posterior.keys():
+            posterior['j_hyp'] = torch.tensor([4.0]*len(posterior)).to(device)
+        sampler.plot_reconstructed_waveform(posterior = posterior, whitened_strain=whitened_strain, asd=asd)
+        

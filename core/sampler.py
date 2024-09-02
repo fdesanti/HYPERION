@@ -3,20 +3,20 @@ import pandas as pd
 
 from pathlib import Path
 from tensordict import TensorDict
-from .flow import Flow, build_flow
-from ..inference import ImportanceSampling
 from bilby.gw.result import CBCResult
 
-
+from .flow import build_flow
+from ..inference import ImportanceSampling
+from ..simulations import GWDetectorNetwork, WhitenNet
 class PosteriorSampler():
     
     def __init__(self, 
-                 flow = None,
-                 flow_checkpoint_path=None, 
-                 waveform_generator=None, 
-                 num_posterior_samples=10000,
-                 output_dir = None,
-                 device = 'cpu'):
+                 flow                  = None,
+                 flow_checkpoint_path  = None,
+                 waveform_generator    = None,
+                 num_posterior_samples = 10000,
+                 output_dir            = None,
+                 device                = 'cpu'):
         
         #building flow model
         if flow is not None:
@@ -29,10 +29,11 @@ class PosteriorSampler():
         
         #set up importance sampler
         if waveform_generator:
-            self.IS = ImportanceSampling(flow=self.flow, 
-                                         device=device,
-                                         waveform_generator=waveform_generator, 
-                                         num_posterior_samples=num_posterior_samples)
+            self.waveform_generator = waveform_generator
+            self.IS = ImportanceSampling(flow                  = self.flow, 
+                                         device                = device,
+                                         waveform_generator    = waveform_generator,
+                                         num_posterior_samples = num_posterior_samples)
         #other attributes
         if output_dir:
             self.output_dir = output_dir  
@@ -179,7 +180,7 @@ class PosteriorSampler():
                 A dictionary containing the samples from the posterior distribution.
         """
         
-        num_samples        = sampling_kwargs.get('num_samples', self.num_posterior_samples)
+        num_samples = sampling_kwargs.get('num_samples', self.num_posterior_samples)
         sampling_kwargs.update({'num_samples': num_samples})
         
         with torch.inference_mode():
@@ -237,8 +238,44 @@ class PosteriorSampler():
         reweighted_indexes = torch.multinomial(importance_weights, num_samples, replacement=True)
         self.reweighted_posterior = self.posterior[reweighted_indexes]
         
-        
         return self.reweighted_posterior
+    
+    
+    def plot_reconstructed_waveform(self, whitened_strain, asd, posterior=None, **kwargs):
+        
+        if posterior is None:
+            posterior = self.posterior
+            
+        #get waveform samples
+        projected_template, tcoal = self.waveform_generator(posterior, project_onto_detectors=True)
+        projected_template = TensorDict.from_dict(projected_template).to(self.device)
+        
+        #compute time_shifts
+        time_shift = self.waveform_generator.det_network.time_delay_from_earth_center(posterior['ra'], 
+                                                                                      posterior['dec'])
+        tcoal_diff  = tcoal.squeeze(1).to(self.device)-posterior['tcoal'].to(self.device)
+        
+        for ifo in time_shift:
+            time_shift[ifo] += tcoal_diff
+        
+        time_shift = TensorDict.from_dict(time_shift).to(self.device).unsqueeze(-1)
+        
+        whitener = WhitenNet(duration = self.waveform_generator.duration,
+                             fs       = self.waveform_generator.fs,
+                             device   = self.device)
+        
+        #whiten_kwargs
+        whiten_kwargs = kwargs.get('whiten_kwargs', {})
+        
+        whitened_waveform = whitener(h          = projected_template, 
+                                     asd        = asd,
+                                     time_shift = time_shift)
+        
+        return 
+        
+            
+        
+                
         
 
 

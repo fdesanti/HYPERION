@@ -1,8 +1,6 @@
 import torch
 import numpy as np
 import multiprocess as mp
-#mp.set_start_method('spawn', force=True)  # Default 'fork' used for training
-
 
 from tqdm import tqdm
 from torch.nn.functional import pad
@@ -10,7 +8,7 @@ from .models import EffectiveFlyByTemplate, TEOBResumSDALI
 from ...core.fft.windows import tukey
 
 models_dict = {'EffectiveFlyBy': EffectiveFlyByTemplate, 
-                'TEOBResumSDALI': TEOBResumSDALI}
+               'TEOBResumSDALI': TEOBResumSDALI}
 
 
 class WaveformGenerator:
@@ -29,8 +27,8 @@ class WaveformGenerator:
     
     def __init__(self, 
                  waveform_model, 
-                 fs = 2048,
-                 duration = 4,
+                 fs               = 2048,
+                 duration         = 4,
                  det_network:dict = None,
                  **waveform_model_kwargs):
 

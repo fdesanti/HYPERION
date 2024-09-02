@@ -159,11 +159,10 @@ class WhitenNet:
 
     def __init__(self, fs, duration, rng=None, device='cpu'):
 
-        self.fs = fs
-        self.device = device
+        self.fs       = fs
+        self.device   = device
         self.duration = duration
-    
-        self.rng = rng
+        self.rng      = rng
 
         return
 
