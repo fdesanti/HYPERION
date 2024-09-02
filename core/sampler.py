@@ -42,15 +42,31 @@ class PosteriorSampler():
         self.device = device
         return
     
-    @property #TODO: this is a bit ugly, make it more elegant
+    @property 
     def latex_labels(self): 
-        converter = {'m1':'$m_1$', 'm2':'$m_2$', 'M':'$M$ $[M_{\odot}]$', 'q':'$q$','M_chirp':'$\mathcal{M}$' ,'e0':'$e_0$', 'p_0':'$p_0$', 'distance':'$d_L$ [Mpc]',
-                     'time_shift':'$\delta t_p$ [s]', 'polarization':'$\psi$', 'inclination':'$\iota$', 'dec': '$\delta$', 'ra':'$\\alpha$'}
-        latex_labels = []
+        converter = {'m1'               : '$m_1$ $[M_{\odot}]$', 
+                     'm2'               : '$m_2$ $[M_{\odot}]$',
+                     'M'                : '$M$ $[M_{\odot}]$',
+                     'q'                : '$q$',
+                     'Mchirp'           : '$\mathcal{M}$ $[M_{\odot}]$',
+                     'e0'               : '$e_0$',
+                     'p_0'              : '$p_0$',
+                     'distance'         : '$d_L$ [Mpc]',
+                     'time_shift'       : '$\delta t_p$ [s]',
+                     'tcoal'            : '$t_{coal}$ [s]',
+                     'polarization'     : '$\psi$',
+                     'inclination'      : '$\iota$',
+                     'dec'              : '$\delta$',
+                     'ra'               : '$\\alpha$',
+                     'H_hyp'            : '$\mathcal{H}_{hyp}$',
+                     'r_hyp'            : '$r_{hyp}$',
+                     'j_hyp'            : '$j_{hyp}$',
+                     'coalescence_angle': '$\phi$',
+                     }
+        _latex_labels = {}
         for par_name in self.inference_parameters:
-            label = converter[par_name] if par_name in converter else par_name
-            latex_labels.append(label)
-        return latex_labels
+            _latex_labels[par_name] = converter[par_name] if par_name in converter else par_name
+        return _latex_labels
 
     @property
     def inference_parameters(self):
@@ -105,7 +121,7 @@ class PosteriorSampler():
             raise ValueError('Bayes Factor has not been computed yet. Run the "compute_BayesFactor" method.')
         return self._BayesFactor
     
-    def to_bilby(self, posterior=None, injection_parameters=None):
+    def to_bilby(self, posterior=None, **kwargs):
         """Export sampler results to a bilby CBC result object."""
         
         if posterior is None:
@@ -114,29 +130,34 @@ class PosteriorSampler():
         if isinstance(posterior, TensorDict):
             posterior= dict(posterior.cpu())
 
-        bilby_kwargs = {'posterior': pd.DataFrame.from_dict(posterior),
+        bilby_kwargs = {'posterior'            : pd.DataFrame.from_dict(posterior),
                         'search_parameter_keys': self.inference_parameters,
-                        'parameter_labels': self.latex_labels,
-                        'outdir': self.output_dir, 
-                        'injection_parameters': injection_parameters}
+                        'parameter_labels'     : list(self.latex_labels.values()),
+                        'outdir'               : self.output_dir,
+                        #'injection_parameters' : injection_parameters, 
+                        }
+        bilby_kwargs.update(kwargs)
         
         return CBCResult(**bilby_kwargs)
     
     def plot_skymap(self, posterior=None, **skymap_kwargs):
         """Wrapper to Bilby plot skymap method."""
         
-        bilby_result = self.to_bilby(posterior)
+        bilby_result = self.to_bilby(posterior=posterior)
         return bilby_result.plot_skymap(**skymap_kwargs)
     
     def plot_corner(self, posterior=None, injection_parameters=None, figname=None, **corner_kwargs):
         """Wrapper to Bilby plot corner method."""
 
-        bilby_result = self.to_bilby(posterior, injection_parameters)
+        bilby_result = self.to_bilby(posterior=posterior, 
+                                     injection_parameters=injection_parameters)
 
         fontsize_kwargs = {'fontsize': 20}
-        default_corner_kwargs = {'title_kwargs':fontsize_kwargs, 'label_kwargs':fontsize_kwargs, 
-                                 'labels':self.latex_labels, 'plot_density':False, 
-                                 'plot_datapoints':True}
+        default_corner_kwargs = {'title_kwargs'   : fontsize_kwargs, 
+                                 'label_kwargs'   : fontsize_kwargs,
+                                 'labels'         : list(self.latex_labels.values()),
+                                 'plot_density'   : False,
+                                 'plot_datapoints': True}
         
         #update corner kwargs with input arguments
         default_corner_kwargs.update(corner_kwargs)
@@ -157,7 +178,10 @@ class PosteriorSampler():
             posterior: (dict)
                 A dictionary containing the samples from the posterior distribution.
         """
-        #TODO: better manage options
+        
+        num_samples        = sampling_kwargs.get('num_samples', self.num_posterior_samples)
+        sampling_kwargs.update({'num_samples': num_samples})
+        
         with torch.inference_mode():
             self.posterior = self.flow.sample(**sampling_kwargs)
         return self.posterior

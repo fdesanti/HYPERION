@@ -57,10 +57,10 @@ if __name__ == '__main__':
         asd_samplers = dict()
         for ifo in det_network.detectors:
             asd_samplers[ifo] = ASD_Sampler(ifo, 
-                                            device=device, 
-                                            fs=conf['fs'], 
-                                            duration=DURATION,
-                                            reference_run=conf['ASD_reference_run'])
+                                            device        = device,
+                                            fs            = conf['fs'],
+                                            duration      = DURATION,
+                                            reference_run = conf['ASD_reference_run'])
         
         """
         SETUP WAVEFORM GENERATOR ===========================================================
@@ -75,7 +75,7 @@ if __name__ == '__main__':
         """
         SETUP DATASET GENERATOR ===========================================================
         """
-        dataset_kwargs = {'waveform_generator': waveform_generator, 
+        dataset_kwargs = {'waveform_generator'      : waveform_generator, 
                               'asd_generators'      : asd_samplers,
                               'det_network'         : det_network,
                             #'num_preload'          : conf['training_options']['num_preload'],
