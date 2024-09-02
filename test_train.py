@@ -125,5 +125,8 @@ if __name__ == '__main__':
         #plot reconstructed_waveform
         if not 'j_hyp' in posterior.keys():
             posterior['j_hyp'] = torch.tensor([4.0]*len(posterior)).to(device)
-        sampler.plot_reconstructed_waveform(posterior = posterior, whitened_strain=whitened_strain, asd=asd)
+        asd_dict={ifo: asd[0][i] for i, ifo in zip(range(len(asd[0])), det_network.detectors)}
+        sampler.plot_reconstructed_waveform(posterior=posterior, 
+                                            whitened_strain=whitened_strain, 
+                                            asd=asd_dict)
         

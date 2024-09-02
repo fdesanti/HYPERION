@@ -253,7 +253,7 @@ class PosteriorSampler():
         #compute time_shifts
         time_shift = self.waveform_generator.det_network.time_delay_from_earth_center(posterior['ra'], 
                                                                                       posterior['dec'])
-        tcoal_diff  = tcoal.squeeze(1).to(self.device)-posterior['tcoal'].to(self.device)
+        tcoal_diff  = posterior['tcoal'].to(self.device)-tcoal.squeeze(1).to(self.device)
         
         for ifo in time_shift:
             time_shift[ifo] += tcoal_diff
@@ -266,10 +266,37 @@ class PosteriorSampler():
         
         #whiten_kwargs
         whiten_kwargs = kwargs.get('whiten_kwargs', {})
-        
-        whitened_waveform = whitener(h          = projected_template, 
+        print(projected_template.shape)
+        whitened_waveform = whitener(h          = projected_template.unsqueeze(0), 
                                      asd        = asd,
-                                     time_shift = time_shift)
+                                     time_shift = time_shift, 
+                                     method     = 'gwpy',
+                                     normalize  = True, 
+                                     add_noise  = False)[0]
+        
+        time = torch.linspace(-self.waveform_generator.duration/2, 
+                              self.waveform_generator.duration/2, 
+                              int(self.waveform_generator.duration*self.waveform_generator.fs)
+                             ).cpu().numpy()
+        
+        import matplotlib.pyplot as plt
+        import numpy as np
+        plt.figure(figsize=(20, 15))
+        for i, det in enumerate(self.waveform_generator.det_network.detectors):
+            plt.subplot(3, 1, i+1)
+            plt.plot(time, whitened_strain[0][i].cpu().numpy())
+            
+            wvf = whitened_waveform[det].cpu().numpy()
+            
+            low = np.percentile(whitened_waveform[det].cpu().numpy(), 0.16, axis=0)
+            high = np.percentile(whitened_waveform[det].cpu().numpy(), 0.84, axis=0)
+            plt.fill_between(time, low, high, color='r', alpha=0.5)
+            
+            #plt.plot(time, median, color='r', alpha=0.5)
+            
+            plt.title(det)           
+        plt.show()
+        plt.savefig(f'{self.output_dir}/reconstructed_waveform.png', dpi=200)
         
         return 
         
