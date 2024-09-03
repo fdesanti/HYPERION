@@ -58,7 +58,7 @@ if __name__ == '__main__':
     
     sampling_frequency = conf['fs']
     
-    gps-=0.250#0.12
+    gps-=0.00#0.12
     
     t0=gps-DURATION/2
     t1=gps+DURATION/2
@@ -135,7 +135,7 @@ if __name__ == '__main__':
                                                **wvf_kwargs)
         
         #SAMPLING --------
-        num_samples = 10_00
+        num_samples = 10_000
         #parameters, strain = test_ds.__getitem__()
         '''
         plt.figure(figsize=(20, 15))
@@ -159,10 +159,12 @@ if __name__ == '__main__':
         posterior = sampler.sample_posterior(strain = torch_whitened_stacked_strain,#/np.sqrt(2/2048),
                                              #asd               = torch_asd,
                                              num_samples        = num_samples,
-                                             restrict_to_bounds = False,
+                                             restrict_to_bounds = True,
                                              event_time         = gps)
         
         sampler.plot_corner(figname=f'{model_dir}/corner.png')
+        bilby_posterior = sampler.to_bilby().save_posterior_samples(filename=f'{model_dir}/posterior.csv')
+
         
         print('[INFO]: Peforming Importance Sampling...')
         is_kwargs = {'whitened_strain':torch_whitened_strain, 'strain':torch_noisy_strain, 'psd':torch_psd, 'event_time':gps}
