@@ -23,7 +23,7 @@ waveform_model: "TEOBResumSDALI"
 
 prior: "TEOBResumS_hyperbolic"
 
-inference_parameters: ["M", "Mchirp", "q", "H_hyp", "r_hyp", "distance", "inclination", "polarization", "coalescence_angle","tcoal", "ra", "dec"]
+inference_parameters: ["M", "q", "H_hyp", "j_hyp", "r_hyp", "distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
 #inference_parameters: ["M", "q", "ecc", "distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
 
 duration: 2 #duration in seconds for the simulated signals
@@ -33,19 +33,19 @@ duration: 2 #duration in seconds for the simulated signals
 # FLOW and EMBEDDING NETWORK
 #============================
 flow:
-  num_coupling_layers: 10
+  num_coupling_layers: 36
 
 coupling_layers:
-  num_features:     3
-  num_identity:     2
-  num_transformed:  1
+  num_features:     12
+  num_identity:     6
+  num_transformed:  6
 
 base_distribution:
-  dist_name:         "MultivariateNormalBase"
+  dist_name:         "ConditionalMultivariateNormalBase"
   kwargs:
-    dim:              3
-    trainable:        false
-    #num_components:   2
+    dim:              12
+    #trainable:        true
+    #num_components:   3
 
 embedding_network:
   model:            "CNN+ResNet+Attention"
@@ -90,7 +90,7 @@ training_options:
   n_proc: os.cpu_count()
 
   whiten_kwargs:
-    method: "gwpy"
+    method: "pycbc"
     normalize: True
 
   add_noise: True

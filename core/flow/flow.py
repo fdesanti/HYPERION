@@ -78,7 +78,7 @@ class Flow(nn.Module):
 
         transformed_samples, logabsdet = self.transformation(inputs, embedded_strain)  #makes the forward pass 
         
-        log_prob = self.base_distribution.log_prob(transformed_samples)
+        log_prob = self.base_distribution.log_prob(transformed_samples, embedded_strain)
         
         return log_prob + logabsdet 
     
@@ -95,7 +95,7 @@ class Flow(nn.Module):
         
         for _ in tqdm(range(nsteps), disable=False if verbose else True):
     
-            prior_samples = self.base_distribution.sample(batch_samples)
+            prior_samples = self.base_distribution.sample(batch_samples, embedded_strain)
 
             flow_samples, inverse_logabsdet = self.transformation.inverse(prior_samples, embedded_strain)
             
