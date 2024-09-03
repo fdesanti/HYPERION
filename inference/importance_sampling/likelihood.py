@@ -79,8 +79,8 @@ class GWLikelihood():
         
         #print('NOISE LIKELIHOOD###############')
         for det_name in strain.keys():
-            
-            frequency_domain_strain = rfft(strain[det_name], n=strain[det_name].shape[-1], norm=self.fs)
+            n = strain[det_name].shape[-1]
+            frequency_domain_strain = rfft(strain[det_name], n=n, norm=n)
             
             #logL -= (2. / self.duration) * torch.sum(torch.conj(frequency_domain_strain) * frequency_domain_strain / (psd[det_name])) / self.fs
 
@@ -138,7 +138,8 @@ class GWLikelihood():
         
         for det_name in strain.keys():
             print(f'[INFO] Computing log likelihood for {det_name}')
-            frequency_domain_strain = rfft(strain[det_name], n=strain[det_name].shape[-1], norm=self.fs)
+            n = strain[det_name].shape[-1]
+            frequency_domain_strain = rfft(strain[det_name], n=n, norm=n)
             '''
             logL += self._gaussian_likelihood(frequency_domain_strain, 
                                               frequency_domain_template[det_name], 
@@ -226,7 +227,7 @@ class GWLikelihood():
         n = self.waveform_generator.duration * self.fs
         frequency_domain_template = dict()
         for det_name in det_names:
-            hf  = rfft(template[det_name], n=n, norm=self.fs)
+            hf  = rfft(template[det_name], n=n, norm=n)
             
             dt = (tcoal + time_delays[det_name]).unsqueeze(-1)
                         

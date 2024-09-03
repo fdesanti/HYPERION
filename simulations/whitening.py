@@ -237,17 +237,17 @@ class WhitenNet:
 
         Args:
         -----
-            h (TensorDict)          : input signal(s) from different detectors
-            asd (TensorDict)        : ASD of the noise for each detector
-            time_shift (TensorDict) : time shift for each detector. (Default is None)
-            noise (TensorDict)      : Gaussian noise to add to the input template(s) - Mutually 
-                                      exclusive with the 'add_noise' argument.
-            add_noise (bool)        : whether to add Gaussian noise to the whitened signal(s)
-            normalize (bool)       : whether to normalize the whitened signal(s) to have unit variance
-            method (str)            : method to use for whitening
-                                      If "gwpy" constructs the FIR as in gwpy.
-                                      Otherwise when "pycbc" just divide the frequency domain
-                                      with the ASD. (Default is 'gwpy')
+            h (TensorDict)         : input signal(s) from different detectors
+            asd (TensorDict)       : ASD of the noise for each detector
+            time_shift (TensorDict): time shift for each detector. (Default is None)
+            noise (TensorDict)     : Gaussian noise to add to the input template(s) - Mutually
+                                     exclusive with the 'add_noise' argument.
+            add_noise (bool): whether to add Gaussian noise to the whitened signal(s)
+            normalize (bool): whether to normalize the whitened signal(s) to have unit variance
+            method (str)    : method to use for whitening
+                              If "gwpy" constructs the FIR as in gwpy.
+                              Otherwise when "pycbc" just divide the frequency domain
+                              with the ASD. (Default is 'gwpy')
 
         Returns:
         --------

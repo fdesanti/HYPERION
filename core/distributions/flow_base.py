@@ -41,8 +41,10 @@ class MultivariateNormalBase(nn.Module):
         """Initializes the distributions given the paramters from the __init__"""
         
         if self.trainable:
-            self.mean = nn.Parameter(torch.zeros(self.dim))
-            self.var  = nn.Parameter(torch.randint(1, 6, (self.dim,)) * torch.eye(self.dim))
+            self.mean = nn.Parameter(torch.randn((self.dim)))
+            self.var  = nn.Parameter(torch.eye(self.dim))
+            #self.mean = nn.Parameter(torch.zeros(self.dim))
+            #self.var  = nn.Parameter(torch.randint(1, 6, (self.dim,)) * torch.eye(self.dim))
         else:
             self.register_buffer("mean", torch.zeros(self.dim))
             self.register_buffer("var",  torch.eye(self.dim))
@@ -82,10 +84,12 @@ class MultivariateGaussianMixture(nn.Module):
         #initialize the mixture components
         self.mixture_components = nn.ModuleList([MultivariateNormalBase(dim, trainable) for _ in range(num_components)])
         
+        #initialize the mixture weights
+        mixture_weights = torch.ones(num_components)/num_components
         if trainable:
-            self.mixture_weights = nn.Parameter(torch.randn(num_components))
+            self.mixture_weights = nn.Parameter(torch.log(mixture_weights))
         else:
-            self.register_buffer("mixture_weights", torch.ones(num_components)/num_components)
+            self.register_buffer("mixture_weights", mixture_weights)
         return
     
     def log_prob(self, samples):
@@ -94,7 +98,7 @@ class MultivariateGaussianMixture(nn.Module):
         if samples.shape[1] != self.dim:
             raise ValueError(f'Wrong samples dim. Expected (batch_size, {self.dim}) and got {samples.dim}')
         
-        weights  = F.softmax(self.mixture_weights, dim=0)
+        weights  = F.softmax(self.mixture_weights)
 
         log_prob = [weights[i].log() + self.mixture_components[i].log_prob(samples) for i in range(self.num_components)]
         
