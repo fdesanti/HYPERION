@@ -182,7 +182,7 @@ class Flow(nn.Module):
         """corrects ra shift due to Earth rotation with GMST (from pycbc.detector code)"""
         
         
-        reference_Time = Time(self.reference_time, format="gps", scale="utc")
+        reference_Time = Time(1370692818, format="gps", scale="utc")
         event_Time     = Time(event_time, format="gps", scale="utc")
         GMST_event     = event_Time.sidereal_time("apparent", "greenwich").rad
         GMST_reference = reference_Time.sidereal_time("apparent", "greenwich").rad

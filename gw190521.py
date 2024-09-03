@@ -58,7 +58,7 @@ if __name__ == '__main__':
     
     sampling_frequency = conf['fs']
     
-    gps-=0.40#0.12
+    gps-=0.250#0.12
     
     t0=gps-DURATION/2
     t1=gps+DURATION/2
@@ -162,10 +162,9 @@ if __name__ == '__main__':
                                              restrict_to_bounds = False,
                                              event_time         = gps)
         
-                
-        print('[INFO]: Peforming Importance Sampling...')
         sampler.plot_corner(figname=f'{model_dir}/corner.png')
-
+        
+        print('[INFO]: Peforming Importance Sampling...')
         is_kwargs = {'whitened_strain':torch_whitened_strain, 'strain':torch_noisy_strain, 'psd':torch_psd, 'event_time':gps}
         reweighted_poterior = sampler.reweight_posterior(importance_sampling_kwargs=is_kwargs, num_samples=50000)
         print(sampler.IS_results)
@@ -200,3 +199,5 @@ if __name__ == '__main__':
         bilby_posterior = sampler.to_bilby().save_posterior_samples(filename='training_results/BHBH/posterior.csv')
         sampler.plot_skymap(jobs=2, maxpts=1_000)
         '''
+
+        
