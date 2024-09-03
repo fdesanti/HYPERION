@@ -25,14 +25,10 @@ class Flow(nn.Module):
         super(Flow, self).__init__()
         
         self.base_distribution = base_distribution
-        
         self.transformation    = transformation
-        
         self.embedding_network = embedding_network
-        
-        self.prior_metadata = prior_metadata
-        
-        self.configuration = configuration
+        self.prior_metadata    = prior_metadata
+        self.configuration     = configuration
            
         return
 
@@ -65,7 +61,7 @@ class Flow(nn.Module):
     @property
     def reference_time(self):
         if not hasattr(self, '_reference_time'):
-            self._reference_time = self.prior_metadata['reference_gps_time']
+            self._reference_time = self.configuration['reference_gps_time']
         return self._reference_time
     
         
@@ -182,7 +178,7 @@ class Flow(nn.Module):
         """corrects ra shift due to Earth rotation with GMST (from pycbc.detector code)"""
         
         
-        reference_Time = Time(1370692818, format="gps", scale="utc")
+        reference_Time = Time(self.reference_time, format="gps", scale="utc")
         event_Time     = Time(event_time, format="gps", scale="utc")
         GMST_event     = event_Time.sidereal_time("apparent", "greenwich").rad
         GMST_reference = reference_Time.sidereal_time("apparent", "greenwich").rad

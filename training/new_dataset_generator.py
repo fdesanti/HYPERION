@@ -76,10 +76,10 @@ class DatasetGenerator:
         #load prior        
         self._load_prior(prior_filepath)     
 
-        self.WhitenNet = WhitenNet(duration=waveform_generator.duration, 
-                                   fs= waveform_generator.fs, 
-                                   device=device,
-                                   rng=self.rng)
+        self.WhitenNet = WhitenNet(duration = waveform_generator.duration, 
+                                   fs       = waveform_generator.fs,
+                                   device   = device,
+                                   rng      = self.rng)
         return
     
     
@@ -249,9 +249,9 @@ class DatasetGenerator:
                          
         #project strain onto detectors
         h = self.det_network.project_wave(hp, hc, 
-                                          ra=prior_samples['ra'], 
-                                          dec=prior_samples['dec'], 
-                                          polarization=prior_samples['polarization'])
+                                          ra           = prior_samples['ra'],
+                                          dec          = prior_samples['dec'],
+                                          polarization = prior_samples['polarization'])
         #compute relative time shifts
         time_shifts = self.det_network.time_delay_from_earth_center(ra=prior_samples['ra'], 
                                                                     dec=prior_samples['dec'])        
@@ -277,12 +277,12 @@ class DatasetGenerator:
         torch_asd = torch.stack([asd[det] for det in self.det_network.detectors], dim=1)
         
         whitened_strain = self.WhitenNet(h=h, 
-                                         asd=asd, 
-                                         noise=None,
-                                         time_shift=time_shifts, 
-                                         add_noise=add_noise, 
-                                         method=self.whitening_method,
-                                         normalize=self.whitening_normalize)
+                                         asd        = asd,
+                                         noise      = None,
+                                         time_shift = time_shifts,
+                                         add_noise  = add_noise,
+                                         method     = self.whitening_method,
+                                         normalize  = self.whitening_normalize)
 
         #standardize parameters
         prior_samples['tcoal'] = self.tcoals[idxs]['tcoal'] + prior_samples['time_shift']#add tcoal to time_shift
