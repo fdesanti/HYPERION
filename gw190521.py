@@ -135,7 +135,7 @@ if __name__ == '__main__':
                                                **wvf_kwargs)
         
         #SAMPLING --------
-        num_samples = 10_000
+        num_samples = 10_00
         #parameters, strain = test_ds.__getitem__()
         '''
         plt.figure(figsize=(20, 15))
