@@ -128,17 +128,17 @@ class ConditionalMultivariateNormalBase(nn.Module):
         mean = self.mean_network(embedded_strain)
         var  = self.var_network(embedded_strain)
         
-        log_prob = [torchMultivariateNormal(mean[i, :], torch.eye(self.dim)*var[i, :]).log_prob(samples[i, :]) for i in range(samples.shape[0])]
-        
-        return torch.stack(log_prob, axis=0)
+        return torchMultivariateNormal(mean, torch.diag_embed(var)).log_prob(samples)
     
     def sample(self, num_samples, embedded_strain):
         
-        mean = self.mean_network(embedded_strain)
-        var  = self.var_network(embedded_strain)
+        #compute the mean and variance
+        #NB here we assume embedded_strain has dim [1, strain_dim] (i.e. 1 sample per batch)
+        mean = self.mean_network(embedded_strain).squeeze(0)
+        var  = self.var_network(embedded_strain).squeeze(0)
 
         #by default .samples returns [1, num_samples, dim] so we delete 1 dimension
-        return torchMultivariateNormal(mean[0], torch.eye(self.dim)*var[0]).sample((1,num_samples)).squeeze(0)
+        return torchMultivariateNormal(mean, torch.diag_embed(var)).sample((1,num_samples)).squeeze(0)
     
 
 class MultivariateGaussianMixtureBase(nn.Module):
