@@ -133,7 +133,7 @@ class PosteriorSampler():
         
         #bilby expects 'luminosity_distance' instead of 'distance'
         if 'distance' in posterior:
-            posterior['luminosity_distance'] = posterior.pop('distance')
+            posterior['luminosity_distance'] = posterior['distance']
             
 
         bilby_kwargs = {'posterior'            : pd.DataFrame.from_dict(posterior),
