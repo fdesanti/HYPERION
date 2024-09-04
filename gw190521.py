@@ -58,7 +58,7 @@ if __name__ == '__main__':
     
     sampling_frequency = conf['fs']
     
-    gps-=0.00#0.12
+    gps-=0.2#0.12
     
     t0=gps-DURATION/2
     t1=gps+DURATION/2
@@ -163,7 +163,7 @@ if __name__ == '__main__':
                                              event_time         = gps)
         
         sampler.plot_corner(figname=f'{model_dir}/corner.png')
-        sampler.plot_skymap(jobs=2)
+        sampler.plot_skymap(jobs=2, maxpts=1_000)
         bilby_posterior = sampler.to_bilby().save_posterior_samples(filename=f'{model_dir}/posterior.csv')
 
         
