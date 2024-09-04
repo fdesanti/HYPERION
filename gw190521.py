@@ -58,7 +58,7 @@ if __name__ == '__main__':
     
     sampling_frequency = conf['fs']
     
-    gps-=0.2#0.12
+    gps-=0.250#0.12
     
     t0=gps-DURATION/2
     t1=gps+DURATION/2
@@ -162,9 +162,9 @@ if __name__ == '__main__':
                                              restrict_to_bounds = True,
                                              event_time         = gps)
         
-        sampler.plot_corner(figname=f'{model_dir}/corner.png')
+        sampler.plot_corner(figname=f'{model_dir}/gw190521_corner.png')
         sampler.plot_skymap(jobs=2, maxpts=1_000)
-        bilby_posterior = sampler.to_bilby().save_posterior_samples(filename=f'{model_dir}/posterior.csv')
+        bilby_posterior = sampler.to_bilby().save_posterior_samples(filename=f'{model_dir}/gw190521_posterior.csv')
 
         
         print('[INFO]: Peforming Importance Sampling...')
@@ -187,7 +187,7 @@ if __name__ == '__main__':
         plt.show()
         plt.close()
 
-        sampler.plot_corner(posterior=reweighted_poterior, figname=f'{model_dir}/corner_reweighted.png')
+        sampler.plot_corner(posterior=reweighted_poterior, figname=f'{model_dir}/gw190521_corner_reweighted.png')
         sampler.plot_skymap(posterior=reweighted_poterior, jobs=2, maxpts=2_000)
        
 
