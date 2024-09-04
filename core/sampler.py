@@ -130,6 +130,11 @@ class PosteriorSampler():
        
         if isinstance(posterior, TensorDict):
             posterior= dict(posterior.cpu())
+        
+        #bilby expects 'luminosity_distance' instead of 'distance'
+        if 'distance' in posterior:
+            posterior['luminosity_distance'] = posterior.pop('distance')
+            
 
         bilby_kwargs = {'posterior'            : pd.DataFrame.from_dict(posterior),
                         'search_parameter_keys': self.inference_parameters,
