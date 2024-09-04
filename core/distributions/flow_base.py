@@ -114,6 +114,8 @@ class ConditionalMultivariateNormalBase(nn.Module):
                                             nn.Dropout(dropout),
                                             nn.Linear(layer_dim, self.dim), 
                                             nn.Softplus())
+        
+        self.eps = 1e-6
     
         return
     
@@ -126,7 +128,7 @@ class ConditionalMultivariateNormalBase(nn.Module):
             raise ValueError(f'Wrong samples dim. Expected (batch_size, {self.dim}) and got {samples.dim}')
         
         mean = self.mean_network(embedded_strain)
-        var  = self.var_network(embedded_strain)
+        var  = self.var_network(embedded_strain) + self.eps
         
         return torchMultivariateNormal(mean, torch.diag_embed(var)).log_prob(samples)
     
@@ -135,7 +137,7 @@ class ConditionalMultivariateNormalBase(nn.Module):
         #compute the mean and variance
         #NB here we assume embedded_strain has dim [1, strain_dim] (i.e. 1 sample per batch)
         mean = self.mean_network(embedded_strain).squeeze(0)
-        var  = self.var_network(embedded_strain).squeeze(0)
+        var  = self.var_network(embedded_strain).squeeze(0) + self.eps
 
         #by default .samples returns [1, num_samples, dim] so we delete 1 dimension
         return torchMultivariateNormal(mean, torch.diag_embed(var)).sample((1,num_samples)).squeeze(0)

@@ -163,6 +163,7 @@ if __name__ == '__main__':
                                              event_time         = gps)
         
         sampler.plot_corner(figname=f'{model_dir}/corner.png')
+        sampler.plot_skymap(jobs=2)
         bilby_posterior = sampler.to_bilby().save_posterior_samples(filename=f'{model_dir}/posterior.csv')
 
         
