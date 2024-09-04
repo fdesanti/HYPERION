@@ -180,12 +180,12 @@ class Flow(nn.Module):
         
         reference_Time = Time(self.reference_time, format="gps", scale="utc")
         event_Time     = Time(event_time, format="gps", scale="utc")
-        GMST_event     = event_Time.sidereal_time("apparent", "greenwich").rad
-        GMST_reference = reference_Time.sidereal_time("apparent", "greenwich").rad
+        GMST_event     = event_Time.sidereal_time("mean", "greenwich").rad
+        GMST_reference = reference_Time.sidereal_time("mean", "greenwich").rad
         
         #dphase = (event_time -1370692818) / sday.si.scale * (2.0 * torch.pi)
         #correction = (-GMST_reference + dphase) % (2.0 * torch.pi)
-        correction = (GMST_event - GMST_reference) #% (2*torch.pi)
+        correction = (GMST_event - GMST_reference) % (2*torch.pi)
                 
         return (ra_samples + correction) % (2*torch.pi)
 
