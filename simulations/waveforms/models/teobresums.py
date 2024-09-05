@@ -57,9 +57,9 @@ class  TEOBResumSDALI():
         'ode_tstep_opt'      : "adaptive",        # Fixing uniform or adaptive. Default = 1 
         
         # nqcs
-        'nqc'                : 'manual',           #options are ["none", "manual", "auto"]
-        'nqc_coefs_flx'      : 'nrfit_spin202002', #options are ["none", "nrfit_spin202002", "nrfit_nospin201602"]
-        'nqc_coefs_hlm'      : 'nrfit_spin202002', #options are ["none", "nrfit_spin202002", "nrfit_nospin201602", "compute"]
+        #'nqc'                : 'manual',           #options are ["none", "manual", "auto"]
+        #'nqc_coefs_flx'      : 'nrfit_spin202002', #options are ["none", "nrfit_spin202002", "nrfit_nospin201602"]
+        #'nqc_coefs_hlm'      : 'nrfit_spin202002', #options are ["none", "nrfit_spin202002", "nrfit_nospin201602", "compute"]
 
         # Output parameters (Python)
         'arg_out'            : "no",     # Output hlm/hflm. Default = "no"

@@ -7,7 +7,8 @@ from bilby.gw.result import CBCResult
 
 from .flow import build_flow
 from ..inference import ImportanceSampling
-from ..simulations import GWDetectorNetwork, WhitenNet
+
+
 class PosteriorSampler():
     
     def __init__(self, 
@@ -247,6 +248,7 @@ class PosteriorSampler():
     
     
     def plot_reconstructed_waveform(self, whitened_strain, asd, posterior=None, **kwargs):
+        from ..simulations import GWDetectorNetwork, WhitenNet
         
         if posterior is None:
             posterior = self.posterior
