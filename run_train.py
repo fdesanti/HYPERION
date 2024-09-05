@@ -20,7 +20,7 @@ if __name__ == '__main__':
     parser.add_option("-p", "--preload_trained", default=False, action="store_true", help="Load a pretrained model in training_results/BHBH directory.")
     (options, args) = parser.parse_args()
     
-    PRELOAD = options.preload_trained
+    PRELOAD = options.preload_trained        
 
     conf_dir = 'training_results/BHBH' if PRELOAD else CONF_DIR
     conf_yaml = conf_dir + '/hyperion_config.yml'
@@ -31,6 +31,7 @@ if __name__ == '__main__':
 
     #if PRELOAD, load the history file to get the learning rates
     if PRELOAD:
+        print(f'[INFO]: Loading pretrained model from {conf_dir} directory...')
         import numpy as np
         history_file = os.path.join(conf_dir, 'history.txt')
         _, _, learning_rates = np.loadtxt(history_file, delimiter=',', unpack=True)
