@@ -182,7 +182,7 @@ class ImportanceSampling():
                     
             Returns:
             --------
-                thetas : dict or pandas.DataFrame
+                theta : dict or pandas.DataFrame
                     Posterior samples
                     
                 log_posterior : torch.tensor
@@ -191,12 +191,12 @@ class ImportanceSampling():
         
         
         #sampling flow posterior
-        thetas, log_posterior, medians, ks_stat  = self._sample_flow_posterior(whitened_strain, event_time)
+        theta, log_posterior, medians, ks_stat  = self._sample_flow_posterior(whitened_strain, event_time)
         
         '''
         import corner
         import matplotlib.pyplot as plt
-        p = thetas.copy()
+        p = theta.copy()
         for name in p.keys():
             p[name] = p[name].squeeze().cpu().numpy()
         corner.corner(p)
@@ -205,58 +205,58 @@ class ImportanceSampling():
         
         #add parameters not estimated by HYPERION
 
-        if 'M' in thetas.keys() and 'q' in thetas.keys():
+        if 'M' in theta.keys() and 'q' in theta.keys():
         
-            thetas['m2'] = thetas['q'] * thetas['M'] / (1 + thetas['q'])  #m2 = qM/(1+q)   m1 = M-m2
-            thetas['m1'] = thetas['M'] - thetas['m2']
-            thetas.pop('M')
-            thetas.pop('q')
-            if 'Mchirp' in thetas.keys():
-                thetas.pop('Mchirp')
+            theta['m2'] = theta['q'] * theta['M'] / (1 + theta['q'])  #m2 = qM/(1+q)   m1 = M-m2
+            theta['m1'] = theta['M'] - theta['m2']
+            theta.pop('M')
+            theta.pop('q')
+            if 'Mchirp' in theta.keys():
+                theta.pop('Mchirp')
         
-        elif 'Mchirp' in thetas.keys() and 'q' in thetas.keys():
-            thetas['m1'] = (thetas['Mchirp'] * (1 + thetas['q'])**(1/5)) * thetas['q']**(-3/5)
-            thetas['m2'] = thetas['m1'] * thetas['q']
-            thetas.pop('Mchirp')
-            thetas.pop('q')
+        elif 'Mchirp' in theta.keys() and 'q' in theta.keys():
+            theta['m1'] = (theta['Mchirp'] * (1 + theta['q'])**(1/5)) * theta['q']**(-3/5)
+            theta['m2'] = theta['m1'] * theta['q']
+            theta.pop('Mchirp')
+            theta.pop('q')
         
         
         #FIXME - in the case of TEOBResumS j_hyp might be missing/it's better to manage
         #        priors with the MultiVariate Prior class
-        if not 'j_hyp' in thetas.keys():
-            thetas['j_hyp'] = torch.tensor([4.0]*len(thetas['m1'])).to(self.device)
+        if not 'j_hyp' in theta.keys():
+            theta['j_hyp'] = torch.tensor([4.0]*len(theta['m1'])).to(self.device)
         
         #compute log Prior
         '''
         #sample parameters not estimated by HYPERION
-        unsampled_parameters = self.priors.names - thetas.keys()
+        unsampled_parameters = self.priors.names - theta.keys()
         for name in unsampled_parameters:
-            thetas[name] = self.priors.priors[name].sample([self.num_posterior_samples])
+            theta[name] = self.priors.priors[name].sample([self.num_posterior_samples])
         '''
         
         #compute log prior and valid samples
-        logP = self.priors.log_prob(thetas).double()
+        logP = self.priors.log_prob(theta).double()
         valid_samples = logP!=-torch.inf
         
         #select valid-only posterior samples
-        thetas = thetas[valid_samples].to('cpu')
+        theta = theta[valid_samples].to('cpu')
         
     
         #compute log Likelihood
         #logL = torch.empty_like(logP)
-        logL = self.likelihood.log_Likelihood(strain=strain, psd=psd, waveform_parameters=thetas)
+        logL = self.likelihood.log_Likelihood(strain=strain, psd=psd, theta=theta)
         #logL[valid] = logL_valid
         
         
 
         log_weights =  logP[valid_samples] + torch.nan_to_num(logL) - log_posterior[valid_samples]
         
-        weights = torch.nan_to_num(torch.exp(log_weights.max()/log_weights))
+        #weights = torch.nan_to_num(torch.exp(log_weights.max()/log_weights))
         #wei
 
         #weights = torch.exp(log_weights - torch.logsumexp(log_weights, 0))
-        #weights = torch.exp(log_weights - torch.max(log_weights))
-        #weights/=weights.mean()
+        weights = torch.exp(log_weights - torch.max(log_weights))
+        weights/=weights.mean()
 
         weights = (weights-weights.min())/(weights.max()-weights.min())
         
@@ -322,7 +322,7 @@ class ImportanceSampling():
                     
             Returns:
             --------
-                thetas : dict or pandas.DataFrame
+                theta : dict or pandas.DataFrame
                     Posterior samples
                     
                 log_posterior : torch.tensor
@@ -334,20 +334,20 @@ class ImportanceSampling():
         
         with torch.inference_mode():
             self.flow.eval()
-            thetas, log_posterior = self.flow.sample(self.num_posterior_samples, strain  = torch_strain, 
+            theta, log_posterior = self.flow.sample(self.num_posterior_samples, strain  = torch_strain, 
                                                     restrict_to_bounds=False, event_time = event_time, #restrict to bounds can be set to False given that if sample exceed prior bounds it is taken into account by prior weights
                                                     return_log_prob=True,
                                                     verbose=False) 
         
-        medians = [float(torch.median(thetas[par_name])) for par_name in self.inference_parameters]    
+        medians = [float(torch.median(theta[par_name])) for par_name in self.inference_parameters]    
 
 
 
         if self.reference_posterior_samples:
-            ks_stat = np.mean([(1-kstest(thetas[name].cpu().numpy().T[0], self.reference_posterior_samples[name]).statistic)*100 for name in self.inference_parameters if not name == 'time_shift'])
+            ks_stat = np.mean([(1-kstest(theta[name].cpu().numpy().T[0], self.reference_posterior_samples[name]).statistic)*100 for name in self.inference_parameters if not name == 'time_shift'])
         else:
             ks_stat = 'None'
-        return thetas, log_posterior, medians, ks_stat
+        return theta, log_posterior, medians, ks_stat
     
     
     
