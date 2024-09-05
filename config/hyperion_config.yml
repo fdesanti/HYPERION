@@ -5,7 +5,7 @@
 #============================
 # SIMULATION & INFERENCE 
 #============================
-detectors: ["L1", "H1", "V1"]
+detectors: ["L1", "H1"]
 
 reference_gps_time: 1370692818 #1242442967.4 #1370692818
 
@@ -90,7 +90,7 @@ training_options:
   n_proc: os.cpu_count()
 
   whiten_kwargs:
-    method: "pycbc"
+    method: "gwpy"
     normalize: True
 
   add_noise: True

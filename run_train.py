@@ -2,7 +2,6 @@ import os
 import yaml
 import torch
 import seaborn as sns
-
 sns.set_theme()
 sns.set_context("talk")
 
@@ -18,25 +17,31 @@ from hyperion.simulations import (ASD_Sampler,
 
 if __name__ == '__main__':
     parser = OptionParser()
-    parser.add_option("-p", "--preload_trained", default=False, action="store_true", help="Load a pretrained model in training_results/BHBH directory. \
-                                                                                           WARNING: At the moment, hyperion_config & prior must match the pretrained model.")
+    parser.add_option("-p", "--preload_trained", default=False, action="store_true", help="Load a pretrained model in training_results/BHBH directory.")
     (options, args) = parser.parse_args()
     
     PRELOAD = options.preload_trained
 
-    conf_yaml = CONF_DIR + '/hyperion_config.yml'
+    conf_dir = 'training_results/BHBH' if PRELOAD else CONF_DIR
+    conf_yaml = conf_dir + '/hyperion_config.yml'
     
     with open(conf_yaml, 'r') as yaml_file:
         conf = yaml.safe_load(yaml_file)
         train_conf = conf['training_options']
 
-    
+    #if PRELOAD, load the history file to get the learning rates
+    if PRELOAD:
+        import numpy as np
+        history_file = os.path.join(conf_dir, 'history.txt')
+        _, _, learning_rates = np.loadtxt(history_file, delimiter=',', unpack=True)
+            
+
     NUM_EPOCHS            = int(train_conf['num_epochs'])
     BATCH_SIZE            = int(train_conf['batch_size'])
-    INITIAL_LEARNING_RATE = float(train_conf['initial_learning_rate'])
+    INITIAL_LEARNING_RATE = float(train_conf['initial_learning_rate']) if not PRELOAD else learning_rates[-1]
 
     WAVEFORM_MODEL = conf['waveform_model']
-    PRIOR_PATH     = os.path.join(CONF_DIR, conf['prior']+'.yml')
+    PRIOR_PATH     = os.path.join(conf_dir, conf['prior']+'.yml')
     DURATION       = conf['duration']
     
 
@@ -45,8 +50,7 @@ if __name__ == '__main__':
         device = f'cuda:{num_gpus-1}'
     else:
         device = 'cpu'
-    device = 'cuda'
-    
+        
     with torch.device(device):
         """
         SETUP DETECTOR NETWORK AND ASD SAMPLERS ============================================
@@ -78,7 +82,6 @@ if __name__ == '__main__':
         dataset_kwargs = {'waveform_generator'      : waveform_generator, 
                               'asd_generators'      : asd_samplers,
                               'det_network'         : det_network,
-                            #'num_preload'          : conf['training_options']['num_preload'],
                               'device'              : device,
                               'batch_size'          : BATCH_SIZE,
                               'inference_parameters': conf['inference_parameters'],
@@ -94,23 +97,27 @@ if __name__ == '__main__':
                                     random_seed=train_conf['seeds']['val'], 
                                     num_preload=conf['training_options']['num_preload_val'])        
         
+        """
+        SETUP FLOW MODEL ===================================================================
+        """
         #checkpoint directory
         checkpoint_dir = os.path.join('training_results', 'BHBH')
         if not os.path.exists(checkpoint_dir):
             os.mkdir(checkpoint_dir)
         checkpoint_filepath = os.path.join(checkpoint_dir, 'BHBH_flow_model.pt')
 
-        #write configuaration file to checkpoint directory
-        conf_yaml_write = os.path.join(checkpoint_dir, 'hyperion_config.yml')
-        with open(conf_yaml_write, 'w') as yaml_file:
-            yaml.dump(conf, yaml_file)
-        
-        #write prior file to checkpoint directory
-        conf_prior_write = os.path.join(checkpoint_dir, 'prior.yml')
-        with open(conf_prior_write, 'w') as yaml_file:
-            with open(PRIOR_PATH, 'r') as prior:
-                prior = yaml.safe_load(prior)
-            yaml.dump(prior, yaml_file)
+        if not PRELOAD:
+            #write configuaration file to checkpoint directory
+            conf_yaml_write = os.path.join(checkpoint_dir, 'hyperion_config.yml')
+            with open(conf_yaml_write, 'w') as yaml_file:
+                yaml.dump(conf, yaml_file)
+            
+            #write prior file to checkpoint directory
+            conf_prior_write = os.path.join(checkpoint_dir, 'prior.yml')
+            with open(conf_prior_write, 'w') as yaml_file:
+                with open(PRIOR_PATH, 'r') as prior:
+                    prior = yaml.safe_load(prior)
+                yaml.dump(prior, yaml_file)
 
         #set up Flow model
         if not PRELOAD:
@@ -130,16 +137,15 @@ if __name__ == '__main__':
                                         kwargs = scheduler_kwargs )
         
         #set up Trainer
-        trainer_kwargs = {'optimizer'        : optimizer, 
-                        'scheduler'          : scheduler,
-                        'checkpoint_filepath': checkpoint_filepath,
-                        'steps_per_epoch'    : train_conf['steps_per_epoch'],
-                        'val_steps_per_epoch': train_conf['val_steps_per_epoch'],
-                        'verbose'            : train_conf['verbose'],
-                        'add_noise'          : train_conf['add_noise']
+        trainer_kwargs = {'optimizer'          : optimizer, 
+                          'scheduler'          : scheduler,
+                          'checkpoint_filepath': checkpoint_filepath,
+                          'steps_per_epoch'    : train_conf['steps_per_epoch'],
+                          'val_steps_per_epoch': train_conf['val_steps_per_epoch'],
+                          'verbose'            : train_conf['verbose'],
+                          'add_noise'          : train_conf['add_noise']
                         }
 
         flow_trainer = Trainer(flow, train_ds, val_ds, device=device, **trainer_kwargs)
         
         flow_trainer.train(NUM_EPOCHS, overwrite_history=False if PRELOAD else True)
-        
