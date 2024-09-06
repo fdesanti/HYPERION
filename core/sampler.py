@@ -45,7 +45,7 @@ class PosteriorSampler():
         return
     
     @property 
-    def latex_labels(self): 
+    def latex_labels(self, parameters=None): 
         converter = {'m1'               : '$m_1$ $[M_{\odot}]$', 
                      'm2'               : '$m_2$ $[M_{\odot}]$',
                      'M'                : '$M$ $[M_{\odot}]$',
@@ -70,7 +70,8 @@ class PosteriorSampler():
                      'coalescence_angle': '$\phi$',
                      }
         _latex_labels = {}
-        for par_name in self.inference_parameters:
+        if parameters is None: parameters = self.inference_parameters
+        for par_name in parameters:
             _latex_labels[par_name] = converter[par_name] if par_name in converter else par_name
         return _latex_labels
 

@@ -186,18 +186,72 @@ class MultivariateGaussianMixtureBase(nn.Module):
         
         #sample from the components
         samples = torch.empty((num_samples, self.dim), device = self.mixture_components[0].mean.device)
-        '''
-        for i in range(num_samples):
-            samples[i] = self.mixture_components[component_samples[i]].sample(1)
-        '''
-
+        
         for i in range(self.num_components):
             mask = component_samples == i
             samples[mask, :] = self.mixture_components[i].sample(mask.sum())
 
         return samples
 
+class ConditionalMultivariateGaussianMixtureBase(nn.Module):
+    """Conditional Mixture of Multivariate Normal the base distribution for the flow."""
+    def __init__(self, 
+                 dim            :int   =  10,
+                 num_components :int   =   2,
+                 neural_network_kwargs =  {},
+                 ):
+        super(ConditionalMultivariateGaussianMixtureBase, self).__init__()
+        self.dim            = dim
+        self.num_components = num_components
+        
+        activation = neural_network_kwargs.get('activation', nn.ELU())
+        dropout    = neural_network_kwargs.get('dropout', 0.2)
+        layer_dim  = neural_network_kwargs.get('layer_dims', 256)
+        
+        #initialize the mixture components
+        self.mixture_components = nn.ModuleList([ConditionalMultivariateNormalBase(dim, 
+                                                                                   trainable=True, 
+                                                                                   neural_network_kwargs=neural_network_kwargs) 
+                                                 for _ in range(num_components)])
+        
+        self.weights_network = nn.Sequential(nn.LazyLinear(layer_dim),
+                                            activation,
+                                            nn.Dropout(dropout),
+                                            nn.Linear(layer_dim, layer_dim),
+                                            activation,
+                                            nn.Dropout(dropout),
+                                            nn.Linear(layer_dim, num_components), 
+                                            nn.Softmax(dim=1))
     
+        return
+    
+    
+    
+    def log_prob(self, samples, embedded_strain):
+        """assumes that samples have dim (Nbatch, self.dim) ie 1 sample per batch"""
+        
+        if samples.shape[1] != self.dim:
+            raise ValueError(f'Wrong samples dim. Expected (batch_size, {self.dim}) and got {samples.dim}')
+        
+        weights  = self.weights_network(embedded_strain)
+
+        log_prob = [weights[i].log() + self.mixture_components[i].log_prob(samples) for i in range(self.num_components)]
+        
+        return torch.sum(torch.stack(log_prob, axis=0), axis=0)
+    
+    def sample(self, num_samples, embedded_strain=None):
+        #sample the component
+        weights  = self.weights_network(embedded_strain)
+        component_samples = torch.multinomial(weights, num_samples, replacement = True)
+        
+        #sample from the components
+        samples = torch.empty((num_samples, self.dim), device = self.mixture_components[0].mean.device)
+        
+        for i in range(self.num_components):
+            mask = component_samples == i
+            samples[mask, :] = self.mixture_components[i].sample(mask.sum())
+
+        return samples
 
 
 class VonMisesNormal(nn.Module):
@@ -321,7 +375,8 @@ class VonMisesNormal(nn.Module):
         
         return samples
 
-base_distributions_dict = {'MultivariateNormalBase'           : MultivariateNormalBase,
-                           'ConditionalMultivariateNormalBase': ConditionalMultivariateNormalBase,
-                           'MultivariateGaussianMixtureBase'  : MultivariateGaussianMixtureBase,
-                           'VonMisesNormal'                   : VonMisesNormal}
+base_distributions_dict = {'MultivariateNormalBase'                    : MultivariateNormalBase,
+                           'ConditionalMultivariateNormalBase'         : ConditionalMultivariateNormalBase,
+                           'MultivariateGaussianMixtureBase'           : MultivariateGaussianMixtureBase,
+                           'ConditionalMultivariateGaussianMixtureBase': ConditionalMultivariateGaussianMixtureBase,
+                           'VonMisesNormal'                            : VonMisesNormal}

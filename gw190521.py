@@ -167,7 +167,7 @@ if __name__ == '__main__':
             from astropy.cosmology import Planck18, z_at_value
             import astropy.units as u
             z = z_at_value(Planck18.luminosity_distance, posterior['distance'].cpu()*u.Mpc)
-            sampler.posterior['M'] = sampler.posterior['M']/torch.from_numpy((1+z)).to(device)
+            sampler.posterior['M_source'] = sampler.posterior['M']/torch.from_numpy((1+z)).to(device)
             #sampler.posterior['Mchirp'] = sampler.posterior['Mchirp']/torch.from_numpy((1+z)).to(device)
 
 
