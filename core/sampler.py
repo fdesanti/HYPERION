@@ -44,7 +44,7 @@ class PosteriorSampler():
         self.device = device
         return
     
-    @property 
+    #@property 
     def latex_labels(self, parameters=None): 
         converter = {'m1'               : '$m_1$ $[M_{\odot}]$', 
                      'm2'               : '$m_2$ $[M_{\odot}]$',
@@ -137,14 +137,11 @@ class PosteriorSampler():
         if isinstance(posterior, TensorDict):
             posterior= dict(posterior.cpu())
         
-        #bilby expects 'luminosity_distance' instead of 'distance'
-        if 'distance' in posterior:
-            posterior['luminosity_distance'] = posterior['distance']
-            
+        parameter_keys = list(posterior.keys())
 
         bilby_kwargs = {'posterior'            : pd.DataFrame.from_dict(posterior),
-                        'search_parameter_keys': self.inference_parameters,
-                        'parameter_labels'     : list(self.latex_labels.values()),
+                        'search_parameter_keys': parameter_keys,
+                        'parameter_labels'     : list(self.latex_labels(parameter_keys).values()),
                         'outdir'               : self.output_dir,
                         #'injection_parameters' : injection_parameters, 
                         }
@@ -160,14 +157,16 @@ class PosteriorSampler():
     
     def plot_corner(self, posterior=None, injection_parameters=None, figname=None, **corner_kwargs):
         """Wrapper to Bilby plot corner method."""
-
+        
         bilby_result = self.to_bilby(posterior=posterior, 
                                      injection_parameters=injection_parameters)
-
+        
+        parameter_keys = list(bilby_result.posterior.keys())
+        
         fontsize_kwargs = {'fontsize': 20}
         default_corner_kwargs = {'title_kwargs'   : fontsize_kwargs, 
                                  'label_kwargs'   : fontsize_kwargs,
-                                 'labels'         : list(self.latex_labels.values()),
+                                 'labels'         : list(self.latex_labels(parameter_keys).values()),
                                  'plot_density'   : False,
                                  'plot_datapoints': True}
         

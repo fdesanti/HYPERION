@@ -108,7 +108,7 @@ parameters:
         minimum: 0.0
         maximum: torch.pi
 
-    distance:
+    luminosity_distance:
       distribution: "uniform"
       kwargs:
         minimum: 10

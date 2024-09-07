@@ -244,8 +244,8 @@ class DatasetGenerator:
         prior_samples.update(self.extrinsic_prior.sample((self.batch_size, 1)))
 
         #rescale luminosity distance
-        hp /= prior_samples['distance']
-        hc /= prior_samples['distance']
+        hp /= prior_samples['luminosity_distance']
+        hc /= prior_samples['luminosity_distance']
                          
         #project strain onto detectors
         h = self.det_network.project_wave(hp, hc, 

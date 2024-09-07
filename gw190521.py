@@ -58,7 +58,7 @@ if __name__ == '__main__':
     
     sampling_frequency = conf['fs']
     
-    gps-=0.25#0.12
+    gps-=0.00#0.12
     
     t0=gps-DURATION/2
     t1=gps+DURATION/2
@@ -163,20 +163,19 @@ if __name__ == '__main__':
                                              event_time         = gps)
         
         
-        try:
-            from astropy.cosmology import Planck18, z_at_value
-            import astropy.units as u
-            z = z_at_value(Planck18.luminosity_distance, posterior['distance'].cpu()*u.Mpc)
-            sampler.posterior['M_source'] = sampler.posterior['M']/torch.from_numpy((1+z)).to(device)
-            #sampler.posterior['Mchirp'] = sampler.posterior['Mchirp']/torch.from_numpy((1+z)).to(device)
-
-
-            sampler.plot_corner(figname=f'{model_dir}/gw190521_corner.png')
-            sampler.plot_skymap(jobs=2, maxpts=1_000)
-            bilby_posterior = sampler.to_bilby().save_posterior_samples(filename=f'{model_dir}/gw190521_posterior.csv')
-        except:
-            pass
         
+        from astropy.cosmology import Planck18, z_at_value
+        import astropy.units as u
+        z = z_at_value(Planck18.luminosity_distance, posterior['distance'].cpu()*u.Mpc)
+        sampler.posterior['M_source'] = sampler.posterior['M']/torch.from_numpy((1+z)).to(device)
+        sampler.posterior['Mchirp_source'] = sampler.posterior['Mchirp']/torch.from_numpy((1+z)).to(device)
+        
+
+        sampler.plot_corner(figname=f'{model_dir}/gw190521_corner.png')
+        sampler.to_bilby().save_posterior_samples(filename=f'{model_dir}/gw190521_posterior.csv')
+        sampler.plot_skymap(jobs=2, maxpts=1_000)
+            
+              
 
         
         print('[INFO]: Peforming Importance Sampling...')
