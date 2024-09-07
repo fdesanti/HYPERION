@@ -104,7 +104,8 @@ class ConditionalMultivariateNormalBase(nn.Module):
                                             activation,
                                             nn.Dropout(dropout),
                                             nn.Linear(layer_dim, self.dim), 
-                                            activation)
+                                            #activation
+                                            )
         
         self.var_network = nn.Sequential(nn.LazyLinear(layer_dim),
                                             activation,
@@ -210,7 +211,6 @@ class ConditionalMultivariateGaussianMixtureBase(nn.Module):
         
         #initialize the mixture components
         self.mixture_components = nn.ModuleList([ConditionalMultivariateNormalBase(dim, 
-                                                                                   trainable=True, 
                                                                                    neural_network_kwargs=neural_network_kwargs) 
                                                  for _ in range(num_components)])
         
@@ -235,21 +235,21 @@ class ConditionalMultivariateGaussianMixtureBase(nn.Module):
         
         weights  = self.weights_network(embedded_strain)
 
-        log_prob = [weights[i].log() + self.mixture_components[i].log_prob(samples) for i in range(self.num_components)]
+        log_prob = [weights[:,i].log() + self.mixture_components[i].log_prob(samples, embedded_strain) for i in range(self.num_components)]
         
         return torch.sum(torch.stack(log_prob, axis=0), axis=0)
     
-    def sample(self, num_samples, embedded_strain=None):
+    def sample(self, num_samples, embedded_strain):
         #sample the component
         weights  = self.weights_network(embedded_strain)
-        component_samples = torch.multinomial(weights, num_samples, replacement = True)
+        component_samples = torch.multinomial(weights, num_samples, replacement=True).squeeze(0)
         
         #sample from the components
-        samples = torch.empty((num_samples, self.dim), device = self.mixture_components[0].mean.device)
+        samples = torch.empty((num_samples, self.dim), device = embedded_strain.device)
         
         for i in range(self.num_components):
             mask = component_samples == i
-            samples[mask, :] = self.mixture_components[i].sample(mask.sum())
+            samples[mask, :] = self.mixture_components[i].sample(mask.sum(), embedded_strain)
 
         return samples
 
