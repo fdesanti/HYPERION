@@ -146,7 +146,7 @@ class DatasetGenerator:
 
         for p in ['M', 'Mchirp', 'q']:
 
-            if p in self.inference_parameters:
+            if p in self.inference_parameters and not p in self.full_prior.keys():
 
                 self.full_prior[p] = prior_dict_[p](self.full_prior['m1'], self.full_prior['m2'])
                 min, max = float(self.full_prior[p].minimum), float(self.full_prior[p].maximum)
@@ -163,19 +163,21 @@ class DatasetGenerator:
 
     def _compute_M_Mchirp_and_q(self, prior_samples):
 
-        #sorting m1 and m2 so that m2 <= m1
-        m1, m2 = prior_samples['m1'], prior_samples['m2']
-        m1, m2 = q_prior._sort_masses(m1, m2)
-        
-        #m1 and m2 have shape [Nbatch]
-        if 'Mchirp' in self.inference_parameters:
-            prior_samples['Mchirp'] = (m1*m2)**(3/5)/(m1+m2)**(1/5)
-        
-        if 'M' in self.inference_parameters:
-            prior_samples['M'] = (m1+m2)
-        
-        if 'q' in self.inference_parameters:
-            prior_samples['q'] = (m2/m1)
+        if all([p in prior_samples.keys() for p in ['m1', 'm2']]):
+
+            #sorting m1 and m2 so that m2 <= m1
+            m1, m2 = prior_samples['m1'], prior_samples['m2']
+            m1, m2 = q_prior._sort_masses(m1, m2)
+            
+            #m1 and m2 have shape [Nbatch]
+            if 'Mchirp' in self.inference_parameters:
+                prior_samples['Mchirp'] = (m1*m2)**(3/5)/(m1+m2)**(1/5)
+            
+            if 'M' in self.inference_parameters:
+                prior_samples['M'] = (m1+m2)
+            
+            if 'q' in self.inference_parameters:
+                prior_samples['q'] = (m2/m1)
 
         return prior_samples
          

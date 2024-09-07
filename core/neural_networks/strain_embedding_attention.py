@@ -55,6 +55,7 @@ class EmbeddingNetworkAttention(nn.Module):
                       nn.Conv1d(in_channel, filter, kernel_size = kernel_size, stride = 1, bias = True),
                       nn.BatchNorm1d(filter, track_running_stats=False) if use_batch_norm else nn.Identity(),
                       activation,
+                      nn.MaxPool1d(2)
                       )
                       for in_channel, filter, kernel_size in zip(shapes, CNN_filters, CNN_kernel_sizes)
                 ]           

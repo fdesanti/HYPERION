@@ -35,12 +35,12 @@ if __name__ == '__main__':
         import numpy as np
         history_file = os.path.join(conf_dir, 'history.txt')
         _, _, learning_rates = np.loadtxt(history_file, delimiter=',', unpack=True)
-        
+        preload_lr = learning_rates[-1] if len(learning_rates) > 0 else learning_rates
             
 
     NUM_EPOCHS            = int(train_conf['num_epochs'])
     BATCH_SIZE            = int(train_conf['batch_size'])
-    INITIAL_LEARNING_RATE = float(train_conf['initial_learning_rate']) if not PRELOAD else learning_rates[-1]
+    INITIAL_LEARNING_RATE = float(train_conf['initial_learning_rate']) if not PRELOAD else preload_lr
 
     WAVEFORM_MODEL = conf['waveform_model']
     PRIOR_PATH     = os.path.join(conf_dir, 'prior.yml') if PRELOAD else os.path.join(conf_dir, conf['prior']+'.yml')

@@ -34,7 +34,7 @@ parameters:
       distribution: "uniform"
       kwargs:
         minimum: 50
-        maximum: 180
+        maximum: 200
 
     H_hyp:                      # Initial E_eob
       distribution: "uniform"
@@ -112,7 +112,7 @@ parameters:
       distribution: "uniform"
       kwargs:
         minimum: 10
-        maximum: 6000
+        maximum: 5000
 
     ra:
       distribution: "uniform"
