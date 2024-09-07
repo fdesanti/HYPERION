@@ -5,7 +5,7 @@ Fully Connected Residual Neural Network implementation with the Attention Mechan
 import torch
 import torch.nn as nn
 from  hyperion.core.neural_networks.strain_embedding import ResBlock
-from  hyperion.core.neural_networks.torch_layers import GlobalMaxPooling1D, Slicer
+from  hyperion.core.neural_networks.torch_layers import GlobalMaxPooling1D, GlobalAvgPooling1D, Slicer
 
 
 class EmbeddingNetworkAttention(nn.Module):
@@ -52,7 +52,6 @@ class EmbeddingNetworkAttention(nn.Module):
         CNN_layers = [nn.Sequential(
                       nn.Conv1d(in_channel, filter, kernel_size = kernel_size, stride = 1, bias = True),
                       nn.BatchNorm1d(filter, track_running_stats=False) if use_batch_norm else nn.Identity(),
-                      nn.Dropout(dropout_probability),
                       activation,
                       )
                       for in_channel, filter, kernel_size in zip(shapes, CNN_filters, CNN_kernel_sizes)
@@ -73,11 +72,11 @@ class EmbeddingNetworkAttention(nn.Module):
         input_dim = block_dims[0]
         for block_dim in block_dims:
             for _ in range(num_blocks):
-                self.residual_blocks.append( ResBlock(input_dim=input_dim, 
-                                                      output_dim=block_dim, 
-                                                      use_batch_norm=False, 
-                                                      activation=activation,
-                                                      dropout_probability= dropout_probability) )
+                self.residual_blocks.append( ResBlock(input_dim           = input_dim, 
+                                                      output_dim          = block_dim,
+                                                      use_batch_norm      = False,
+                                                      activation          = activation,
+                                                      dropout_probability = dropout_probability) )
                 input_dim = block_dim
             
         self.resnet = nn.ModuleList(self.residual_blocks)

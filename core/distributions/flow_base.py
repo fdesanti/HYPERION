@@ -104,7 +104,7 @@ class ConditionalMultivariateNormalBase(nn.Module):
                                             activation,
                                             nn.Dropout(dropout),
                                             nn.Linear(layer_dim, self.dim), 
-                                            #activation
+                                            activation
                                             )
         
         self.var_network = nn.Sequential(nn.LazyLinear(layer_dim),

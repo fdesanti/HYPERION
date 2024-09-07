@@ -58,7 +58,7 @@ if __name__ == '__main__':
     
     sampling_frequency = conf['fs']
     
-    gps-=0.25#0.12
+    gps-=0.0#0.12
     
     t0=gps-DURATION/2
     t1=gps+DURATION/2
