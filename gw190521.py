@@ -29,6 +29,8 @@ if __name__ == '__main__':
     
     
     model_dir = sys.argv[1] if len(sys.argv) > 1 else 'training_results/BHBH'
+    dt_gps    = sys.argv[2] if len(sys.argv) > 2 else 0.25
+
     print(f'----> Running model saved at {model_dir}')
 
     conf_yaml = model_dir + '/hyperion_config.yml'
@@ -58,7 +60,7 @@ if __name__ == '__main__':
     
     sampling_frequency = conf['fs']
     
-    gps-=0.0#0.12
+    gps-=float(dt_gps)#0.12
     
     t0=gps-DURATION/2
     t1=gps+DURATION/2
@@ -154,7 +156,8 @@ if __name__ == '__main__':
                                    num_posterior_samples = num_samples,
                                    device                = device)
 
-        #print(sampler.flow.configuration)        
+        #print(sampler.flow.configuration)     
+        #print(sampler.flow.base_distribution)   
 
         posterior = sampler.sample_posterior(strain = torch_whitened_stacked_strain,#/np.sqrt(2/2048),
                                              #asd               = torch_asd,
@@ -166,9 +169,18 @@ if __name__ == '__main__':
         
         from astropy.cosmology import Planck18, z_at_value
         import astropy.units as u
-        z = z_at_value(Planck18.luminosity_distance, posterior['luminosity_distance'].cpu()*u.Mpc)
-        sampler.posterior['M_source'] = sampler.posterior['M']/torch.from_numpy((1+z)).to(device)
-        sampler.posterior['Mchirp_source'] = sampler.posterior['Mchirp']/torch.from_numpy((1+z)).to(device)
+        if 'luminosity_distance' in posterior.keys():
+            z = z_at_value(Planck18.luminosity_distance, posterior['luminosity_distance'].cpu()*u.Mpc)
+        elif 'distance' in posterior.keys():
+            z = z_at_value(Planck18.luminosity_distance, posterior['distance'].cpu()*u.Mpc)
+        
+        if 'M' in posterior.keys():
+            sampler.posterior['M_source'] = sampler.posterior['M']/torch.from_numpy((1+z)).to(device)
+        
+        if 'Mchirp' in sampler.posterior.keys():
+            sampler.posterior['Mchirp_source'] = sampler.posterior['Mchirp']/torch.from_numpy((1+z)).to(device)
+        else:
+            sampler.posterior['Mchirp'] = sampler.posterior['M']**0.6/sampler.posterior['q']**0.2
         
 
         sampler.plot_corner(figname=f'{model_dir}/gw190521_corner.png')

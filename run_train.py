@@ -35,6 +35,7 @@ if __name__ == '__main__':
         import numpy as np
         history_file = os.path.join(conf_dir, 'history.txt')
         _, _, learning_rates = np.loadtxt(history_file, delimiter=',', unpack=True)
+        
             
 
     NUM_EPOCHS            = int(train_conf['num_epochs'])
