@@ -8,7 +8,7 @@
 waveform_kwargs:
   # Initial conditions and output time grid
   domain              : 0         # Time domain. EOBSPA is not available for eccentric waveforms!
-  initial_frequency   : 5      # Initial frequency in Hz. Default = 0.02
+  initial_frequency   : 0.02      # Initial frequency in Hz. Default = 0.02
   #nqcs
   nqc                 : 'auto'              #options are ["none", "manual", "auto"]
   #nqc_coefs_flx      : 'nrfit_spin202002'    #options are ["none", "nrfit_spin202002", "nrfit_nospin201602"]

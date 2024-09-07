@@ -4,52 +4,9 @@ Fully Connected Residual Neural Network implementation with the Attention Mechan
 
 import torch
 import torch.nn as nn
-from hyperion.core.neural_networks.strain_embedding import ResBlock
-from  hyperion.core.neural_networks.torch_layers import GlobalMaxPooling1D
+from  hyperion.core.neural_networks.strain_embedding import ResBlock
+from  hyperion.core.neural_networks.torch_layers import GlobalMaxPooling1D, Slicer
 
-
-
-class Slicer(nn.Module):
-    """
-    Slices the input strain tensor into 
-    (possibly overlapping) windows of a fixed length
-
-    Args:
-    -----
-        input_len (int)    : The length of the input strain tensor
-        fs (int)           : The sampling frequency of the input strain tensor
-        segment_len (float): The length in seconds of the output segments
-        overlap (float)    : The overlap (percentage) between segments in seconds
-    """
-    
-    def __init__(self, 
-                 input_len, 
-                 fs,
-                 segment_len = 0.1,
-                 overlap = 0.0):
-        super(Slicer, self).__init__()
-        
-        self.fs = fs
-        self.input_len = input_len
-        self.segment_len = int(segment_len * fs) # Convert seconds to samples
-        self.step = int(self.segment_len * (1 - overlap/100))
-
-    @property
-    def num_segments(self):
-        return (self.input_len - self.segment_len) // self.step + 1
-        
-    def forward(self, x):
-        """
-        Slices the input tensor into segments of length segment_len
-        """       
-        segments = []
-        for i in range(0, self.input_len - self.segment_len, self.step):
-            segments.append(x[..., i:i+self.segment_len])
-        
-        segments = torch.stack(segments, dim = -2).unsqueeze(-1)
-
-        return segments.view(x.shape[0], x.shape[1], self.num_segments, self.segment_len) # (batch_size, num_channels, num_segments, segment_len)
-       
 
 class EmbeddingNetworkAttention(nn.Module):
 
@@ -95,6 +52,7 @@ class EmbeddingNetworkAttention(nn.Module):
         CNN_layers = [nn.Sequential(
                       nn.Conv1d(in_channel, filter, kernel_size = kernel_size, stride = 1, bias = True),
                       nn.BatchNorm1d(filter, track_running_stats=False) if use_batch_norm else nn.Identity(),
+                      nn.Dropout(dropout_probability),
                       activation,
                       )
                       for in_channel, filter, kernel_size in zip(shapes, CNN_filters, CNN_kernel_sizes)
@@ -102,11 +60,11 @@ class EmbeddingNetworkAttention(nn.Module):
         self.CNN = nn.Sequential(*CNN_layers)
 
         #Multihead Attention Layer
-        self.MHA = nn.MultiheadAttention(embed_dim=CNN_filters[-1], 
-                                         num_heads=num_heads, 
-                                         add_bias_kv=add_bias_kv,
-                                         dropout=dropout_probability,
-                                         batch_first=True)
+        self.MHA = nn.MultiheadAttention(embed_dim   = CNN_filters[-1], 
+                                         num_heads   = num_heads,
+                                         add_bias_kv = add_bias_kv,
+                                         dropout     = dropout_probability,
+                                         batch_first = True)
 
         #=======================================================================
         # Construct ResNet blocks
@@ -139,7 +97,7 @@ class EmbeddingNetworkAttention(nn.Module):
     
     def _strain_embedding(self, strain):
         """
-        Embeds a single channel of the strain tensor
+        Embeds a multi-channel strain tensor with convolutional layers & Attention Mechanism
         """
         # Slice the input tensor into segments
         sliced_strain = self.slicer(strain) # (batch_size, 1, num_segments, segment_len)

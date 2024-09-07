@@ -58,7 +58,7 @@ if __name__ == '__main__':
     
     sampling_frequency = conf['fs']
     
-    gps-=0.00#0.12
+    gps-=0.25#0.12
     
     t0=gps-DURATION/2
     t1=gps+DURATION/2
@@ -106,7 +106,7 @@ if __name__ == '__main__':
          #whitened_strain[det].plot(epoch = gps)
          plt.figure(figsize=(15, 5))
          plt.plot(whitened_strain[det])
-         plt.savefig(f'{model_dir}/{det}_whitened_strain.png')
+         #plt.savefig(f'{model_dir}/{det}_whitened_strain.png')
          plt.close()
     torch_whitened_stacked_strain = torch.stack([torch_whitened_strain[det] for det in detectors]).unsqueeze(0).to(device).float()
     print(whitened_strain)
@@ -166,7 +166,7 @@ if __name__ == '__main__':
         
         from astropy.cosmology import Planck18, z_at_value
         import astropy.units as u
-        z = z_at_value(Planck18.luminosity_distance, posterior['distance'].cpu()*u.Mpc)
+        z = z_at_value(Planck18.luminosity_distance, posterior['luminosity_distance'].cpu()*u.Mpc)
         sampler.posterior['M_source'] = sampler.posterior['M']/torch.from_numpy((1+z)).to(device)
         sampler.posterior['Mchirp_source'] = sampler.posterior['Mchirp']/torch.from_numpy((1+z)).to(device)
         
