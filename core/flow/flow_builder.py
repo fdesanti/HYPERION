@@ -73,10 +73,8 @@ def build_flow( prior_metadata           :dict = None,
         
         coupling_layers += [RandomPermutation(num_features=coupling_layers_kwargs['num_features'])]
 
-        coupling_layers += [AffineCouplingLayer(coupling_layers_kwargs['num_features'],
-                                                embedding_network_kwargs['strain_out_dim'], 
-                                                coupling_layers_kwargs['num_identity'], 
-                                                coupling_layers_kwargs['num_transformed'])]
+        coupling_layers += [AffineCouplingLayer(num_identity    = coupling_layers_kwargs['num_identity'], 
+                                                num_transformed = coupling_layers_kwargs['num_transformed'])]
         
     coupling_transform = CouplingTransform(coupling_layers)
 
