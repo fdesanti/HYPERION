@@ -124,14 +124,14 @@ if __name__ == '__main__':
         
         asd_samplers = dict()
         for ifo in conf['detectors']:
-            asd_samplers[ifo] = ASD_Sampler(ifo, device=device, fs=conf['fs'], duration=DURATION)
+            asd_samplers[ifo] = ASD_Sampler(ifo, device=device, fs=2*conf['fs'], duration=DURATION)
         
         with open(PRIOR_PATH, 'r') as f:
             prior_conf = yaml.safe_load(f)
             wvf_kwargs = prior_conf['waveform_kwargs']
         
         waveform_generator = WaveformGenerator(WAVEFORM_MODEL, 
-                                               fs=conf['fs'], 
+                                               fs=2*conf['fs'], 
                                                duration=DURATION,
                                                det_network=det_network,
                                                **wvf_kwargs)
@@ -186,7 +186,11 @@ if __name__ == '__main__':
         sampler.plot_corner(figname=f'{model_dir}/gw190521_corner.png')
         sampler.to_bilby().save_posterior_samples(filename=f'{model_dir}/gw190521_posterior.csv')
         sampler.plot_skymap(jobs=2, maxpts=1_000)
-            
+        
+
+        
+        asds = {det:asd_samplers[det].asd_reference.unsqueeze(0) for det in detectors}
+        sampler.plot_reconstructed_waveform(whitened_strain=torch_whitened_strain, asd=asds)
               
 
         

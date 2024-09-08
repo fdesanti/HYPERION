@@ -255,8 +255,8 @@ class DatasetGenerator:
                                           dec          = prior_samples['dec'],
                                           polarization = prior_samples['polarization'])
         #compute relative time shifts
-        time_shifts = self.det_network.time_delay_from_earth_center(ra=prior_samples['ra'], 
-                                                                    dec=prior_samples['dec'])        
+        time_shifts = self.det_network.time_delay_from_earth_center(ra  = prior_samples['ra'], 
+                                                                    dec = prior_samples['dec'])        
         
         #import matplotlib.pyplot as plt
         #plt.figure()

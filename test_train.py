@@ -117,7 +117,10 @@ if __name__ == '__main__':
 
         print('Sampled parameters vs true parameters medians')
         for par in true_parameters:
-            print(f"{par}: {posterior[par].cpu().median():.2f} vs {true_parameters[par]:.2f}")
+            if par == 'H_hyp':
+                print(f"{par}: {posterior[par].cpu().median():.5f} vs {true_parameters[par]:.5f}")
+            else:
+                print(f"{par}: {posterior[par].cpu().median():.2f} vs {true_parameters[par]:.2f}")
         
         #generate corner plot
         sampler.plot_corner(injection_parameters=true_parameters)
@@ -125,8 +128,10 @@ if __name__ == '__main__':
         #plot reconstructed_waveform
         if not 'j_hyp' in posterior.keys():
             posterior['j_hyp'] = torch.tensor([4.0]*len(posterior)).to(device)
-        asd_dict={ifo: asd[0][i] for i, ifo in zip(range(len(asd[0])), det_network.detectors)}
+        asd_dict={ifo: asd[0][i].unsqueeze(0) for i, ifo in zip(range(len(asd[0])), det_network.detectors)}
+        whitened_strain = {ifo: whitened_strain[0][i] for i, ifo in zip(range(len(whitened_strain[0])), det_network.detectors)}
         sampler.plot_reconstructed_waveform(posterior=posterior, 
                                             whitened_strain=whitened_strain, 
-                                            asd=asd_dict)
+                                            asd=asd_dict, 
+                                            CL=50)
         

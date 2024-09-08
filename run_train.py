@@ -40,7 +40,7 @@ if __name__ == '__main__':
 
     NUM_EPOCHS            = int(train_conf['num_epochs'])
     BATCH_SIZE            = int(train_conf['batch_size'])
-    INITIAL_LEARNING_RATE = float(train_conf['initial_learning_rate']) if not PRELOAD else preload_lr
+    INITIAL_LEARNING_RATE = float(train_conf['initial_learning_rate']) if not PRELOAD else preload_lr/2
 
     WAVEFORM_MODEL = conf['waveform_model']
     PRIOR_PATH     = os.path.join(conf_dir, 'prior.yml') if PRELOAD else os.path.join(conf_dir, conf['prior']+'.yml')
@@ -121,13 +121,20 @@ if __name__ == '__main__':
                     prior = yaml.safe_load(prior)
                 yaml.dump(prior, yaml_file)
 
+
         #set up Flow model
         if not PRELOAD:
             prior_metadata = train_ds.prior_metadata
             flow = build_flow(prior_metadata).to(device)
         else:
             flow = build_flow(checkpoint_path=checkpoint_filepath).to(device)            
-
+            
+            print(flow.prior_metadata)
+            flow.prior_metadata['inference_parameters'] = conf['inference_parameters']
+            flow.prior_metadata['parameters']['luminosity_distance'] = flow.prior_metadata['parameters'].pop('distance')
+            flow.prior_metadata['means']['luminosity_distance'] = flow.prior_metadata['means'].pop('distance')
+            flow.prior_metadata['stds']['luminosity_distance'] = flow.prior_metadata['stds'].pop('distance')
+            
         #set up Optimizer and Learning rate schedulers
         optim_kwargs = {'params': [p for p in flow.parameters() if p.requires_grad], 
                         'lr': INITIAL_LEARNING_RATE}

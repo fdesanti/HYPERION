@@ -67,7 +67,7 @@ class EmbeddingNetworkAttention(nn.Module):
                                          add_bias_kv = add_bias_kv,
                                          dropout     = dropout_probability,
                                          batch_first = True)
-        #self.MHA_proj = nn.LazyLinear(CNN_filters[-1])
+        #self.MHA_proj = nn.Sequential(nn.LazyLinear(CNN_filters[-1]), activation)
         #=======================================================================
         # Construct ResNet blocks
         #=======================================================================
@@ -109,9 +109,8 @@ class EmbeddingNetworkAttention(nn.Module):
             x_i = sliced_strain[:, :, i, :]
             x_i = self.CNN(x_i)
             x_i = GlobalMaxPooling1D(data_format='channel_last')(x_i)
-            #x_i = GlobalAvgPooling1D(data_format='channel_last')(x_i)
             #x_i = nn.Flatten()(x_i)
-            #x_i = self.activation(self.MHA_proj(x_i))
+            #x_i = self.MHA_proj(x_i)
             x_out.append(x_i)
         x_out = torch.stack(x_out, dim=1) # (batch_size, num_segments, CNN_filters[-1])
         
