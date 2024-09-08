@@ -24,7 +24,7 @@ waveform_model: "TEOBResumSDALI"
 
 prior: "TEOBResumS_hyperbolic"
 
-inference_parameters: ["M", "Mchirp", "q", "H_hyp", "r_hyp", "luminosity_distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
+inference_parameters: ["M", "Mchirp", "q", "H_hyp", "r_hyp", "luminosity_distance", "inclination", "coalescence_angle", "tcoal", "polarization",  "ra", "dec"]
 #inference_parameters: ["M", "q", "ecc", "distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
 
 duration: 2 #duration in seconds for the simulated signals
@@ -51,7 +51,7 @@ base_distribution:
 embedding_network:
   model:            "CNN+ResNet+Attention"
   kwargs:
-    num_blocks:       5
+    num_blocks:       3
     block_dims:       [2048, 1024, 512, 256]
     strain_out_dim:   256
     use_batch_norm:   false
@@ -78,7 +78,7 @@ embedding_network:
 training_options:
   num_epochs: 300
 
-  batch_size: 512
+  batch_size: 256
 
   initial_learning_rate: 0.0001
 

@@ -68,8 +68,8 @@ class WaveformGenerator:
         """
         N = int(self.duration * self.fs)
 
-        hp *= tukey(len(hp), alpha=0.1)
-        hc *= tukey(len(hc), alpha=0.1)
+        hp *= tukey(len(hp), alpha=0.2)
+        hc *= tukey(len(hc), alpha=0.2)
         
         #signal is longer --> crop
         if hp.shape[-1] >= N:

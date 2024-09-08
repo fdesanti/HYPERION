@@ -55,7 +55,7 @@ class EmbeddingNetworkAttention(nn.Module):
                       nn.Conv1d(in_channel, filter, kernel_size = kernel_size, stride = 1, bias = True),
                       nn.BatchNorm1d(filter, track_running_stats=False) if use_batch_norm else nn.Identity(),
                       activation,
-                      nn.MaxPool1d(2)
+                      #nn.MaxPool1d(2)
                       )
                       for in_channel, filter, kernel_size in zip(shapes, CNN_filters, CNN_kernel_sizes)
                 ]           
@@ -67,7 +67,7 @@ class EmbeddingNetworkAttention(nn.Module):
                                          add_bias_kv = add_bias_kv,
                                          dropout     = dropout_probability,
                                          batch_first = True)
-        self.MHA_proj = nn.LazyLinear(CNN_filters[-1])
+        #self.MHA_proj = nn.LazyLinear(CNN_filters[-1])
         #=======================================================================
         # Construct ResNet blocks
         #=======================================================================
@@ -108,10 +108,10 @@ class EmbeddingNetworkAttention(nn.Module):
         for i in range(self.num_segments):
             x_i = sliced_strain[:, :, i, :]
             x_i = self.CNN(x_i)
-            #x_i = GlobalMaxPooling1D(data_format='channel_last')(x_i)
+            x_i = GlobalMaxPooling1D(data_format='channel_last')(x_i)
             #x_i = GlobalAvgPooling1D(data_format='channel_last')(x_i)
-            x_i = nn.Flatten()(x_i)
-            x_i = self.activation(self.MHA_proj(x_i))
+            #x_i = nn.Flatten()(x_i)
+            #x_i = self.activation(self.MHA_proj(x_i))
             x_out.append(x_i)
         x_out = torch.stack(x_out, dim=1) # (batch_size, num_segments, CNN_filters[-1])
         

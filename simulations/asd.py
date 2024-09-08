@@ -6,6 +6,7 @@ import numpy as np
 from ..config import CONF_DIR
 from ..core.fft import rfftfreq, irfft
 
+from scipy.interpolate import interp1d
 
 class ASD_Sampler():
     """
@@ -50,7 +51,7 @@ class ASD_Sampler():
 
     """
 
-    def __init__(self, ifo, asd_file=None, reference_run='O3', fs=2048, duration=2, device = 'cpu', random_seed=None):
+    def __init__(self, ifo, asd_file=None, reference_run='O3', fs=2048, duration=2, device = 'cpu', random_seed=None, fmin=None):
 
         #read reference Asd
         if asd_file is not None:
@@ -59,24 +60,27 @@ class ASD_Sampler():
             file = f"{CONF_DIR}/ASD_curves/{reference_run}/ASD_{ifo}_{reference_run}.txt"
 
         asd_f, asd = np.loadtxt(file, unpack=True)
+
+      
     
         #generate frequency array
         self.fs = fs
         self.noise_points = duration*fs
 
         self.f = rfftfreq(fs*duration, d=1/fs, device = device)
-        #fmin = max(min(asd_f), 1/self.noise_points)
-        #self.f = self.f[self.f>=fmin]
-        #self.f = self.f[self.f<=max(asd_f)]
+        
+        if fmin is None:
+            fmin = 8
+        f = self.f.clone()
+        f[f < fmin] = fmin
 
         self.df = torch.abs(self.f[1] - self.f[2])
         
         #reference ASD from interpolation
-        self.asd_reference = torch.from_numpy(np.interp(self.f.cpu().numpy(), asd_f, asd)).to(device)
-        #import matplotlib.pyplot as plt
-        #plt.loglog(self.f.cpu(), self.asd_reference.cpu().numpy())
-        #plt.show()
-
+        #self.asd_reference = torch.from_numpy(np.interp(self.f.cpu().numpy(), asd_f, asd)).to(device)
+        asd_interp = interp1d(asd_f, asd, kind='cubic', fill_value='extrapolate')
+        self.asd_reference = torch.from_numpy(asd_interp(f.cpu().numpy())).to(device)
+        
         #other attributes
         self.device = device
 

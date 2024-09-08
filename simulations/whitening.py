@@ -5,6 +5,7 @@ Some of the functions are adapted from the GWPy library.
 """
 
 import torch
+import numpy as np
 from torchaudio.functional import fftconvolve
 from hyperion.core.fft import rfft, irfft, rfftfreq
 from hyperion.core.fft.windows import tukey, planck, get_window
@@ -31,7 +32,7 @@ def fir_from_transfer(transfer, ntaps, window='hann', ncorner=None):
     # truncate and highpass the transfer function
     transfer = truncate_transfer(transfer, ncorner=ncorner)
     # compute and truncate the impulse response
-    impulse = irfft(transfer)
+    impulse = torch.fft.irfft(transfer)
     impulse = truncate_impulse(impulse, ntaps=ntaps, window=window)
     # wrap around and normalise to construct the filter
     out = torch.roll(impulse, int(ntaps/2 - 1))[0:ntaps]
@@ -106,7 +107,7 @@ def convolve(signal, fir, window='hann'):
     fir_size = fir.size()[-1]
     signal_size = signal.size()[-1]
     
-    pad  = int(fir_size/2)
+    pad  = int(np.ceil(fir_size/2))
     nfft = min(8*fir_size, signal_size)
     
     # condition the input data
@@ -276,9 +277,18 @@ class WhitenNet:
             if method == 'gwpy':
                 if not fduration:
                     fduration = self.duration
-                ht = irfft(hf, n=self.n, norm=fft_norm)
+                nout = (hf.size()[-1] - 1) * 2
+                ht = irfft(hf*nout, n=nout)
                 ntaps = int((fduration * self.fs))
                 fir   = fir_from_transfer(1/asd[det], ntaps=ntaps, window=window, ncorner=ncorner)
+                '''
+                import matplotlib.pyplot as plt
+                plt.plot(fir.cpu().numpy()[0])
+                plt.show()
+
+                plt.loglog(self.freqs.cpu().numpy(), asd[det].cpu().numpy()[0])
+                plt.show()
+                '''
                 whitened[det] = convolve(ht, fir, window=window)
             
             else:

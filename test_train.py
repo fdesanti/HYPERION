@@ -97,8 +97,8 @@ if __name__ == '__main__':
             plt.subplot(3, 1, i+1)
             plt.plot(t.cpu().numpy(), whitened_strain[0][i].cpu().numpy())
             plt.title(det)           
-        plt.show()
         plt.savefig(f'{MODEL_DIR}/strain.png', dpi=200)
+        plt.show()
 
         #set up Sampler
         checkpoint_path = f'{MODEL_DIR}/BHBH_flow_model.pt'

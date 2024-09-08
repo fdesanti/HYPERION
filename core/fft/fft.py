@@ -31,8 +31,9 @@ class IFFT():
     
 class IRFFT():
     def __call__(self, input, norm=1, **kwargs):
-        ift = torch.fft.irfft(input, **kwargs) * norm
-        ift[...,1:] /= 2
+        input[...,1:]/=2
+        ift = torch.fft.irfft(input, **kwargs)
+        
         return ift
     
 
