@@ -252,7 +252,7 @@ class PosteriorSampler():
         return self.reweighted_posterior
     
     
-    def plot_reconstructed_waveform(self, whitened_strain, asd, num_wvf=10000, posterior=None, CL=90, **kwargs):
+    def plot_reconstructed_waveform(self, whitened_strain, asd, num_wvf=None, posterior=None, CL=90, **kwargs):
         from ..simulations import GWDetectorNetwork, WhitenNet
         
         if posterior is None:
@@ -264,6 +264,8 @@ class PosteriorSampler():
         if not 'polarization' in posterior.keys():
             posterior['polarization'] = torch.zeros_like(posterior['ra'])
 
+        if num_wvf is None:
+            num_wvf = len(posterior)
         
         # select random samples from the posterior
         print(f'[INFO]: Selecting {num_wvf} random samples from the posterior.')
@@ -340,7 +342,7 @@ class PosteriorSampler():
             
             plt.title(det)           
         
-        plt.savefig(f'{self.output_dir}/reconstructed_waveform.png', dpi=200)
+        plt.savefig(f'{self.output_dir}/reconstructed_waveform_{CL}CL.png', dpi=200)
         plt.show()
         
         return 

@@ -4,6 +4,8 @@ import yaml
 import torch
 import matplotlib.pyplot as plt
 
+from optparse import OptionParser
+
 from tensordict import TensorDict
 from hyperion.training import *
 from hyperion.config import CONF_DIR
@@ -25,21 +27,26 @@ from tqdm import tqdm
 import numpy as np
 
 if __name__ == '__main__':
+    parser = OptionParser()
+    parser.add_option("-s", "--num_posterior_samples", default=50_000, help="Number of posterior samples to draw")
+    parser.add_option("-m", "--MODEL_DIR", default='training_results/BHBH', help="Directory containing the model to sample from")
+    parser.add_option("-t", "--dt", default=0.25, help="Offset to apply to the GPS time of the event")
 
+    (options, args) = parser.parse_args()
     
-    
-    model_dir = sys.argv[1] if len(sys.argv) > 1 else 'training_results/BHBH'
-    dt_gps    = sys.argv[2] if len(sys.argv) > 2 else 0.25
+    NUM_SAMPLES    = int(options.num_posterior_samples)
+    MODEL_DIR      = options.MODEL_DIR
+    dt_gps         = float(options.dt)
 
-    print(f'----> Running model saved at {model_dir}')
+    print(f'----> Running model saved at {MODEL_DIR}')
 
-    conf_yaml = model_dir + '/hyperion_config.yml'
+    conf_yaml = MODEL_DIR + '/hyperion_config.yml'
     
     with open(conf_yaml, 'r') as yaml_file:
         conf = yaml.safe_load(yaml_file)
 
     WAVEFORM_MODEL = conf['waveform_model']
-    PRIOR_PATH = os.path.join(model_dir, 'prior.yml')
+    PRIOR_PATH = os.path.join(MODEL_DIR, 'prior.yml')
     DURATION  = conf['duration']
 
     detectors = conf['detectors']
@@ -108,7 +115,7 @@ if __name__ == '__main__':
          #whitened_strain[det].plot(epoch = gps)
          plt.figure(figsize=(20, 5))
          plt.plot(whitened_strain[det])
-         plt.savefig(f'{model_dir}/{det}_whitened_strain.png')
+         plt.savefig(f'{MODEL_DIR}/{det}_whitened_strain.png')
          plt.close()
     torch_whitened_stacked_strain = torch.stack([torch_whitened_strain[det] for det in detectors]).unsqueeze(0).to(device).float()
     print(whitened_strain)
@@ -124,20 +131,19 @@ if __name__ == '__main__':
         
         asd_samplers = dict()
         for ifo in conf['detectors']:
-            asd_samplers[ifo] = ASD_Sampler(ifo, device=device, fs=2*conf['fs'], duration=DURATION)
+            asd_samplers[ifo] = ASD_Sampler(ifo, device=device, fs=conf['fs'], duration=DURATION)
         
         with open(PRIOR_PATH, 'r') as f:
             prior_conf = yaml.safe_load(f)
             wvf_kwargs = prior_conf['waveform_kwargs']
         
         waveform_generator = WaveformGenerator(WAVEFORM_MODEL, 
-                                               fs=2*conf['fs'], 
+                                               fs=conf['fs'], 
                                                duration=DURATION,
                                                det_network=det_network,
                                                **wvf_kwargs)
         
         #SAMPLING --------
-        num_samples = 10_000
         #parameters, strain = test_ds.__getitem__()
         '''
         plt.figure(figsize=(20, 15))
@@ -149,11 +155,11 @@ if __name__ == '__main__':
         '''
 
         #set up Sampler
-        checkpoint_path = f'{model_dir}/BHBH_flow_model.pt'
+        checkpoint_path = f'{MODEL_DIR}/BHBH_flow_model.pt'
         
         sampler = PosteriorSampler(flow_checkpoint_path  = checkpoint_path, 
                                    waveform_generator    = waveform_generator,
-                                   num_posterior_samples = num_samples,
+                                   num_posterior_samples = NUM_SAMPLES,
                                    device                = device)
 
         #print(sampler.flow.configuration)     
@@ -161,7 +167,7 @@ if __name__ == '__main__':
 
         posterior = sampler.sample_posterior(strain = torch_whitened_stacked_strain,#/np.sqrt(2/2048),
                                              #asd               = torch_asd,
-                                             num_samples        = num_samples,
+                                             num_samples        = NUM_SAMPLES,
                                              restrict_to_bounds = True,
                                              event_time         = gps)
         
@@ -182,15 +188,22 @@ if __name__ == '__main__':
         else:
             sampler.posterior['Mchirp'] = sampler.posterior['M']**0.6/sampler.posterior['q']**0.2
         
+        sampler.posterior['z'] = torch.from_numpy(z).to(device)
 
-        sampler.plot_corner(figname=f'{model_dir}/gw190521_corner.png')
-        sampler.to_bilby().save_posterior_samples(filename=f'{model_dir}/gw190521_posterior.csv')
-        sampler.plot_skymap(jobs=2, maxpts=1_000)
+        #plot corner + skymap + save posterior samples
+        sampler.plot_corner(figname=f'{MODEL_DIR}/gw190521_corner.png')
+        sampler.to_bilby().save_posterior_samples(filename=f'{MODEL_DIR}/gw190521_posterior.csv')
+        #sampler.plot_skymap(jobs=2, maxpts=NUM_SAMPLES)
         
-
+        #plot reconstructed waveform
+        posterior = sampler.posterior
+        posterior['inclination']  = torch.zeros_like(posterior['inclination'])
+        posterior['polarization'] = torch.zeros_like(posterior['polarization'])
+        posterior['H_hyp']        = 1.0007*torch.ones_like(posterior['H_hyp'])
+        posterior['coalescence_angle'] = torch.ones_like(posterior['H_hyp'])
         
         asds = {det:asd_samplers[det].asd_reference.unsqueeze(0) for det in detectors}
-        sampler.plot_reconstructed_waveform(whitened_strain=torch_whitened_strain, asd=asds)
+        sampler.plot_reconstructed_waveform(whitened_strain=torch_whitened_strain, asd=asds, CL=95)
               
 
         
@@ -210,12 +223,12 @@ if __name__ == '__main__':
         plt.xlabel('log posterior')
         plt.ylabel('log prior + log likelihood')
         plt.colorbar()
-        plt.savefig(f'{model_dir}/posterior_vs_prior_likelihood.png')
+        plt.savefig(f'{MODEL_DIR}/posterior_vs_prior_likelihood.png')
         plt.show()
         plt.close()
 
-        sampler.plot_corner(posterior=reweighted_poterior, figname=f'{model_dir}/gw190521_corner_reweighted.png')
-        sampler.plot_skymap(posterior=reweighted_poterior, jobs=2, maxpts=2_000)
+        sampler.plot_corner(posterior=reweighted_poterior, figname=f'{MODEL_DIR}/gw190521_corner_reweighted.png')
+        sampler.plot_skymap(posterior=reweighted_poterior, jobs=2, maxpts=NUM_SAMPLES)
        
 
         '''
