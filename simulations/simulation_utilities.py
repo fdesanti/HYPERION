@@ -6,6 +6,7 @@ from tqdm import tqdm
 from ..core.fft import rfft
 
 import astropy.units as u
+import astropy.cosmology as cosmo
 from astropy.cosmology import Planck18, z_at_value
 
 #======================================
@@ -23,7 +24,7 @@ def luminosity_distance_from_redshift(z, cosmology=Planck18):
     """
     return cosmology.luminosity_distance(z).value
 
-def redshift_from_luminosity_distance(dl, cosmology=Planck18):
+def redshift_from_luminosity_distance(dl, cosmology=None):
     """
     Computes the redshift from the luminosity distance assuming a given Cosmology.
     
@@ -32,6 +33,11 @@ def redshift_from_luminosity_distance(dl, cosmology=Planck18):
         dl (float or torch.Tensor): luminosity distance in Mpc
         cosmology (astropy.cosmology): cosmology object. (Default is Planck18).
     """
+    if cosmology is None:
+        cosmology = Planck18
+    else:
+        assert isinstance(cosmology, cosmo.FlatLambdaCDM), "cosmology must be an astropy cosmology object"
+    
     z = dl
     for i in tqdm(range(len(dl)), total=len(dl), ncols = 100, ascii=' ='):
         z[i] = z_at_value(cosmology.luminosity_distance, dl[i] * u.Mpc)

@@ -7,11 +7,11 @@ from tensordict import TensorDict
 from bilby.gw.result import CBCResult
 
 from .flow import build_flow
-from .utilities import GWlog
+from .utilities import GWLogger
 from ..inference import ImportanceSampling
 from ..simulations import redshift_from_luminosity_distance
 
-log = GWlog()
+log = GWLogger()
 class PosteriorSampler():
     
     def __init__(self, 
@@ -201,7 +201,7 @@ class PosteriorSampler():
             self.posterior = self.flow.sample(**sampling_kwargs)
         return self.posterior
     
-    def compute_mass_source_frame_parameters(self, posterior=None, cosmology=None):
+    def compute_source_frame_mass_parameters(self, posterior=None, cosmology=None):
         """
         Computes mass-source frame parameters from the posterior samples.
         We estimate the redshift z using the luminosity distance and the given cosmology.
@@ -230,7 +230,8 @@ class PosteriorSampler():
             return posterior
         
         #compute redshift
-        z = redshift_from_luminosity_distance(dl, cosmology=cosmology)
+        log.info('Computing redshift from luminosity distance samples.')
+        z = redshift_from_luminosity_distance(dl.cpu().numpy(), cosmology=cosmology)
         
         #compute source frame parameters & add to posterior
         for par in ['m1', 'm2', 'M', 'Mchirp']:

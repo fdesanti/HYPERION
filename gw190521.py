@@ -128,7 +128,7 @@ if __name__ == '__main__':
 
         #set up gwskysim detectors and asd_samplers
         det_network = GWDetectorNetwork(conf['detectors'], use_torch=True, device=device)
-        det_network.set_reference_time(gps)
+        det_network.set_reference_time(event_gps)
         
         asd_samplers = dict()
         for ifo in conf['detectors']:
@@ -191,6 +191,8 @@ if __name__ == '__main__':
         
         sampler.posterior['z'] = torch.from_numpy(z).to(device)
         '''
+        #compute source frame parameters
+        sampler.compute_source_frame_mass_parameters()
         #plot corner + skymap + save posterior samples
         sampler.plot_corner(figname=f'{MODEL_DIR}/gw190521_corner.png')
         sampler.to_bilby().save_posterior_samples(filename=f'{MODEL_DIR}/gw190521_posterior.csv')
