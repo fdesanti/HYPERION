@@ -240,9 +240,6 @@ class PosteriorSampler():
         #add redshift to posterior
         posterior['z'] = torch.from_numpy(z).to(self.device)
         
-        #update self posterior
-        self.posterior = posterior
-        
         return posterior
             
     def sample_importance_weights(self, **importance_sampling_kwargs):
