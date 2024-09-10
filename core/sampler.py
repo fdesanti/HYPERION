@@ -1,3 +1,4 @@
+import os
 import torch
 import pandas as pd
 
@@ -253,7 +254,7 @@ class PosteriorSampler():
     
     
     def plot_reconstructed_waveform(self, whitened_strain, asd, num_wvf=None, posterior=None, CL=90, **kwargs):
-        from ..simulations import GWDetectorNetwork, WhitenNet
+        from ..simulations import WhitenNet
         
         if posterior is None:
             posterior = self.posterior
@@ -267,12 +268,31 @@ class PosteriorSampler():
         if num_wvf is None:
             num_wvf = len(posterior)
         
-        # select random samples from the posterior
-        print(f'[INFO]: Selecting {num_wvf} random samples from the posterior.')
-        sub_posterior = {}
+        # select random samples from the posterior        
+        
+        #delta = (1 + CL) / 2
+        percentiles = [(100-CL)/2, 100-(100-CL)/2]
+        lower_quantile = percentiles[0] / 100
+        upper_quantile = percentiles[1] / 100
+        mask = torch.ones(len(posterior), dtype=torch.bool)
         for key in posterior.keys():
-            i = torch.multinomial(torch.ones(len(posterior)), num_wvf, replacement=False)
-            sub_posterior[key] = posterior[key][i]
+            low  = posterior[key].quantile(lower_quantile)
+            high = posterior[key].quantile(upper_quantile)
+            mask = mask & (posterior[key] >= low) & (posterior[key] <= high)
+        
+        posterior = posterior[mask]
+        
+        if num_wvf is None:
+            num_wvf = len(posterior)
+        else:
+            if num_wvf > len(posterior):
+                num_wvf = len(posterior)
+                print(f'[WARNING]: Number of samples requested is greater than the number of valid samples.')
+        print(f'[INFO]: Taking {num_wvf} random samples from the posterior.')
+        
+        i = torch.multinomial(torch.ones(len(posterior)), num_wvf, replacement=False)
+        posterior = posterior[i]
+        #sub_posterior[key] = posterior[key][i]
         #posterior = TensorDict.from_dict(sub_posterior).to(self.device)
 
         #posterior = posterior[i]
@@ -286,7 +306,9 @@ class PosteriorSampler():
         #compute time_shifts
         time_shift = self.waveform_generator.det_network.time_delay_from_earth_center(posterior['ra'], 
                                                                                       posterior['dec'])
-        tcoal_diff  = posterior['tcoal'].median().to(self.device)-tcoal.squeeze(1).to(self.device)
+        
+        median_tcoal = posterior['tcoal'].median().to(self.device)+0.022
+        tcoal_diff  = median_tcoal -tcoal.squeeze(1).to(self.device)
         
         for ifo in time_shift:
             time_shift[ifo] += tcoal_diff
@@ -299,7 +321,6 @@ class PosteriorSampler():
         
         #whiten_kwargs
         whiten_kwargs = kwargs.get('whiten_kwargs', {})
-        print(projected_template)
         whitened_waveform = whitener(h          = projected_template, 
                                      asd        = asd,
                                      time_shift = time_shift, 
@@ -316,6 +337,12 @@ class PosteriorSampler():
         
         import matplotlib.pyplot as plt
         import numpy as np
+        import pandas as pd
+        reconstructed_wvf_output_dir = f'{self.output_dir}/reconstructed_waveform'
+        if not os.path.exists(reconstructed_wvf_output_dir):
+            os.makedirs(reconstructed_wvf_output_dir)
+            
+        saving = {}
         plt.figure(figsize=(20, 15))
         for i, det in enumerate(self.waveform_generator.det_network.detectors):
             plt.subplot(3, 1, i+1)
@@ -325,26 +352,32 @@ class PosteriorSampler():
             
             
             percentiles = [(100-CL)/2, 100-(100-CL)/2]
+            
             median = np.percentile(whitened_waveform[det].cpu().numpy(), 50, axis=0)
             low  = np.percentile(whitened_waveform[det].cpu().numpy(), percentiles[0], axis=0)
             high = np.percentile(whitened_waveform[det].cpu().numpy(), percentiles[1], axis=0)
-            plt.fill_between(time, low, high, color='r', alpha=0.5)
+            plt.fill_between(time, low, high, color='r', alpha=0.3)
             
-            plt.plot(time, median, linestyle = '--', color='k', alpha=0.8)
+            plt.plot(time, median, linestyle = '--', linewidth=2, color='k', alpha=0.8)
 
-
+            saving[det] = pd.DataFrame({'time': time, 'median': median, 'low': low, 'high': high})
             #plt.plot(time, median, color='r', alpha=0.5)
             '''
             for wvf_sample in wvf:
                 print(wvf_sample, wvf_sample.shape)
                 plt.plot(time, wvf_sample, color='r', alpha=0.5)
             '''
+            plt.xlim(0.3, 0.6)
+            #plt.xlim(-0.25, 0.0)
             
             plt.title(det)           
         
-        plt.savefig(f'{self.output_dir}/reconstructed_waveform_{CL}CL.png', dpi=200)
+        plt.savefig(f'{reconstructed_wvf_output_dir}/reconstructed_waveform_{CL}CL.png', dpi=200)
         plt.show()
         
+        
+        for det in saving:
+            saving[det].to_csv(f'{reconstructed_wvf_output_dir}/reconstructed_waveform_{CL}CL_{det}.csv', index=False, header=True)
         return 
         
             

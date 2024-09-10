@@ -102,7 +102,7 @@ if __name__ == '__main__':
         
         fake_bilby_priors = {}
         for key in conf['inference_parameters']:
-            fake_bilby_priors[key] = bilby.core.prior.Uniform(0, 1, latex_label=sampler.latex_labels[key])
+            fake_bilby_priors[key] = bilby.core.prior.Uniform(0, 1, latex_label=sampler.latex_labels()[key])
 
         for _ in tqdm(range(NUM_POSTERIORS)):
         

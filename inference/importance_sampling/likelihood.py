@@ -137,7 +137,7 @@ class GWLikelihood():
         for ifo in strain.keys():
             frequency_domain_strain =  fft(strain[ifo], norm=self.fs)
             
-            logZn += -0.5 * self._inner_product(frequency_domain_strain, frequency_domain_strain, psd[ifo])
+            logZn -= 0.5 * self._inner_product(frequency_domain_strain, frequency_domain_strain, psd[ifo])
 
         return logZn.real
     
@@ -176,7 +176,7 @@ class GWLikelihood():
 
         print(f"Log Likelihood: {logL.real + logZn}")
 
-        return logL.real #+ logZn
+        return logL.real + logZn
     
     
     
@@ -199,7 +199,7 @@ class GWLikelihood():
         
         time_delays = self.det_network.time_delay_from_earth_center(theta['ra'], 
                                                                     theta['dec'])
-        tcoal  = tcoal.squeeze(1).to(self.device)-theta['tcoal'].to(self.device)
+        tcoal  = theta['tcoal'].median().to(self.device) - tcoal.squeeze(1).to(self.device)
         
         
 
@@ -207,7 +207,7 @@ class GWLikelihood():
         frequency_domain_template = dict()
         for ifo in self.det_network.names:
 
-            hf  =  fft(template[ifo], n=n, norm=self.fs)
+            hf  =  fft(template[ifo], norm=self.fs)
             
             dt = (tcoal + time_delays[ifo]).unsqueeze(-1)
                         

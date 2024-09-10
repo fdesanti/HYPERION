@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
         #set up gwskysim detectors and asd_samplers
         det_network = GWDetectorNetwork(conf['detectors'], use_torch=True, device=device)
-        det_network.set_reference_time(conf['reference_gps_time'])
+        det_network.set_reference_time(gps)
         
         asd_samplers = dict()
         for ifo in conf['detectors']:
@@ -172,7 +172,7 @@ if __name__ == '__main__':
                                              event_time         = gps)
         
         
-        
+        '''
         from astropy.cosmology import Planck18, z_at_value
         import astropy.units as u
         if 'luminosity_distance' in posterior.keys():
@@ -189,7 +189,7 @@ if __name__ == '__main__':
             sampler.posterior['Mchirp'] = sampler.posterior['M']**0.6/sampler.posterior['q']**0.2
         
         sampler.posterior['z'] = torch.from_numpy(z).to(device)
-
+        '''
         #plot corner + skymap + save posterior samples
         sampler.plot_corner(figname=f'{MODEL_DIR}/gw190521_corner.png')
         sampler.to_bilby().save_posterior_samples(filename=f'{MODEL_DIR}/gw190521_posterior.csv')
@@ -197,19 +197,46 @@ if __name__ == '__main__':
         
         #plot reconstructed waveform
         posterior = sampler.posterior
-        posterior['inclination']  = torch.zeros_like(posterior['inclination'])
-        posterior['polarization'] = torch.zeros_like(posterior['polarization'])
-        posterior['H_hyp']        = 1.0007*torch.ones_like(posterior['H_hyp'])
-        posterior['coalescence_angle'] = torch.ones_like(posterior['H_hyp'])
+        posterior['inclination']       = torch.zeros_like(posterior['inclination'])
+        posterior['polarization']      = torch.zeros_like(posterior['polarization'])
+        posterior['H_hyp']             = 1.0007*torch.ones_like(posterior['H_hyp'])
+        posterior['coalescence_angle'] = torch.zeros_like(posterior['H_hyp'])
+        
         
         asds = {det:asd_samplers[det].asd_reference.unsqueeze(0) for det in detectors}
-        sampler.plot_reconstructed_waveform(whitened_strain=torch_whitened_strain, asd=asds, CL=95)
+        sampler.plot_reconstructed_waveform(whitened_strain=torch_whitened_strain, asd=asds, 
+                                            CL=90)
               
 
         
         print('[INFO]: Peforming Importance Sampling...')
+        posterior = sampler.sample_posterior(strain = torch_whitened_stacked_strain,#/np.sqrt(2/2048),
+                                             verbose            = False,  
+                                             #asd               = torch_asd,
+                                             num_samples        = NUM_SAMPLES,
+                                             restrict_to_bounds = False,
+                                             event_time         = gps)
+        
         is_kwargs = {'whitened_strain':torch_whitened_strain, 'strain':torch_noisy_strain, 'psd':torch_psd, 'event_time':gps}
-        reweighted_poterior = sampler.reweight_posterior(importance_sampling_kwargs=is_kwargs, num_samples=50000)
+        reweighted_poterior = sampler.reweight_posterior(importance_sampling_kwargs=is_kwargs, num_samples=NUM_SAMPLES)
+
+        if 'luminosity_distance' in posterior.keys():
+            z = z_at_value(Planck18.luminosity_distance, reweighted_poterior['luminosity_distance'].cpu()*u.Mpc)
+        elif 'distance' in posterior.keys():
+            z = z_at_value(Planck18.luminosity_distance, reweighted_poterior['distance'].cpu()*u.Mpc)
+        
+        if 'M' in posterior.keys():
+            reweighted_poterior['M_source'] = reweighted_poterior['M']/torch.from_numpy((1+z)).to(device)
+        
+        if 'Mchirp' in sampler.posterior.keys():
+            reweighted_poterior['Mchirp_source'] = reweighted_poterior['Mchirp']/torch.from_numpy((1+z)).to(device)
+        else:
+            reweighted_poterior['Mchirp'] = reweighted_poterior['M']**0.6/sampler.posterior['q']**0.2
+        
+        reweighted_poterior['z'] = torch.from_numpy(z).to(device)
+        
+        bilby_reweighted_posterior = sampler.to_bilby(posterior=reweighted_poterior).save_posterior_samples(filename=f'{MODEL_DIR}/gw190521_reweighted_posterior.csv')
+        
         print(sampler.IS_results)
 
         valid_samples  = sampler.IS_results['stats']['valid_samples']

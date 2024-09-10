@@ -128,13 +128,13 @@ if __name__ == '__main__':
             flow = build_flow(prior_metadata).to(device)
         else:
             flow = build_flow(checkpoint_path=checkpoint_filepath).to(device)            
-            
+            '''
             print(flow.prior_metadata)
             flow.prior_metadata['inference_parameters'] = conf['inference_parameters']
             flow.prior_metadata['parameters']['luminosity_distance'] = flow.prior_metadata['parameters'].pop('distance')
             flow.prior_metadata['means']['luminosity_distance'] = flow.prior_metadata['means'].pop('distance')
             flow.prior_metadata['stds']['luminosity_distance'] = flow.prior_metadata['stds'].pop('distance')
-            
+            '''
         #set up Optimizer and Learning rate schedulers
         optim_kwargs = {'params': [p for p in flow.parameters() if p.requires_grad], 
                         'lr': INITIAL_LEARNING_RATE}
