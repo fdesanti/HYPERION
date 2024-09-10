@@ -1,6 +1,6 @@
 import torch
 from .EFB_T_PN import PN_Expansion
-from ..utilities import pc_to_Msun, Msun_to_sec
+from ..waveform_utilities import pc_to_Msun, Msun_to_sec
 
 class EffectiveFlyByTemplate():
     """Class that generates templates of gw from Binary Close Encounter exploiting the Effective Fly-by Templates

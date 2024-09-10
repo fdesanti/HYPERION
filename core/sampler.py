@@ -378,20 +378,4 @@ class PosteriorSampler():
         
         for det in saving:
             saving[det].to_csv(f'{reconstructed_wvf_output_dir}/reconstructed_waveform_{CL}CL_{det}.csv', index=False, header=True)
-        return 
-        
-            
-        
-                
-        
-
-
-
-        
-        
-        
-        
-    
-    
-    
-    
+        return

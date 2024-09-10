@@ -59,7 +59,8 @@ if __name__ == '__main__':
         #device = 'cuda'
     else:
         device = 'cpu'
-        
+    
+    event_gps = 1242442967.4 
     gps = 1242442967.4 #event_gps("GW190521")
     print('GW190521 GPS time', gps)
     start = int(gps) - 32
@@ -169,7 +170,7 @@ if __name__ == '__main__':
                                              #asd               = torch_asd,
                                              num_samples        = NUM_SAMPLES,
                                              restrict_to_bounds = True,
-                                             event_time         = gps)
+                                             event_time         = event_gps)
         
         
         '''
@@ -215,7 +216,7 @@ if __name__ == '__main__':
                                              #asd               = torch_asd,
                                              num_samples        = NUM_SAMPLES,
                                              restrict_to_bounds = False,
-                                             event_time         = gps)
+                                             event_time         = event_gps)
         
         is_kwargs = {'whitened_strain':torch_whitened_strain, 'strain':torch_noisy_strain, 'psd':torch_psd, 'event_time':gps}
         reweighted_poterior = sampler.reweight_posterior(importance_sampling_kwargs=is_kwargs, num_samples=NUM_SAMPLES)

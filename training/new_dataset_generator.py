@@ -13,13 +13,10 @@ from ..core.distributions import MultivariatePrior, prior_dict_
 from ..core.distributions import q_uniform_in_components as q_prior
 
 from ..simulations import WhitenNet
-
-from ..simulations.waveforms.utilities import pc_to_Msun
-
-from ..simulations.sim_utils import (optimal_snr, 
-                                     matched_filter_snr, 
-                                     rescale_to_network_snr, 
-                                     network_optimal_snr)
+from ..simulations.simulation_utilities import (optimal_snr, 
+                                                matched_filter_snr, 
+                                                rescale_to_network_snr, 
+                                                network_optimal_snr)
 
 
 class DatasetGenerator:
