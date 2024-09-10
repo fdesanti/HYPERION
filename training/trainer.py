@@ -9,10 +9,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from tqdm import tqdm
-from gwskysim.gwskysim.utilities.gwlogger import GWLogger
-
 from ..core.flow import build_flow
-
+from ..core.utilities import GWLogger
 
 class Trainer: 
     def __init__(self,
@@ -184,9 +182,8 @@ class Trainer:
     
 	
     def train(self, num_epochs, overwrite_history=True):
-        self.log = GWLogger('training_logger')
-        self.log.setLevel('INFO')
-
+        self.log = GWLogger()
+        
         best_train_loss = np.inf
         best_val_loss   = np.inf
         

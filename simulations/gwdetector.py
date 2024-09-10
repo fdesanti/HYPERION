@@ -13,6 +13,9 @@ R_earth = R_earth.value #earth radius value [m]
 c = c.value #speed of light value [m/s]
 
 from ..config import CONF_DIR
+from ..core.utilities import GWLogger
+
+log = GWLogger()
 
 
 def get_detectors_configs(det_conf_path = None):
@@ -59,8 +62,8 @@ class GWDetector(object):
             try:
                 assert use_torch == True, "Cannot use GPU (cuda) without using torch"
             except AssertionError as e:
-                print('[WARNING]: ', e)
-                print('[INFO]: Setting use_torch to True')
+                log.warning(e)
+                log.info('Setting use_torch to True')
                 use_torch = True
         
         self.device    = device

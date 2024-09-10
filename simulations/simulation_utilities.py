@@ -1,24 +1,41 @@
 """Definition of useful functions for the simulations"""
 
 import torch
+
+from tqdm import tqdm
 from ..core.fft import rfft
 
-from astropy.cosmology import Planck18
+import astropy.units as u
+from astropy.cosmology import Planck18, z_at_value
 
 #======================================
 # Cosmology
 #======================================
 
-def luminosity_distance_from_redshift(z):
+def luminosity_distance_from_redshift(z, cosmology=Planck18):
     """
-    Computes the luminosity distance from the redshift using the Planck18 cosmology.
+    Computes the luminosity distance from the redshift assuming a given cosmology.
     
     Args:
     -----
         z (float or torch.Tensor): redshift
+        cosmology (astropy.cosmology): cosmology object. (Default is Planck18).
     """
-    return Planck18.luminosity_distance(z).value
+    return cosmology.luminosity_distance(z).value
 
+def redshift_from_luminosity_distance(dl, cosmology=Planck18):
+    """
+    Computes the redshift from the luminosity distance assuming a given Cosmology.
+    
+    Args:
+    -----
+        dl (float or torch.Tensor): luminosity distance in Mpc
+        cosmology (astropy.cosmology): cosmology object. (Default is Planck18).
+    """
+    z = dl
+    for i in tqdm(range(len(dl)), total=len(dl), ncols = 100, ascii=' ='):
+        z[i] = z_at_value(cosmology.luminosity_distance, dl[i] * u.Mpc)
+    return z
 
 #======================================
 # Matched filter  & SNR
@@ -106,9 +123,7 @@ def network_optimal_snr(frequency_domain_strain, psd, duration):
         
     #return torch.sqrt(torch.sum(torch.stack(det_snr)**2, dim = -1))
 
-    
 
-    
 def rescale_to_network_snr(h, new_snr, old_snr = None, **kwargs):
     """
     Rescales the input signal to a new network SNR. 
@@ -149,6 +164,3 @@ def rescale_to_network_snr(h, new_snr, old_snr = None, **kwargs):
         
         
     return h_o
-
-
-

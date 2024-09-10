@@ -10,10 +10,11 @@ from optparse import OptionParser
 from hyperion.training import *
 from hyperion.config import CONF_DIR
 from hyperion.core.flow import build_flow
+from hyperion.core import GWLogger
 from hyperion.simulations import (ASD_Sampler, 
                                   GWDetectorNetwork, 
                                   WaveformGenerator)
-
+log = GWLogger()
 
 if __name__ == '__main__':
     parser = OptionParser()
@@ -31,7 +32,7 @@ if __name__ == '__main__':
 
     #if PRELOAD, load the history file to get the learning rates
     if PRELOAD:
-        print(f'[INFO]: Loading pretrained model from {conf_dir} directory...')
+        log.info(f'Loading pretrained model from {conf_dir} directory...')
         import numpy as np
         history_file = os.path.join(conf_dir, 'history.txt')
         _, _, learning_rates = np.loadtxt(history_file, delimiter=',', unpack=True)
@@ -65,6 +66,7 @@ if __name__ == '__main__':
             asd_samplers[ifo] = ASD_Sampler(ifo, 
                                             device        = device,
                                             fs            = conf['fs'],
+                                            fmin          = conf['fmin'],
                                             duration      = DURATION,
                                             reference_run = conf['ASD_reference_run'])
         

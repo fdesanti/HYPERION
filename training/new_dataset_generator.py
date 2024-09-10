@@ -7,6 +7,7 @@ import torch.nn.functional as F
 
 from tensordict import TensorDict
 
+from ..core import GWLogger
 from ..core.fft import *
 from ..config import CONF_DIR
 from ..core.distributions import MultivariatePrior, prior_dict_
@@ -18,6 +19,7 @@ from ..simulations.simulation_utilities import (optimal_snr,
                                                 rescale_to_network_snr, 
                                                 network_optimal_snr)
 
+log = GWLogger()
 
 class DatasetGenerator:
     """
@@ -206,7 +208,7 @@ class DatasetGenerator:
         Preload a set of waveforms to speed up the generation of the dataset.
         """
         
-        print('\n[INFO] Preloading a new set of waveforms...')
+        log.info('Preloading a new set of waveforms...')
 
         #first we sample the intrinsic parameters
         self.prior_samples = self.intrinsic_prior.sample(self.num_preload)
@@ -217,7 +219,7 @@ class DatasetGenerator:
         #then we call the waveform generator
         hp, hc, tcoal = self.waveform_generator(self.prior_samples.to('cpu'), 
                                                 n_proc=self.n_proc)
-        print('\n[INFO] Done.')
+        log.info('Done.')
 
         #store the waveforms as a TensorDict
         wvfs = {'hp': hp, 'hc': hc}

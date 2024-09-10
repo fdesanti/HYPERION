@@ -69,10 +69,9 @@ class ASD_Sampler():
 
         self.f = rfftfreq(fs*duration, d=1/fs, device = device)
         
-        if fmin is None:
-            fmin = 8
-        f = self.f.clone()
-        f[f < fmin] = fmin
+        if fmin is not None:
+            f = self.f.clone()
+            f[f < fmin] = fmin
 
         self.df = torch.abs(self.f[1] - self.f[2])
         

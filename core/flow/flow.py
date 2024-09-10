@@ -10,7 +10,9 @@ from time import time
 from astropy.time import Time
 from astropy.units.si import sday
 
+from ..utilities import GWLogger
 
+log = GWLogger()
 class Flow(nn.Module):
     """Class that manages the flow model"""
     
@@ -115,7 +117,7 @@ class Flow(nn.Module):
 
         end=time()
         if verbose:
-            print(f"---> Sampling took {end-start:.3f} seconds")
+            log.info(f"Sampling took {end-start:.3f} seconds")
         
         if return_log_prob:
             log_posterior = self.base_distribution.log_prob(samples, embedded_strain) - inverse_logabsdet 

@@ -56,6 +56,7 @@ if __name__ == '__main__':
             asd_samplers[ifo] = ASD_Sampler(ifo, 
                                             device        = device,
                                             fs            = conf['fs'],
+                                            fmin          = conf['fmin'],
                                             duration      = DURATION,
                                             reference_run = conf['ASD_reference_run'])
         

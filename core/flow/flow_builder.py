@@ -4,10 +4,12 @@ import torch
 
 from . import Flow
 from . import CouplingTransform, AffineCouplingLayer, RandomPermutation
-from ..distributions   import MultivariateNormalBase, base_distributions_dict
+from ..utilities import GWLogger
+from ..distributions import MultivariateNormalBase, base_distributions_dict
 from ..neural_networks import EmbeddingNetwork, EmbeddingNetworkAttention, embedding_network_dict
-
 from ...config import CONF_DIR
+
+log = GWLogger()
 
 def build_flow( prior_metadata           :dict = None,
                 flow_kwargs              :dict = None,
@@ -88,10 +90,10 @@ def build_flow( prior_metadata           :dict = None,
     """loading (eventual) weights"""
     if checkpoint_path is not None:
         flow.load_state_dict(checkpoint['model_state_dict'])
-        print('----> Model weights loaded!\n')
+        log.info('Model weights loaded!')
         model_parameters = filter(lambda p: p.requires_grad, flow.parameters())
         params = sum([np.prod(p.size()) for p in model_parameters])
-        print(f'----> Flow has {params/1e6:.1f} M trained parameters')
+        log.info(f'Flow has {params/1e6:.1f} M trained parameters')
         
     return flow
 

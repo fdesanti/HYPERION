@@ -7,9 +7,10 @@ from tensordict import TensorDict
 from bilby.gw.result import CBCResult
 
 from .flow import build_flow
+from .utilities import GWLogger
 from ..inference import ImportanceSampling
 
-
+logger = GWLogger()
 class PosteriorSampler():
     
     def __init__(self, 
@@ -234,7 +235,7 @@ class PosteriorSampler():
         """
         
         if posterior is None:
-            print('[INFO]: Using previously sampled posterior.')
+            logger.info('Using previously sampled posterior.')
             posterior = self.posterior
        
         if importance_weights is None:
@@ -288,7 +289,7 @@ class PosteriorSampler():
             if num_wvf > len(posterior):
                 num_wvf = len(posterior)
                 print(f'[WARNING]: Number of samples requested is greater than the number of valid samples.')
-        print(f'[INFO]: Taking {num_wvf} random samples from the posterior.')
+        logger.info(f'Taking {num_wvf} random samples from the posterior.')
         
         i = torch.multinomial(torch.ones(len(posterior)), num_wvf, replacement=False)
         posterior = posterior[i]
