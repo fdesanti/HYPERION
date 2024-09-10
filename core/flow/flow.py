@@ -91,11 +91,13 @@ class Flow(nn.Module):
         
         samples = []
         
-        embedded_strain = self.embedding_network(strain)
-        nsteps = num_samples//batch_size if num_samples>=batch_size else 1
-        batch_samples = batch_size if num_samples>batch_size else num_samples
+        embedded_strain      = self.embedding_network(strain)
+        nsteps               = num_samples // batch_size if num_samples>=batch_size else 1
+        batch_samples        = batch_size if num_samples > batch_size else num_samples
+        disable_progress_bar = True if not verbose or nsteps == 1 else True
+
         
-        for _ in tqdm(range(nsteps), disable=False if verbose else True):
+        for _ in tqdm(range(nsteps), disable=disable_progress_bar):
     
             prior_samples = self.base_distribution.sample(batch_samples, embedded_strain)
 
