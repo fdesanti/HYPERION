@@ -7,10 +7,11 @@ from tensordict import TensorDict
 from bilby.gw.result import CBCResult
 
 from .flow import build_flow
-from .utilities import GWLogger
+from .utilities import GWlog
 from ..inference import ImportanceSampling
+from ..simulations import redshift_from_luminosity_distance
 
-logger = GWLogger()
+log = GWlog()
 class PosteriorSampler():
     
     def __init__(self, 
@@ -199,6 +200,50 @@ class PosteriorSampler():
         with torch.inference_mode():
             self.posterior = self.flow.sample(**sampling_kwargs)
         return self.posterior
+    
+    def compute_mass_source_frame_parameters(self, posterior=None, cosmology=None):
+        """
+        Computes mass-source frame parameters from the posterior samples.
+        We estimate the redshift z using the luminosity distance and the given cosmology.
+        Then the parameters are rescaled with 1/(1+z)
+        
+        Args:
+        -----
+            posterior (dict or TensorDict): posterior samples. (Default: uses the previously sampled posterior)
+            cosmology (astropy.cosmology): cosmology object to compute redshift from luminosity distance. (Default: Planck18)
+        
+        Returns:
+        --------
+            posterior (dict or TensorDict): posterior samples updated with mass-source frame parameters.
+        """
+        
+        if posterior is None:
+            posterior = self.posterior
+        
+        #get luminosity distance
+        if 'luminosity_distance' in posterior.keys():
+            dl = posterior['luminosity_distance']
+        elif 'distance' in posterior.keys():
+            dl = posterior['distance']
+        else:
+            log.error('Luminosity distance not found in the posterior samples. Unable to determine redshift.')
+            return posterior
+        
+        #compute redshift
+        z = redshift_from_luminosity_distance(dl, cosmology=cosmology)
+        
+        #compute source frame parameters & add to posterior
+        for par in ['m1', 'm2', 'M', 'Mchirp']:
+            if par in posterior.keys():
+                posterior[f'{par}_source'] = posterior[par] / torch.from_numpy((1+z)).to(self.device)
+        
+        #add redshift to posterior
+        posterior['z'] = torch.from_numpy(z).to(self.device)
+        
+        #update self posterior
+        self.posterior = posterior
+        
+        return posterior
             
     def sample_importance_weights(self, **importance_sampling_kwargs):
         """
@@ -235,7 +280,7 @@ class PosteriorSampler():
         """
         
         if posterior is None:
-            logger.info('Using previously sampled posterior.')
+            log.info('Using previously sampled posterior.')
             posterior = self.posterior
        
         if importance_weights is None:
@@ -289,7 +334,7 @@ class PosteriorSampler():
             if num_wvf > len(posterior):
                 num_wvf = len(posterior)
                 print(f'[WARNING]: Number of samples requested is greater than the number of valid samples.')
-        logger.info(f'Taking {num_wvf} random samples from the posterior.')
+        log.info(f'Taking {num_wvf} random samples from the posterior.')
         
         i = torch.multinomial(torch.ones(len(posterior)), num_wvf, replacement=False)
         posterior = posterior[i]
