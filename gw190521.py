@@ -119,7 +119,7 @@ if __name__ == '__main__':
          plt.savefig(f'{MODEL_DIR}/{det}_whitened_strain.png')
          plt.close()
     torch_whitened_stacked_strain = torch.stack([torch_whitened_strain[det] for det in detectors]).unsqueeze(0).to(device).float()
-    print(whitened_strain)
+    #print(whitened_strain)
     #torch_asd = torch.stack([torch_asd[det] for det in torch_asd.keys()], dim=0).unsqueeze(0).to(device).float()
     #print(torch_asd.shape)
    
@@ -172,30 +172,14 @@ if __name__ == '__main__':
                                              restrict_to_bounds = True,
                                              event_time         = event_gps)
         
-        
-        '''
-        from astropy.cosmology import Planck18, z_at_value
-        import astropy.units as u
-        if 'luminosity_distance' in posterior.keys():
-            z = z_at_value(Planck18.luminosity_distance, posterior['luminosity_distance'].cpu()*u.Mpc)
-        elif 'distance' in posterior.keys():
-            z = z_at_value(Planck18.luminosity_distance, posterior['distance'].cpu()*u.Mpc)
-        
-        if 'M' in posterior.keys():
-            sampler.posterior['M_source'] = sampler.posterior['M']/torch.from_numpy((1+z)).to(device)
-        
-        if 'Mchirp' in sampler.posterior.keys():
-            sampler.posterior['Mchirp_source'] = sampler.posterior['Mchirp']/torch.from_numpy((1+z)).to(device)
-        else:
-            sampler.posterior['Mchirp'] = sampler.posterior['M']**0.6/sampler.posterior['q']**0.2
-        
-        sampler.posterior['z'] = torch.from_numpy(z).to(device)
-        '''
+    
         #compute source frame parameters
         sampler.compute_source_frame_mass_parameters()
+        
         #plot corner + skymap + save posterior samples
         sampler.plot_corner(figname=f'{MODEL_DIR}/gw190521_corner.png')
         sampler.to_bilby().save_posterior_samples(filename=f'{MODEL_DIR}/gw190521_posterior.csv')
+        
         #sampler.plot_skymap(jobs=2, maxpts=NUM_SAMPLES)
         
         #plot reconstructed waveform
@@ -212,7 +196,6 @@ if __name__ == '__main__':
               
 
         
-        print('[INFO]: Peforming Importance Sampling...')
         posterior = sampler.sample_posterior(strain = torch_whitened_stacked_strain,#/np.sqrt(2/2048),
                                              verbose            = False,  
                                              #asd               = torch_asd,
@@ -222,21 +205,8 @@ if __name__ == '__main__':
         
         is_kwargs = {'whitened_strain':torch_whitened_strain, 'strain':torch_noisy_strain, 'psd':torch_psd, 'event_time':gps}
         reweighted_poterior = sampler.reweight_posterior(importance_sampling_kwargs=is_kwargs, num_samples=NUM_SAMPLES)
-
-        if 'luminosity_distance' in posterior.keys():
-            z = z_at_value(Planck18.luminosity_distance, reweighted_poterior['luminosity_distance'].cpu()*u.Mpc)
-        elif 'distance' in posterior.keys():
-            z = z_at_value(Planck18.luminosity_distance, reweighted_poterior['distance'].cpu()*u.Mpc)
         
-        if 'M' in posterior.keys():
-            reweighted_poterior['M_source'] = reweighted_poterior['M']/torch.from_numpy((1+z)).to(device)
-        
-        if 'Mchirp' in sampler.posterior.keys():
-            reweighted_poterior['Mchirp_source'] = reweighted_poterior['Mchirp']/torch.from_numpy((1+z)).to(device)
-        else:
-            reweighted_poterior['Mchirp'] = reweighted_poterior['M']**0.6/sampler.posterior['q']**0.2
-        
-        reweighted_poterior['z'] = torch.from_numpy(z).to(device)
+        reweighted_poterior = sampler.compute_source_frame_mass_parameters(posterior = reweighted_poterior)
         
         bilby_reweighted_posterior = sampler.to_bilby(posterior=reweighted_poterior).save_posterior_samples(filename=f'{MODEL_DIR}/gw190521_reweighted_posterior.csv')
         

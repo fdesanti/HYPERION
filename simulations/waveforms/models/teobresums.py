@@ -9,12 +9,14 @@ Instructions for the TEOBResumS waveform model:
 """
 
 import torch
+from hyperion.core.utilities import GWLogger
+log = GWLogger()
 
 try:
     import EOBRun_module
 except ModuleNotFoundError as e: 
-    print(e)
-    print("[WARNING]: unable to import EOBRun_module. Please refer to the documentation to install it. TEOBResumSDALI waveform model won't work otherwise")
+    log.error(e)
+    log.warning("Unable to import EOBRun_module. Please refer to the documentation to install it. TEOBResumSDALI waveform model won't work otherwise")
 
 
 
@@ -70,8 +72,12 @@ class  TEOBResumSDALI():
         if kwargs:
             self.kwargs.update(kwargs) 
             
-        print('[INFO]: USING TEOBResumS waveform model with the following parameters:')
-        print(self.kwargs, '\n')
+        print('\n')
+        log.info('Using TEOBResumS-Dali waveform model with the following parameters:')
+        for key, value in self.kwargs.items():
+            print(f'{key}: {value}')
+        print('\n')
+        #print(self.kwargs, '\n')
         return
         
     @property

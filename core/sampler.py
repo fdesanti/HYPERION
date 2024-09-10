@@ -162,6 +162,8 @@ class PosteriorSampler():
     def plot_corner(self, posterior=None, injection_parameters=None, figname=None, **corner_kwargs):
         """Wrapper to Bilby plot corner method."""
         
+        log.info('Generating corner plot...')
+        
         bilby_result = self.to_bilby(posterior=posterior, 
                                      injection_parameters=injection_parameters)
         
@@ -280,6 +282,8 @@ class PosteriorSampler():
                 A dictionary containing the reweighted samples from the posterior distribution.
         """
         
+        log.info('Peforming Importance Sampling...')
+        
         if posterior is None:
             log.info('Using previously sampled posterior.')
             posterior = self.posterior
@@ -301,6 +305,9 @@ class PosteriorSampler():
     
     
     def plot_reconstructed_waveform(self, whitened_strain, asd, num_wvf=None, posterior=None, CL=90, **kwargs):
+        
+        log.info('Plotting reconstructed waveforms...')
+        
         from ..simulations import WhitenNet
         
         if posterior is None:
@@ -334,8 +341,8 @@ class PosteriorSampler():
         else:
             if num_wvf > len(posterior):
                 num_wvf = len(posterior)
-                print(f'[WARNING]: Number of samples requested is greater than the number of valid samples.')
-        log.info(f'Taking {num_wvf} random samples from the posterior.')
+                log.warning(f'Number of samples requested is greater than the number of valid samples.')
+        log.info(f'Taking {num_wvf} random samples from the posterior and generating waveforms')
         
         i = torch.multinomial(torch.ones(len(posterior)), num_wvf, replacement=False)
         posterior = posterior[i]

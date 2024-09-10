@@ -90,6 +90,7 @@ def build_flow( prior_metadata           :dict = None,
     """loading (eventual) weights"""
     if checkpoint_path is not None:
         flow.load_state_dict(checkpoint['model_state_dict'])
+        print('\n')
         log.info('Model weights loaded!')
         model_parameters = filter(lambda p: p.requires_grad, flow.parameters())
         params = sum([np.prod(p.size()) for p in model_parameters])
