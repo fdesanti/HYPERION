@@ -7,7 +7,11 @@ sns.set_context("talk")
 
 from optparse import OptionParser
 
-from hyperion.training import *
+from hyperion.training import (DatasetGenerator, 
+                               get_LR_scheduler,
+                               get_optimizer, 
+                               Trainer)
+
 from hyperion.config import CONF_DIR
 from hyperion.core.flow import build_flow
 from hyperion.core import GWLogger
