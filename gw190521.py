@@ -174,11 +174,11 @@ if __name__ == '__main__':
         
     
         #compute source frame parameters
-        sampler.compute_source_frame_mass_parameters()
+        #sampler.compute_source_frame_mass_parameters()
         
         #plot corner + skymap + save posterior samples
-        sampler.plot_corner(figname=f'{MODEL_DIR}/gw190521_corner.png')
-        sampler.to_bilby().save_posterior_samples(filename=f'{MODEL_DIR}/gw190521_posterior.csv')
+        #sampler.plot_corner(figname=f'{MODEL_DIR}/gw190521_corner.png')
+        #sampler.to_bilby().save_posterior_samples(filename=f'{MODEL_DIR}/gw190521_posterior.csv')
         
         #sampler.plot_skymap(jobs=2, maxpts=NUM_SAMPLES)
         
@@ -192,7 +192,7 @@ if __name__ == '__main__':
         
         asds = {det:asd_samplers[det].asd_reference.unsqueeze(0) for det in detectors}
         sampler.plot_reconstructed_waveform(whitened_strain=torch_whitened_strain, asd=asds, 
-                                            CL=90)
+                                            CL=30)
               
 
         

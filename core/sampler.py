@@ -362,7 +362,7 @@ class PosteriorSampler():
                                                                                       posterior['dec'])
         
         median_tcoal = posterior['tcoal'].median().to(self.device)+0.022
-        tcoal_diff  = median_tcoal -tcoal.squeeze(1).to(self.device)
+        tcoal_diff  = median_tcoal - tcoal.squeeze(1).to(self.device)
         
         for ifo in time_shift:
             time_shift[ifo] += tcoal_diff
@@ -421,8 +421,8 @@ class PosteriorSampler():
                 print(wvf_sample, wvf_sample.shape)
                 plt.plot(time, wvf_sample, color='r', alpha=0.5)
             '''
-            plt.xlim(0.3, 0.6)
-            #plt.xlim(-0.25, 0.0)
+            #plt.xlim(0.3, 0.6)
+            plt.xlim(-0.25, 0.0)
             
             plt.title(det)           
         
