@@ -118,10 +118,12 @@ if __name__ == '__main__':
         true_parameters = {key: true_parameters[key].cpu().item() for key in true_parameters.keys()}
 
         log.info('Sampled parameters medians vs true parameters')
+        print('\n')
         print(f"{'Parameter':<15} {'Median':<10} {'Truth'}")
+        print(f"{'---------':<15} {'------':<10} {'-----'}")
         for par in true_parameters:
-            print(f"{par:<15} {posterior[par].cpu().median():<10.3f} {true_parameters[par]:<10.3f}"))
-        
+            print(f"{par:<15} {posterior[par].cpu().median():<10.3f} {true_parameters[par]:<10.3f}")
+        print('\n')
         #generate corner plot
         sampler.plot_corner(injection_parameters=true_parameters)
         
