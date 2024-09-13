@@ -84,8 +84,9 @@ class AffineCouplingLayer(nn.Module):
         self.num_identity    = num_identity
         self.num_transformed = num_transformed
         self.strain_features = strain_features
-        
-        
+    
+    
+    
         if s_network is not None:
             self.s_network = s_network
         else:

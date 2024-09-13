@@ -21,10 +21,10 @@ class KennEmbedding(Kenn):
                 }
         #update with user
         config.update(kwargs)
-
+        
         #create a KennConfig instance
-        kenn_config = KennConfig(KennAttention, 
-                                 KennAttentionHead, 
+        kenn_config = KennConfig(KennAttentionHead, 
+                                 KennAttention, 
                                  **config)
         
         super().__init__(kenn_config)

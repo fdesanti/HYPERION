@@ -11,7 +11,8 @@ from hyperion.simulations import (ASD_Sampler,
                                   GWDetectorNetwork, 
                                   WaveformGenerator)
 
-from hyperion.core import PosteriorSampler
+from hyperion.core import PosteriorSampler, GWLogger
+log = GWLogger()
 
 
 if __name__ == '__main__':
@@ -116,12 +117,10 @@ if __name__ == '__main__':
         true_parameters = TensorDict.from_dict(true_parameters)
         true_parameters = {key: true_parameters[key].cpu().item() for key in true_parameters.keys()}
 
-        print('Sampled parameters vs true parameters medians')
+        log.info('Sampled parameters medians vs true parameters')
+        print(f"{'Parameter':<15} {'Median':<10} {'Truth'}")
         for par in true_parameters:
-            if par == 'H_hyp':
-                print(f"{par}: {posterior[par].cpu().median():.5f} vs {true_parameters[par]:.5f}")
-            else:
-                print(f"{par}: {posterior[par].cpu().median():.2f} vs {true_parameters[par]:.2f}")
+            print(f"{par:<15} {posterior[par].cpu().median():<10.3f} {true_parameters[par]:<10.3f}"))
         
         #generate corner plot
         sampler.plot_corner(injection_parameters=true_parameters)

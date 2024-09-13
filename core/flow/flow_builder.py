@@ -17,6 +17,7 @@ def build_flow( prior_metadata           :dict = None,
                 base_distribution_kwargs :dict = None,
                 embedding_network_kwargs :dict = None,
                 checkpoint_path                = None,
+                config_file                    = None,
                ):
 
     #loading a saved model
@@ -28,10 +29,9 @@ def build_flow( prior_metadata           :dict = None,
     #building model from scratch
     else:
         assert prior_metadata is not None, 'Unable to build Flow since no hyperparams are passed'
-    
         # First, read the JSON
-        default_config_file = CONF_DIR + '/hyperion_config.yml'
-        with open(default_config_file, 'r') as yaml_file:
+        config_file = CONF_DIR + '/hyperion_config.yml' if config_file is None else config_file
+        with open(config_file, 'r') as yaml_file:
             kwargs = yaml.safe_load(yaml_file)
 
         if flow_kwargs is not None:
@@ -50,7 +50,7 @@ def build_flow( prior_metadata           :dict = None,
     embedding_network_model  =  kwargs['embedding_network']['model']
 
     configuration = kwargs
-
+    
     #NEURAL NETWORK ---------------------------------------    
     #compute the shape of the strain tensor
     detectors = configuration['detectors']
