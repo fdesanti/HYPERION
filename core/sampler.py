@@ -361,7 +361,7 @@ class PosteriorSampler():
         time_shift = self.waveform_generator.det_network.time_delay_from_earth_center(posterior['ra'], 
                                                                                       posterior['dec'])
         
-        median_tcoal = posterior['tcoal'].median().to(self.device)+0.022
+        median_tcoal = posterior['tcoal'].to(self.device)#+0.022
         tcoal_diff  = median_tcoal - tcoal.squeeze(1).to(self.device)
         
         for ifo in time_shift:
@@ -422,7 +422,7 @@ class PosteriorSampler():
                 plt.plot(time, wvf_sample, color='r', alpha=0.5)
             '''
             #plt.xlim(0.3, 0.6)
-            plt.xlim(-0.25, 0.0)
+            #plt.xlim(-0.25, 0.0)
             
             plt.title(det)           
         

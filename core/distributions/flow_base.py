@@ -250,6 +250,12 @@ class ConditionalMultivariateGaussianMixtureBase(nn.Module):
         for i in range(self.num_components):
             mask = component_samples == i
             samples[mask, :] = self.mixture_components[i].sample(mask.sum(), embedded_strain)
+            '''
+            print(f'component: {i}')
+            print(f'weight: {weights[:,i].item()}')
+            print(f'mean: {self.mixture_components[i].mean_network(embedded_strain)}')
+            print(f'var: {self.mixture_components[i].var_network(embedded_strain)}')
+            '''
 
         return samples
 
