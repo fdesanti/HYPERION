@@ -9,15 +9,18 @@ Instructions for the TEOBResumS waveform model:
 """
 
 import torch
+from importlib import import_module
 from hyperion.core.utilities import GWLogger
+
 log = GWLogger()
 
+'''
 try:
     import EOBRun_module
 except ModuleNotFoundError as e: 
     log.error(e)
     log.warning("Unable to import EOBRun_module. Please refer to the documentation to install it. TEOBResumSDALI waveform model won't work otherwise")
-
+'''
 
 
 def modes_to_k(modes):
@@ -39,6 +42,14 @@ class  TEOBResumSDALI():
     """
     
     def __init__(self, fs, **kwargs):
+        try:
+        #import EOBRun_module
+            eob_module = import_module('EOBRun_module')
+            self.EOBRunPy = eob_module.EOBRunPy
+        except ModuleNotFoundError as e: 
+            log.error(e)
+            log.warning("Unable to import EOBRun_module. Please refer to the documentation to install it. TEOBResumSDALI waveform model won't work otherwise")
+
         
         modes = [(2,1),(2,2),(3,3),(4,2)]
 
@@ -122,7 +133,7 @@ class  TEOBResumSDALI():
         pars.update(waveform_parameters)
        
         # Run the model
-        eob_output = EOBRun_module.EOBRunPy(pars)
+        eob_output = self.EOBRunPy(pars)
         
         output = {}
         
