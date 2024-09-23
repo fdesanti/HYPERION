@@ -79,7 +79,13 @@ class ASD_Sampler():
         #self.asd_reference = torch.from_numpy(np.interp(self.f.cpu().numpy(), asd_f, asd)).to(device)
         asd_interp = interp1d(asd_f, asd, kind='cubic', fill_value='extrapolate')
         self.asd_reference = torch.from_numpy(asd_interp(f.cpu().numpy())).to(device)
-        
+        '''
+        import matplotlib.pyplot as plt
+        plt.loglog(self.f.cpu(), self.asd_reference.cpu(), label='interp')
+        plt.loglog(asd_f, asd, label='asd original')
+        plt.show()
+        '''
+
         #other attributes
         self.device = device
 

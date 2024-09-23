@@ -54,8 +54,8 @@ def truncate_transfer(transfer, ncorner=None):
     nsamp = transfer.size()[-1]
     ncorner = ncorner if ncorner else 0
     out = transfer.clone()
-    out[:, 0:ncorner] = 0
-    out[:, ncorner:nsamp] *= planck(nsamp-ncorner, nleft=5, nright=5, device=transfer.device)
+    out[..., 0:ncorner] = 0
+    out[..., ncorner:nsamp] *= planck(nsamp-ncorner, nleft=5, nright=5, device=transfer.device)
     return out
 
 def truncate_impulse(impulse, ntaps, window='hann'):
@@ -79,9 +79,9 @@ def truncate_impulse(impulse, ntaps, window='hann'):
    
     window = get_window(window, window_length=ntaps)
     
-    out[:, 0:trunc_start]   *= window[trunc_start:ntaps]
-    out[:, trunc_stop:size] *= window[0:trunc_start]
-    out[:, trunc_start:trunc_stop] = 0
+    out[..., 0:trunc_start]   *= window[trunc_start:ntaps]
+    out[..., trunc_stop:size] *= window[0:trunc_start]
+    out[..., trunc_start:trunc_stop] = 0
     return out
 
 
@@ -297,7 +297,7 @@ class WhitenNet:
                 
                 #convert back to the time domain
                 # we divide by the noise standard deviation to ensure to have unit variance
-                whitened[det] = irfft(hf_w, n=self.n, norm=fft_norm) 
+                whitened[det] = irfft(hf_w, norm=fft_norm)
             
             if normalize:
                 whitened[det] /= self.noise_std
