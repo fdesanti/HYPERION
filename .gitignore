@@ -4,6 +4,7 @@
 *.pt
 *.hdf5
 *.ipynb
+*.out
 
 # Compiled files
 *.pyc

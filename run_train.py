@@ -22,12 +22,17 @@ log = GWLogger()
 
 if __name__ == '__main__':
     parser = OptionParser()
-    parser.add_option("-p", "--preload_trained", default=False, action="store_true", help="Load a pretrained model in training_results/BHBH directory.")
+    parser.add_option("-d", "--device", default=None, help="Device to run the training on. (Default is 'cuda')")
+    parser.add_option("-m", "--model_name",  default='BHBH', help="Name of the model to train (preload). (Default: BHBH)")
+    parser.add_option("-p", "--preload_trained", default=False, action="store_true", help="Load a pretrained model in training_results/<MODEL_NAME> directory.")
     (options, args) = parser.parse_args()
     
-    PRELOAD = options.preload_trained        
+    PRELOAD    = options.preload_trained
+    DEVICE     = options.device
+    MODEL_NAME = options.model_name
 
-    conf_dir = 'training_results/BHBH' if PRELOAD else CONF_DIR
+    
+    conf_dir = f'training_results/{MODEL_NAME}' if PRELOAD else CONF_DIR
     conf_yaml = conf_dir + '/hyperion_config.yml'
     
     with open(conf_yaml, 'r') as yaml_file:
@@ -51,24 +56,25 @@ if __name__ == '__main__':
     PRIOR_PATH     = os.path.join(conf_dir, 'prior.yml') if PRELOAD else os.path.join(conf_dir, conf['prior']+'.yml')
     DURATION       = conf['duration']
     
-
-    if torch.cuda.is_available():
-        num_gpus = torch.cuda.device_count()
-        device = f'cuda:{num_gpus-1}'
-    else:
-        device = 'cpu'
+    if DEVICE is None:
+        if torch.cuda.is_available():
+            num_gpus = torch.cuda.device_count()
+            DEVICE = f'cuda:{num_gpus-1}'
+        else:
+            DEVICE = 'cpu'
+    
         
-    with torch.device(device):
+    with torch.device(DEVICE):
         """
         SETUP DETECTOR NETWORK AND ASD SAMPLERS ============================================
         """
-        det_network = GWDetectorNetwork(conf['detectors'], use_torch=True, device=device)
+        det_network = GWDetectorNetwork(conf['detectors'], use_torch=True, device=DEVICE)
         det_network.set_reference_time(conf['reference_gps_time'])
 
         asd_samplers = dict()
         for ifo in det_network.detectors:
             asd_samplers[ifo] = ASD_Sampler(ifo, 
-                                            device        = device,
+                                            device        = DEVICE,
                                             fs            = conf['fs'],
                                             fmin          = conf['fmin'],
                                             duration      = DURATION,
@@ -90,7 +96,7 @@ if __name__ == '__main__':
         dataset_kwargs = {'waveform_generator'      : waveform_generator, 
                               'asd_generators'      : asd_samplers,
                               'det_network'         : det_network,
-                              'device'              : device,
+                              'device'              : DEVICE,
                               'batch_size'          : BATCH_SIZE,
                               'inference_parameters': conf['inference_parameters'],
                               'prior_filepath'      : PRIOR_PATH,
@@ -109,10 +115,10 @@ if __name__ == '__main__':
         SETUP FLOW MODEL ===================================================================
         """
         #checkpoint directory
-        checkpoint_dir = os.path.join('training_results', 'BHBH')
+        checkpoint_dir = os.path.join('training_results', MODEL_NAME)
         if not os.path.exists(checkpoint_dir):
             os.mkdir(checkpoint_dir)
-        checkpoint_filepath = os.path.join(checkpoint_dir, 'BHBH_flow_model.pt')
+        checkpoint_filepath = os.path.join(checkpoint_dir, f'{MODEL_NAME}_flow_model.pt')
 
         if not PRELOAD:
             #write configuaration file to checkpoint directory
@@ -131,9 +137,9 @@ if __name__ == '__main__':
         #set up Flow model
         if not PRELOAD:
             prior_metadata = train_ds.prior_metadata
-            flow = build_flow(prior_metadata).to(device)
+            flow = build_flow(prior_metadata).to(DEVICE)
         else:
-            flow = build_flow(checkpoint_path=checkpoint_filepath).to(device)            
+            flow = build_flow(checkpoint_path=checkpoint_filepath).to(DEVICE)            
             '''
             print(flow.prior_metadata)
             flow.prior_metadata['inference_parameters'] = conf['inference_parameters']
@@ -161,6 +167,6 @@ if __name__ == '__main__':
                           'add_noise'          : train_conf['add_noise']
                         }
 
-        flow_trainer = Trainer(flow, train_ds, val_ds, device=device, **trainer_kwargs)
+        flow_trainer = Trainer(flow, train_ds, val_ds, device=DEVICE, **trainer_kwargs)
         
         flow_trainer.train(NUM_EPOCHS, overwrite_history=False if PRELOAD else True)
