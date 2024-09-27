@@ -36,6 +36,8 @@ duration: 2 #duration in seconds for the simulated signals
 #============================
 flow:
   num_coupling_layers: 36
+  coupling: 'spline'
+  
 
 coupling_layers:
   num_features:     12
@@ -50,25 +52,25 @@ base_distribution:
     #num_components:   3
 
 embedding_network:
-  model:            "KENN"
+  model:            "CNN+ResNet+Attention"
   kwargs:
-    d_model: 512
-  #  num_blocks:       5
-  #  block_dims:       [2048, 1024, 512, 256]
-  #  strain_out_dim:   256
-  #  use_batch_norm:   false
-  #  dropout_probability: 0.2
+    #d_model: 512
+    num_blocks:       5
+    block_dims:       [2048, 1024, 512, 256]
+    strain_out_dim:   256
+    use_batch_norm:   false
+    dropout_probability: 0.2
 
     #slicer kwargs:
-  #  overlap : 15
-  #  segment_len: 0.2
+    overlap : 15
+    segment_len: 0.2
 
     #attention kwargs
-  #  num_heads: 32
-  #  add_bias_kv: true
+    num_heads: 32
+    add_bias_kv: true
 
-  #  CNN_filters                   : [32, 64, 128]
-  #  CNN_kernel_sizes              : [5, 5, 5]
+    CNN_filters                   : [32, 64, 128]
+    CNN_kernel_sizes              : [5, 5, 5]
     #CNN_localization_filters     : [16, 32, 16, 32, 64, 128]
     #CNN_localization_kernel_sizes: [128, 64, 32, 16, 8, 4]
     #CNN_localization_kernel_sizes: [7, 7, 5, 5, 3, 3]
