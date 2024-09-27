@@ -9,23 +9,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from tqdm import tqdm
-from gwskysim.gwskysim.utilities.gwlogger import GWLogger
+from ..core.flow import build_flow
+from ..core.utilities import GWLogger
 
-
-
-
-class Trainer:
+class Trainer: 
     def __init__(self,
-                flow: torch.nn.Module,
-                training_dataset: torch.utils.data.DataLoader,
-                validation_dataset: torch.utils.data.DataLoader,
-                optimizer: torch.optim.Optimizer,
-                scheduler: torch.optim.lr_scheduler,
-                device: str,
+                flow               : torch.nn.Module,
+                training_dataset   : torch.utils.data.DataLoader,
+                validation_dataset : torch.utils.data.DataLoader,
+                optimizer          : torch.optim.Optimizer,
+                scheduler          : torch.optim.lr_scheduler,
+                device             : str,
                 checkpoint_filepath: str,
                 steps_per_epoch     = None,
                 val_steps_per_epoch = None,
-                verbose = True,
+                verbose             = True,
+                add_noise           = True
                 ):
         
         self.device     = device
@@ -34,6 +33,7 @@ class Trainer:
         self.val_ds     = validation_dataset
         self.optimizer  = optimizer
         self.scheduler  = scheduler
+        self.add_noise  = add_noise
         
         self.checkpoint_filepath = checkpoint_filepath
         self.checkpoint_dir      = os.path.dirname(checkpoint_filepath)
@@ -65,23 +65,23 @@ class Trainer:
         for step in range(self.steps_per_epoch):
         #for parameters, strains in self.train_ds:
             #getting the trainig batch
-            parameters, strains = self.train_ds.__getitem__()
+            parameters, strains, asd = self.train_ds.__getitem__(add_noise=self.add_noise)
             
             
             #training step
             self.optimizer.zero_grad()
             
             #get the loss
-            log_p =  -self.flow.log_prob(parameters.to(self.device), strains.to(self.device))
+            log_p =  -self.flow.log_prob(parameters.to(self.device), strains.to(self.device), asd.to(self.device))
             loss  = torch.mean(log_p)
+            
+            if self.verbose:
+                    print(f'Epoch = {epoch} |  Step = {step+1} / {self.steps_per_epoch}  |  Loss = {loss.item():.3f}', end='\r')
             
             if torch.isnan(loss) or torch.isinf(loss):
                 #do not update model's weights
                 fail_counter += 1
             else:
-                if self.verbose:
-                    print(f'Epoch = {epoch} |  Step = {step+1} / {self.steps_per_epoch}  |  Loss = {loss.item():.3f}', end='\r')
-            
                 #updating weights
                 loss.backward()
                 avg_train_loss += loss.item() #item() returns loss as a number instead of a tensor
@@ -118,20 +118,19 @@ class Trainer:
         #for parameters, strains in self.val_ds:
             
             #getting batch
-            parameters, strains = self.val_ds.__getitem__()
+            parameters, strains, asd = self.val_ds.__getitem__(add_noise=self.add_noise)
             
             #computing loss
-            log_p = -self.flow.log_prob(parameters.to(self.device), strains.to(self.device))
+            log_p = -self.flow.log_prob(parameters.to(self.device), strains.to(self.device), asd.to(self.device))
             loss  = torch.mean(log_p)
            
-            if torch.isnan(loss) or torch.isinf(loss):
-                fail_counter += 1
+            if self.verbose:
                 print(f'Epoch = {epoch}  |  Validation Step = {step+1} / {self.val_steps_per_epoch}  |  Loss = {loss.item():.3f}', end='\r')
             
+            if torch.isnan(loss) or torch.isinf(loss):
+                fail_counter += 1            
             else:
                 avg_val_loss += loss.item() #item() returns loss as a number instead of a tensor
-                if self.verbose:
-                    print(f'Epoch = {epoch}  |  Validation Step = {step+1} / {self.val_steps_per_epoch}  |  Loss = {loss.item():.3f}', end='\r')
             #if step> self.val_steps_per_epoch:
             #    break
             #step+=1
@@ -183,9 +182,8 @@ class Trainer:
     
 	
     def train(self, num_epochs, overwrite_history=True):
-        self.log = GWLogger('training_logger')
-        self.log.setLevel('INFO')
-
+        self.log = GWLogger()
+        
         best_train_loss = np.inf
         best_val_loss   = np.inf
         
@@ -204,6 +202,11 @@ class Trainer:
         
         #main training loop over the epochs
         for epoch in tqdm(range(1,num_epochs+1)):
+
+            #preload waveforms
+            self.train_ds.preload_waveforms()
+            self.val_ds.preload_waveforms()
+
             
             #on-epoch training
             self.flow.train(True) #train attribute comes from nn.Module and is used to set the weights in training mode
@@ -215,7 +218,9 @@ class Trainer:
                 val_loss = self._test_on_epoch(epoch)
             
             if np.isnan(train_loss) or np.isnan(val_loss):
-                self.log.error(f'Epoch {epoch} skipped due to nan loss\n')
+                self.log.error(f'Epoch {epoch} skipped due to nan loss')
+                self.log.info(f'Loading previously saved model\n')
+                self.flow = build_flow(checkpoint_path=self.checkpoint_filepath).to(self.device)
                 continue #we skip to next iteration
         
             self.log.info(f'Epoch = {epoch}  |  avg train loss = {train_loss:.3f}  |  avg val loss = {val_loss:.3f}')

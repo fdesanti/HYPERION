@@ -10,7 +10,9 @@ from time import time
 from astropy.time import Time
 from astropy.units.si import sday
 
+from ..utilities import GWLogger
 
+log = GWLogger()
 class Flow(nn.Module):
     """Class that manages the flow model"""
     
@@ -25,14 +27,10 @@ class Flow(nn.Module):
         super(Flow, self).__init__()
         
         self.base_distribution = base_distribution
-        
         self.transformation    = transformation
-        
         self.embedding_network = embedding_network
-        
-        self.prior_metadata = prior_metadata
-        
-        self.configuration = configuration
+        self.prior_metadata    = prior_metadata
+        self.configuration     = configuration
            
         return
 
@@ -65,16 +63,16 @@ class Flow(nn.Module):
     @property
     def reference_time(self):
         if not hasattr(self, '_reference_time'):
-            self._reference_time = self.prior_metadata['reference_gps_time']
+            self._reference_time = self.configuration['reference_gps_time']
         return self._reference_time
     
         
 
-    def log_prob(self, inputs, strain, evidence=False):
+    def log_prob(self, inputs, strain, asd, evidence=False):
         """computes the loss function"""
         
         
-        embedded_strain = self.embedding_network(strain)
+        embedded_strain = self.embedding_network(strain, asd)
         
         
         if evidence:
@@ -82,24 +80,26 @@ class Flow(nn.Module):
 
         transformed_samples, logabsdet = self.transformation(inputs, embedded_strain)  #makes the forward pass 
         
-        log_prob = self.base_distribution.log_prob(transformed_samples)
+        log_prob = self.base_distribution.log_prob(transformed_samples, embedded_strain)
         
         return log_prob + logabsdet 
     
      
 
-    def sample(self, num_samples, strain, batch_size = 50000, restrict_to_bounds=False, post_process=True, event_time = None, verbose = True, return_log_prob=False):
+    def sample(self, num_samples, strain, asd=None, batch_size = 50000, restrict_to_bounds=False, post_process=True, event_time = None, verbose = True, return_log_prob=False):
         start = time()
         
         samples = []
         
-        embedded_strain = self.embedding_network(strain)
-        nsteps = num_samples//batch_size if num_samples>=batch_size else 1
-        batch_samples = batch_size if num_samples>batch_size else num_samples
+        embedded_strain      = self.embedding_network(strain)
+        nsteps               = num_samples // batch_size if num_samples>=batch_size else 1
+        batch_samples        = batch_size if num_samples > batch_size else num_samples
+        disable_progress_bar = True if not verbose or nsteps == 1 else True
+
         
-        for _ in tqdm(range(nsteps), disable=False if verbose else True):
+        for _ in tqdm(range(nsteps), disable=disable_progress_bar):
     
-            prior_samples = self.base_distribution.sample(batch_samples)
+            prior_samples = self.base_distribution.sample(batch_samples, embedded_strain)
 
             flow_samples, inverse_logabsdet = self.transformation.inverse(prior_samples, embedded_strain)
             
@@ -119,10 +119,10 @@ class Flow(nn.Module):
 
         end=time()
         if verbose:
-            print(f"---> Sampling took {end-start:.3f} seconds")
+            log.info(f"Sampling took {end-start:.3f} seconds")
         
         if return_log_prob:
-            log_posterior = self.base_distribution.log_prob(samples) + inverse_logabsdet 
+            log_posterior = self.base_distribution.log_prob(samples, embedded_strain) - inverse_logabsdet 
             #log_posterior = self.log_prob(samples, strain, evidence=True) 
             
             log_std = torch.sum(torch.log(torch.tensor([self.stds[p] for p in self.inference_parameters])))
@@ -164,9 +164,14 @@ class Flow(nn.Module):
         total_mask = torch.ones(num_samples, dtype=torch.bool)
 
         for name in self.inference_parameters:
-            bounds = self.prior_metadata['parameters'][name]['kwargs']
-            total_mask *= ((processed_samples_dict[name]<=bounds['maximum']) * (processed_samples_dict[name]>=bounds['minimum']))
-
+            try: #TODO: UGLY fix this
+                bounds = self.prior_metadata['parameters'][name]['kwargs']
+                min_b = eval(bounds['minimum']) if isinstance(bounds['minimum'], str) else bounds['minimum']
+                max_b = eval(bounds['maximum']) if isinstance(bounds['maximum'], str) else bounds['maximum']
+                total_mask *= ((processed_samples_dict[name]<=max_b) * (processed_samples_dict[name]>=min_b))
+            except:
+                continue
+            
         for name in self.inference_parameters:
             restricted_samples_dict [name] = processed_samples_dict[name][total_mask]
         return restricted_samples_dict
@@ -178,16 +183,15 @@ class Flow(nn.Module):
         
         
         reference_Time = Time(self.reference_time, format="gps", scale="utc")
-        #event_Time     = Time(event_time, format="gps", scale="utc")
+        event_Time     = Time(event_time, format="gps", scale="utc")
+        GMST_event     = event_Time.sidereal_time("mean", "greenwich").rad
         GMST_reference = reference_Time.sidereal_time("mean", "greenwich").rad
         
-        dphase = (event_time - self.reference_time) / sday.si.scale * (2.0 * torch.pi)
-        correction = (-GMST_reference + dphase) % (2.0 * torch.pi)
+        #dphase = (event_time -1370692818) / sday.si.scale * (2.0 * torch.pi)
+        #correction = (-GMST_reference + dphase) % (2.0 * torch.pi)
+        correction = (GMST_event - GMST_reference) % (2*torch.pi)
                 
         return (ra_samples + correction) % (2*torch.pi)
-    
-
-
 
         
         

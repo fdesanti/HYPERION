@@ -1,0 +1,114 @@
+
+##########################################
+# TEOBResumS Eccentric prior
+##########################################
+
+#For a list of the waveform parameters see
+# https://bitbucket.org/eob_ihes/teobresums/wiki/Conventions,%20parameters%20and%20output
+
+waveform_kwargs:
+  # Initial conditions and output time grid
+  domain              : 0    # Time domain. EOBSPA is not available for eccentric waveforms!
+  ecc_freq            : 1    # Use periastron (0), average (1) or apastron (2) frequency for initial condition computation. Default = 1
+  initial_frequency   : 10    # Initial frequency in Hz. Default = 0.02
+  use_mode_lm         : [1]
+
+  #nqcs
+  nqc                : 'manual'              #options are ["none", "manual", "auto"]
+  nqc_coefs_flx      : 'nrfit_spin202002'    #options are ["none", "nrfit_spin202002", "nrfit_nospin201602"]
+  nqc_coefs_hlm      : 'nrfit_spin202002'    #options are ["none", "nrfit_spin202002", "nrfit_nospin201602", "compute"]
+  
+
+
+#=================================
+# INTRINSIC PARAMETERS
+#=================================
+
+parameters:
+  intrinsic:
+    m1:                         
+      distribution: "uniform"
+      kwargs:
+        minimum: 50.0
+        maximum: 150.0
+
+    m2:                        
+      distribution: "uniform"
+      kwargs:
+        minimum: 50.0
+        maximum: 150.0
+
+    ecc:
+      distribution: "uniform"
+      kwargs:
+        minimum: 0.6
+        maximum: 0.9
+      
+    inclination:
+      distribution: "sin"
+      kwargs:
+        minimum: 0.0
+        maximum: torch.pi
+    
+    coalescence_angle:
+      distribution: "uniform"
+      kwargs:
+        minimum: 0.0
+        maximum: 2 * torch.pi
+
+    #chi1:                       # Dimensionless spin of the primary
+    #  distribution: "uniform"
+    #  kwargs:
+    #    minimum: -0.1
+    #    maximum: 0.1
+    
+    #chi2:                       # Dimensionless spin of the secondary          
+    #  distribution: "uniform"
+    #  kwargs:
+    #   minimum: -0.1
+    #   maximum: 0.1
+
+#=================================
+# EXTRINSIC PARAMETERS
+#=================================
+
+  extrinsic:
+
+    time_shift:
+      distribution: "uniform"
+      #distribution: "delta"
+      kwargs:
+        #value: 0.0
+        minimum: -0.25
+        maximum: 0.25
+
+    #this is used only to standardize the samples coming from the simulations
+    #with this delta distribution you have 0 mean and 1 std
+    tcoal:
+      distribution: "delta" 
+      kwargs:
+        value: 0.0
+
+    polarization:
+      distribution: "uniform"
+      kwargs:
+        minimum: 0.0
+        maximum: torch.pi
+
+    distance:
+      distribution: "uniform"
+      kwargs:
+        minimum: 10
+        maximum: 6000
+
+    ra:
+      distribution: "uniform"
+      kwargs:
+        minimum: 0.0
+        maximum: 2 * torch.pi
+      
+    dec:
+      distribution: "cos"
+      kwargs:
+        minimum: -torch.pi / 2
+        maximum:  torch.pi / 2
