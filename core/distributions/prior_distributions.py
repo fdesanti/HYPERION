@@ -2,11 +2,11 @@ import torch
 from tensordict import TensorDict
 from torch.distributions import Gamma
 
-N_ = int(1e6)
+N_ = int(1e7)
 
-###########################
+#=======================================
 # Rand Wrapper Class
-###########################
+#=======================================
 class Rand():
     """
     Wrapper class to torch.rand to explot a random generator with a fixed seed
@@ -26,22 +26,44 @@ class Rand():
 
 
 
-################################
+#=======================================
 # Analytical Prior Distributions
-################################
+#=======================================
 class BasePrior():
     """Base class for Prior Distributions"""
     
-    def __init__(self, minimum=None, maximum=None , device = 'cpu', seed = None):
+    def __init__(self, minimum=None, maximum=None, device = 'cpu', seed = None):
 
-        assert maximum >= minimum, f"high must be >= than low, given {maximum} and {minimum} respectively"
         
         self.device  = device
-        self.minimum = torch.tensor(minimum).to(device)
-        self.maximum = torch.tensor(maximum).to(device)
-        self.rand = Rand(seed, device)
+        self.rand    = Rand(seed, device)
+        self.minimum = minimum
+        self.maximum = maximum
+        assert self.maximum >= self.minimum, f"maximum must be >= than minimum, given {maximum} and {minimum} respectively"
+
         return
     
+    @property
+    def minimum(self):
+        return self._minimum
+    @minimum.setter
+    def minimum(self, value):
+        if value is not None:
+            self._minimum = torch.tensor(value).to(self.device)
+        else:
+            self._minimum = self.sample((N_)).min()
+    
+    @property
+    def maximum(self):
+        return self._maximum
+    @maximum.setter
+    def maximum(self, value):
+        if value is not None:
+            self._maximum = torch.tensor(value).to(self.device)
+        else:
+            self._maximum = self.sample((N_)).max()
+        
+        
     @property
     def mean(self):
         #print('default')
@@ -146,7 +168,7 @@ class DeltaPrior(BasePrior):
         diff = abs(check - samples)
         
         log_prob = torch.zeros(samples.shape)
-        log_prob[diff !=0] = -torch.inf
+        #log_prob[diff !=0] = -torch.inf
         
         return log_prob
 
@@ -198,7 +220,7 @@ class SinePrior(BasePrior):
     """Uniform in Sine Prior distribution"""
     
     def __init__(self, minimum=0, maximum=torch.pi , device = 'cpu', seed = None):
-        """Cosine prior with bounds
+        """Sine prior with bounds
         """
         super(SinePrior, self).__init__(minimum, maximum, device, seed)
         return
@@ -287,9 +309,54 @@ class PowerLawPrior(BasePrior):
         return samples
     
     
-###########################
+class GammaPrior(BasePrior):
+    """Gamma Prior distribution
+    Wrapper to torch.distributions.Gamma
+    
+    Args:
+    -----
+        concentration (float): concentration parameter
+        rate (float)         : rate parameter
+        scale (float)        : scaling factor. (Default: 1)
+    
+    Note:
+    -----
+        The scaling factor is used to rescale the samples from the Gamma distribution and 
+        it is useful when this prior is used as an SNR distribution
+    """
+    
+    def __init__(self, concentration=1.0, rate=1.0, scale=1, device = 'cpu', seed = None):
+        self.concentration = torch.as_tensor(concentration, device = device).float()
+        self.rate  = torch.as_tensor(rate,  device=device).float()
+        self.scale = torch.as_tensor(scale, device=device).float()
+        self.Gamma = Gamma(self.concentration, self.rate)
+        
+        super(GammaPrior, self).__init__(None, None, device, seed)
+        return
+    
+    def sample(self, sample_shape, standardize=False, dtype=None):
+        
+        #check shape: torch.distributions does not accept 1D samples
+        if isinstance(sample_shape, int):
+            sample_shape = (1, sample_shape)
+            samples = self.Gamma.sample(sample_shape).squeeze()
+        else:
+            samples = self.Gamma.sample(sample_shape)
+        
+        #multiply by the scaling factor
+        samples *= self.scale
+        
+        #eventually standardize
+        if standardize:
+            samples = self.standardize_samples(samples)
+        
+        return samples
+
+    
+    
+#=======================================
 # GW Prior Distributions
-###########################    
+#=======================================    
     
 class M_uniform_in_components(BasePrior):
     """Class that manages total Mass M prior from uniform distributed masses"""
@@ -382,22 +449,51 @@ class q_uniform_in_components(BasePrior):
         return q
     
     
+class Mchirp_uniform_in_components(BasePrior):
+    """
+    Class that manages Chirp Mass Mchirp prior from uniform distributed masses.
     
-class GammaPrior(BasePrior):
-    def __init__(self, concentration=1.0, rate=1.0, device = 'cpu', seed = None):
-        super(GammaPrior, self).__init__(0, concentration, device, seed)
-        self.concentration = torch.as_tensor(concentration, device = device)
-        self.rate = torch.as_tensor(rate, device = device)
-        self.Gamma = Gamma(self.concentration, self.rate)
+    Note:
+    -----
+        This prior differs from the usual p(Mchirp) \propto Mchirp given that 
+        we sample Mchirp from uniformly distributed masses m1, m2.
+    """
+    
+    def __init__(self, m1, m2):
+        assert isinstance(m1, UniformPrior), "m1 is not an instance of UniformPrior"
+        assert isinstance(m2, UniformPrior), "m2 is not an instance of UniformPrior"
+        
+        self.m1 = m1
+        self.m2 = m2
+        minimum = float((m1.minimum*m2.minimum)**(3/5)/(m1.minimum+m2.minimum)**(1/5))
+        maximum = float((m1.maximum*m2.maximum)**(3/5)/(m1.maximum+m2.maximum)**(1/5))
+        super(Mchirp_uniform_in_components, self).__init__(minimum, maximum, m1.device)
         return
     
-    def sample(self, sample_shape, standardize = False, dtype=None ):
-        
-        if isinstance(sample_shape, int):
-            sample_shape = (1, sample_shape)
-            return self.Gamma.sample(sample_shape).squeeze()
-        else:
-            return self.Gamma.sample(sample_shape)
+    @property
+    def name(self):
+        return 'Mchirp'
+    
+    @property
+    def mean(self):
+        if not hasattr(self, '_mean'):
+            self._mean = self.sample(N_).mean()
+        return self._mean
+    
+    @property
+    def std(self):
+        if not hasattr(self, '_std'):
+            self._std = self.sample(N_).std()
+        return self._std
+    
+    def sample(self, sample_shape, standardize = False, dtype=None):
+        m1 = self.m1.sample(sample_shape, dtype=dtype)
+        m2 = self.m2.sample(sample_shape, dtype=dtype)
+        Mchirp = (m1*m2)**(3/5)/(m1+m2)**(1/5)
+        if standardize:
+            Mchirp = self.standardize_samples(Mchirp)
+        return Mchirp
+    
 
 
 prior_dict_ = {'uniform'  : UniformPrior, 
@@ -406,11 +502,14 @@ prior_dict_ = {'uniform'  : UniformPrior,
                'sin'      : SinePrior, 
                'power-law': PowerLawPrior, 
                'gamma'    : GammaPrior,
-               'M' : M_uniform_in_components, 
-               'q' : q_uniform_in_components}
+               'M'        : M_uniform_in_components, 
+               'q'        : q_uniform_in_components,
+               'Mchirp'   : Mchirp_uniform_in_components}
 
 
-    
+#=======================================
+# Multivariate Prior
+#=======================================  
 class MultivariatePrior():
     """
     Class that manages a multivariate (i.e. multiparameter) Prior
@@ -423,10 +522,23 @@ class MultivariatePrior():
     
     """
     
-    def __init__(self, prior_dict, seed = None, device = 'cpu'):
+    def __init__(self, prior_dict, seed=None, device='cpu'):
         
-        self.priors = self._load_priors(prior_dict, seed, device)
-        self.names  = list(prior_dict.keys())
+        """
+        Constructor Args:
+        -----------------
+            prior_dict (dict): dictionary containing Prior distribution instances / dictionary metadata
+            seed (int): seed for reproducibility
+            device (str): either "cpu" or "cuda" for the device to run the code. (Default: 'cpu')        
+        """
+        
+        self.prior_dict = prior_dict
+        self.seed   = seed
+        self.device = device
+        
+        self.priors = self._load_priors(self.prior_dict, self.seed, self.device)
+        self.names  = list(self.prior_dict.keys())
+
         return
     
     @staticmethod
@@ -434,7 +546,11 @@ class MultivariatePrior():
         """Loads the priors from a dictionary of prior distributions"""
         priors = dict()
         
-        for par in prior_dict:
+        for i, par in enumerate(prior_dict):
+            if isinstance(prior_dict[par], BasePrior):
+                priors[par] = prior_dict[par]
+                continue
+
             dist_name = prior_dict[par]['distribution']
             kwargs = prior_dict[par]['kwargs']
             #evaluate string expressions in kwargs
@@ -443,13 +559,21 @@ class MultivariatePrior():
 
             if seed is not None:
                 if isinstance(seed, dict):
-                    kwargs['seed'] = seed[par]
+                    kwargs['seed'] = seed[par] + i
                 else:
-                    kwargs['seed'] = seed
+                    kwargs['seed'] = seed + i
 
             priors[par] = prior_dict_[dist_name](**kwargs)
 
         return priors
+    
+    def add_prior(self, new_prior_dict, seed=None):
+        
+        prior_dict = self.prior_dict.copy()
+        prior_dict.update(new_prior_dict)    
+        self.__init__(prior_dict, seed, self.device)
+        
+        return self
     
     def log_prob(self, samples):
         """Samples must be a dictionary containing a set of parameter samples of shape [Nbatch, 1]"""

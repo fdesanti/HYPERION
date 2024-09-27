@@ -1,5 +1,6 @@
-import os
 import yaml
+
+from tensordict import TensorDict
 
 from importlib import import_module
 
@@ -12,6 +13,9 @@ R_earth = R_earth.value #earth radius value [m]
 c = c.value #speed of light value [m/s]
 
 from ..config import CONF_DIR
+from ..core.utilities import GWLogger
+
+log = GWLogger()
 
 
 def get_detectors_configs(det_conf_path = None):
@@ -58,8 +62,8 @@ class GWDetector(object):
             try:
                 assert use_torch == True, "Cannot use GPU (cuda) without using torch"
             except AssertionError as e:
-                print('[WARNING]: ', e)
-                print('[INFO]: Setting use_torch to True')
+                log.warning(e)
+                log.info('Setting use_torch to True')
                 use_torch = True
         
         self.device    = device
@@ -321,6 +325,15 @@ class GWDetector(object):
         #t_gpss = hp.get_sampled_time()
         if t_gps is None:
             t_gps = self.reference_time
+        
+        if self.use_torch: 
+            #check device and move to the right one 
+            hp           = hp.to(self.device)
+            hc           = hc.to(self.device)
+            ra           = ra.to(self.device)
+            dec          = dec.to(self.device)
+            polarization = polarization.to(self.device)
+            
         f_plus, f_cross = self.antenna_pattern_functions(ra, dec, polarization, t_gps)
 
         h_signal = hp*f_plus + hc*f_cross
@@ -330,7 +343,12 @@ class GWDetector(object):
     def time_delay_from_earth_center(self, ra, dec, t_gps=None):
         """Returns the time delay from Earth Center"""
         #define earth center on right device (if torch is used)
-        kw = {'device':'cpu'} if self.use_torch else {}
+        if self.use_torch:
+            ra  = ra.to(self.device)
+            dec = dec.to(self.device)
+            kw  = {'device':self.device}
+        else: 
+            kw = {}
         earth_center = self.xp.zeros(3, **kw)
         return self.time_delay_from_location(earth_center, ra, dec, t_gps)
     
@@ -420,20 +438,31 @@ class GWDetectorNetwork():
         else:
             self.detectors = {}
 
-            default_kwargs = {'use_torch': False, 
-                              'device': 'cpu', 
-                              'reference_time':1370692818, 
-                              'config_file_path' : None}
-            default_kwargs.update(kwargs)
+            self.default_kwargs = {'use_torch'       : False, 
+                                   'device'          : 'cpu',
+                                   'reference_time'  : 1370692818,
+                                   'config_file_path': None}
+            self.default_kwargs.update(kwargs)
             
             for name in names:
-                self.detectors[name] = GWDetector(name, **default_kwargs)
-
+                self.detectors[name] = GWDetector(name, **self.default_kwargs)
+                
         return 
     
     @property
     def names(self):
         return list(self.detectors.keys())
+    
+    @property
+    def device(self):
+        return self.default_kwargs['device']
+    
+    def set_new_device(self, new_device):
+        self.default_kwargs['device'] = new_device
+        #update the device for each detector
+        for ifo in self.names:
+            self.detectors[ifo].device = new_device
+        return
     
     def set_reference_time(self, reference_time):
         """Set the reference time for the detectors in the network"""
@@ -494,4 +523,4 @@ class GWDetectorNetwork():
         delays = dict()
         for name, detector in self.detectors.items():
             delays[name] = detector.time_delay_from_earth_center(ra, dec, t_gps)
-        return delays 
+        return delays

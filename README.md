@@ -39,15 +39,25 @@ It is therefore recommended to install pytorch before installing the requirement
 
 
 ### A note about TEOBResumS-DALI installation
-TEOBResumS-DALI can be installed with the following steps
+TEOBResumS-DALI can be installed with the following steps.
+Warning: the gcc command "make" must be installed on your system
 
 ```
-git clone https://git.ligo.org/rossella.gamba/teobresums
+git clone https://bitbucket.org/eob_ihes/teobresums.git
 cd teobresums
 git checkout dev/DALI
 cd Python
-python setup.py install
+make
 ```
+Then export the path to the Python folder to your PYTHONPATH. 
+
+```
+echo PYTHONPATH="<path_to_Python_folder>:$PYTHONPATH" > ~/.bashrc
+echo export PYTHONPATH > ~/.bashrc
+source ~/.bashrc
+```
+
+
 
 ## Usage
 
@@ -81,6 +91,27 @@ resampled_posterior = flow_sampler.reweight_posterior(posterior=posterior,
 print(f'The signal vs noise Bayes Factor is {sampler.BayesFactor:.2f}')
 ```
 
+## Citation
 
+If you use `HYPERION`, please cite the 
+[corresponding paper](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.109.102004) as follows.
 
+> De Santi et al., Physical Review D **109**, 102004 (2024)
 
+**Bibtex**
+
+```
+@article{DeSanti2024,
+  title = {Deep learning to detect gravitational waves from binary close encounters: Fast parameter estimation using normalizing flows},
+  author = {De Santi, Federico and Razzano, Massimiliano and Fidecaro, Francesco and Muccillo, Luca and Papalini, Lucia and Patricelli, Barbara},
+  journal = {Phys. Rev. D},
+  volume = {109},
+  issue = {10},
+  pages = {102004},
+  numpages = {21},
+  year = {2024},
+  month = {May},
+  publisher = {American Physical Society},
+  doi = {10.1103/PhysRevD.109.102004},
+  url = {https://link.aps.org/doi/10.1103/PhysRevD.109.102004}
+} 

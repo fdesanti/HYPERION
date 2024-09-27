@@ -1,7 +1,12 @@
 """Various wrappers and/or implementations of window functions."""
 import torch
+from torch.special import expit
 
-__all__ = ['hann', 'tukey']
+__all__ = ['hann', 'tukey', 'planck']
+
+def get_window(window, **kwargs):
+    """Get a window function by name."""
+    return globals()[window](**kwargs)
 
 ########################
 # Helper functions 
@@ -34,6 +39,7 @@ class HANN():
     """wrapper for torch.hann_window."""
     def __call__(self, **kwargs):
         return torch.hann_window(**kwargs)
+hann = HANN()
 
 
 def tukey(M=2048, alpha = 0.5, sym = True, device='cpu'):
@@ -89,4 +95,32 @@ def tukey(M=2048, alpha = 0.5, sym = True, device='cpu'):
     
     return _truncate(window, needs_trunc)
 
-hann = HANN()
+def planck(N, nleft=0, nright=0, device='cpu'):
+    """
+    Returns a Planck-taper window.
+    
+    Args:
+    -----
+        N (int)      : Number of samples in the window.
+        nleft (int)  : Number of samples to taper on the left side  (should be < N/2).
+        nright (int) : Number of samples to taper on the right side (should be < N/2).
+        device (str) : Device to store the window tensor. (Default: 'cpu')
+    
+    Returns:
+    --------
+        out (tensor) : A tensor containing the Planck window, with the same size as N.
+    """
+    
+    out = torch.ones(N, device=device)
+    if nleft:
+        out[0] *= 0
+        zleft = torch.tensor([nleft * (1./k + 1./(k-nleft))
+                            for k in range(1, nleft)]).to(device)
+        out[1:nleft] *= expit(-zleft)
+    if nright:
+        out[N-1] *= 0
+        zright = torch.tensor([-nright * (1./(k-nright) + 1./k)
+                                for k in range(1, nright)]).to(device)
+        out[N-nright:N-1] *= expit(-zright)
+        
+    return out
