@@ -346,6 +346,8 @@ class DatasetGenerator():
         #generate projected waveform strain
         h = self.waveform_generator(**prior_samples, 
                                     return_hp_and_hc=return_hp_and_hc)
+        
+        
         if return_hp_and_hc:
             return out_prior_samples, h
         

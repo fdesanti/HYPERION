@@ -1,2 +1,2 @@
-from .models import TEOBResumS, EffectiveFlyByTemplate
+from .models import TEOBResumSDALI, EffectiveFlyByTemplate
 from .waveform_generator import WaveformGenerator

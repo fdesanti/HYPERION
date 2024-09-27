@@ -47,3 +47,45 @@ class SeparableConv1d(nn.Module):
         out = self.depthwise(x)
         out = self.pointwise(out)
         return out
+
+
+class Slicer(nn.Module):
+    """
+    Slices the input strain tensor into 
+    (possibly overlapping) windows of a fixed length
+
+    Args:
+    -----
+        input_len (int)    : The length of the input strain tensor
+        fs (int)           : The sampling frequency of the input strain tensor
+        segment_len (float): The length in seconds of the output segments
+        overlap (float)    : The overlap (percentage) between segments in seconds
+    """
+    
+    def __init__(self, 
+                 input_len, 
+                 fs,
+                 segment_len = 0.1,
+                 overlap = 0.0):
+        super(Slicer, self).__init__()
+        
+        self.fs = fs
+        self.input_len = input_len
+        self.segment_len = int(segment_len * fs) # Convert seconds to samples
+        self.step = int(self.segment_len * (1 - overlap/100))
+
+    @property
+    def num_segments(self):
+        return (self.input_len - self.segment_len) // self.step + 1
+        
+    def forward(self, x):
+        """
+        Slices the input tensor into segments of length segment_len
+        """       
+        segments = []
+        for i in range(0, self.input_len - self.segment_len, self.step):
+            segments.append(x[..., i:i+self.segment_len])
+        
+        segments = torch.stack(segments, dim = -2).unsqueeze(-1)
+
+        return segments.view(x.shape[0], x.shape[1], self.num_segments, self.segment_len) # (batch_size, num_channels, num_segments, segment_len)

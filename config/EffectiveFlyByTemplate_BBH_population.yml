@@ -3,7 +3,7 @@
 ###############################################
 reference_gps_time: 1370692818
 
-fs : 2048
+fs : 4096
 
 parameters:
 
@@ -11,14 +11,14 @@ parameters:
     distribution: "uniform"
     kwargs:
       minimum: 10.0
-      maximum: 150.0
+      maximum: 100.0
     
 
   m2:
     distribution: "uniform"
     kwargs:
       minimum: 10.0
-      maximum: 150.0
+      maximum: 100.0
   
   e0:
     distribution: "uniform"
@@ -29,8 +29,8 @@ parameters:
   p_0:
     distribution: "uniform"
     kwargs:
-      minimum: 10.0
-      maximum: 25.0
+      minimum: 8.0
+      maximum: 20.0
 
   time_shift:
     distribution: "uniform"
@@ -54,7 +54,7 @@ parameters:
     distribution: "uniform"
     kwargs:
       minimum: 10
-      maximum: 2000
+      maximum: 200
 
   ra:
     distribution: "uniform"

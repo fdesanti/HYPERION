@@ -7,14 +7,13 @@ tensordict
 #plotting and I/O
 seaborn
 pyyaml
-glob
+glob2
 h5py
 tqdm
 
 #gw related
-bilby
+#bilby
 astropy
-healpy
 
 
 
