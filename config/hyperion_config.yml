@@ -7,7 +7,7 @@
 #============================
 detectors: ["L1", "H1", "V1"]
 
-reference_gps_time: 1370692818 #1242442967.4 #1370692818
+reference_gps_time: 1242442967.4 #1370692818 #1242442967.4 #1370692818
 
 fs: 2048 #sampling frequency Hz for simulations & inference 
 
@@ -43,6 +43,7 @@ coupling_layers:
   num_features:     12
   num_identity:     6
   num_transformed:  6
+  num_bins:         4
 
 base_distribution:
   dist_name:         "ConditionalMultivariateNormalBase"
@@ -54,7 +55,9 @@ base_distribution:
 embedding_network:
   model:            "CNN+ResNet+Attention"
   kwargs:
-    #d_model: 512
+    #d_model: 1024
+    #chunk_size: 0.5
+    #encoder_layers: 4
     num_blocks:       5
     block_dims:       [2048, 1024, 512, 256]
     strain_out_dim:   256
@@ -70,7 +73,7 @@ embedding_network:
     add_bias_kv: true
 
     CNN_filters                   : [32, 64, 128]
-    CNN_kernel_sizes              : [5, 5, 5]
+    CNN_kernel_sizes              : [7, 7, 7]
     #CNN_localization_filters     : [16, 32, 16, 32, 64, 128]
     #CNN_localization_kernel_sizes: [128, 64, 32, 16, 8, 4]
     #CNN_localization_kernel_sizes: [7, 7, 5, 5, 3, 3]
@@ -89,7 +92,7 @@ training_options:
   steps_per_epoch: 1000
   val_steps_per_epoch: 150
 
-  num_preload_train: 2000
+  num_preload_train: 5000
   num_preload_val: 1000
 
   n_proc: os.cpu_count()
@@ -101,16 +104,16 @@ training_options:
   add_noise: True
 
   lr_schedule:
-    #scheduler: CosineAnnealingLR
-    #kwargs:
-    #  T_max: 300 #has to be equal to num_epochs
-    
-    scheduler: ReduceLROnPlateau
+    scheduler: CosineAnnealingLR
     kwargs:
-      factor:    0.5
-      patience:  20
-      mode:      min
-      threshold: 0
+      T_max: 300 #has to be equal to num_epochs
+    
+    #scheduler: ReduceLROnPlateau
+    #kwargs:
+    #  factor:    0.5
+    #  patience:  20
+    #  mode:      min
+    #  threshold: 0
     
   optimizer:
     algorithm: Adam

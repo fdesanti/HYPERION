@@ -70,7 +70,8 @@ def build_flow( prior_metadata           :dict = None,
     
 
     #COUPLING TRANSFORM ----------------------------------------------------------------
-    CouplingLayer = coupling_layer_dict[flow_kwargs['coupling']]
+    coupling_kind = flow_kwargs.get('coupling', 'affine')
+    CouplingLayer = coupling_layer_dict[coupling_kind]
     
     coupling_layers = []
     for _ in range(flow_kwargs['num_coupling_layers']):
