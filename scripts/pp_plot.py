@@ -18,26 +18,26 @@ from bilby.core.result import make_pp_plot
 
 if __name__ == '__main__':
     parser = OptionParser()
-    parser.add_option("-n", "--num_posteriors", default=128, help="Number of posteriors to sample for the pp plot")
+    parser.add_option("-p", "--num_posteriors", default=128, help="Number of posteriors to sample for the pp plot")
     parser.add_option("-s", "--num_posterior_samples", default=50_000, help="Number of posterior samples to draw")
     parser.add_option("-v", "--verbosity", default=False, action="store_true", help="Verbosity of the flow sampler. (Default: False)")
-    parser.add_option("-m", "--model_dir", default='training_results/BHBH', help="Directory containing the model to sample from")
+    parser.add_option("-m", "--model_name", default='BHBH', help="Name of the model to sample from")
     
     (options, args) = parser.parse_args()
     
     NUM_POSTERIORS = int(options.num_posteriors)
     NUM_SAMPLES    = int(options.num_posterior_samples)
     VERBOSITY      = options.verbosity
-    MODEL_DIR      = options.model_dir
+    MODEL_NAME      = options.model_dir
     
     #Setup & load model --------------------------------------------------
-    conf_yaml = MODEL_DIR + '/hyperion_config.yml'
+    conf_yaml = f'training_results/{MODEL_NAME}/hyperion_config.yml'
     
     with open(conf_yaml, 'r') as yaml_file:
         conf = yaml.safe_load(yaml_file)
 
     WAVEFORM_MODEL = conf['waveform_model']
-    PRIOR_PATH = os.path.join(MODEL_DIR, 'prior.yml')
+    PRIOR_PATH = f'training_results/{MODEL_NAME}/prior.yml'
     DURATION  = conf['duration']
 
 
@@ -86,7 +86,7 @@ if __name__ == '__main__':
         test_ds.preload_waveforms()
         
         #set up Sampler
-        checkpoint_path = f'{MODEL_DIR}/BHBH_flow_model.pt'
+        checkpoint_path = f'training_results/{MODEL_NAME}/{MODEL_NAME}_flow_model'
         
         sampler = PosteriorSampler(flow_checkpoint_path  = checkpoint_path, 
                                    waveform_generator    = waveform_generator,
@@ -126,7 +126,7 @@ if __name__ == '__main__':
             bilby_posterior_list.append(bilby_posterior)
             
         #make pp plot
-        pp_plot, pvals = make_pp_plot(bilby_posterior_list, filename=f'{MODEL_DIR}/pp_plot.png')
+        pp_plot, pvals = make_pp_plot(bilby_posterior_list, filename=f'training_results/{MODEL_NAME}/pp_plot.png')
         
 
         

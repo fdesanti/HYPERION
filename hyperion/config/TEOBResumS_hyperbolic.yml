@@ -39,16 +39,16 @@ parameters:
     H_hyp:                      # Initial E_eob
       distribution: "uniform"
       kwargs:
-        minimum: 1.0
+        minimum: 1.0003
         maximum: 1.001
       
     j_hyp:                      # initial pphi_eob (angular momentum)
-      distribution: "delta"
-      #distribution: "uniform"
+      #distribution: "delta"
+      distribution: "uniform"
       kwargs:
-        value: 4.0
-      #  minimum: 3.95
-      #  maximum: 4.05
+        #value: 4.0
+        minimum: 3.95
+        maximum: 4.05
 
     r_hyp:                      # initial ratial separation
       distribution: "uniform"
@@ -91,8 +91,8 @@ parameters:
       #distribution: "delta"
       kwargs:
         #value: 0.0
-        minimum: -0.25
-        maximum: 0.25
+        minimum: -0.15
+        maximum: 0.15
 
     #this is used only to standardize the samples coming from the simulations
     #with this delta distribution you have 0 mean and 1 std

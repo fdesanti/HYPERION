@@ -3,7 +3,7 @@ import numpy as np
 import torch
 
 from . import Flow
-from . import CouplingTransform, AffineCouplingLayer, RandomPermutation
+from . import CouplingTransform, RandomPermutation, coupling_layer_dict
 from ..utilities import GWLogger
 from ..distributions import MultivariateNormalBase, base_distributions_dict
 from ..neural_networks import EmbeddingNetwork, EmbeddingNetworkAttention, embedding_network_dict
@@ -70,13 +70,14 @@ def build_flow( prior_metadata           :dict = None,
     
 
     #COUPLING TRANSFORM ----------------------------------------------------------------
+    coupling_kind = flow_kwargs.get('coupling', 'affine')
+    CouplingLayer = coupling_layer_dict[coupling_kind]
+    
     coupling_layers = []
-    for i in range(flow_kwargs['num_coupling_layers']):
+    for _ in range(flow_kwargs['num_coupling_layers']):
         
         coupling_layers += [RandomPermutation(num_features=coupling_layers_kwargs['num_features'])]
-
-        coupling_layers += [AffineCouplingLayer(num_identity    = coupling_layers_kwargs['num_identity'], 
-                                                num_transformed = coupling_layers_kwargs['num_transformed'])]
+        coupling_layers += [CouplingLayer(**coupling_layers_kwargs)]
         
     coupling_transform = CouplingTransform(coupling_layers)
 

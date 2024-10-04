@@ -5,7 +5,7 @@ import torch.nn as nn
 class RandomPermutation(nn.Module):
     """Implementation of Random Permutation transformation that shuffles parameters along the coupling transformation"""
     
-    def __init__(self, num_features:int = 10):
+    def __init__(self, num_features, kwargs = None):
         
         super(RandomPermutation, self).__init__()
         
@@ -15,18 +15,18 @@ class RandomPermutation(nn.Module):
         
         return
     
-    def forward(self, inputs, context = None):
+    def forward(self, inputs, embedded_strain=None):
         
         batch_size = inputs.shape[0]
-        outputs = inputs[:, self._permutation]
-        logabsdet = inputs.new_zeros(batch_size)
+        outputs    = inputs[:, self._permutation]
+        logabsdet  = inputs.new_zeros(batch_size)
         
         return outputs, logabsdet
     
-    def inverse(self, inputs, context = None):
+    def inverse(self, inputs, embedded_straub=None):
         
         batch_size = inputs.shape[0]
-        outputs = inputs[:, torch.argsort(self._permutation)]
-        logabsdet = inputs.new_zeros(batch_size)
+        outputs    = inputs[:, torch.argsort(self._permutation)]
+        logabsdet  = inputs.new_zeros(batch_size)
         
         return outputs, logabsdet

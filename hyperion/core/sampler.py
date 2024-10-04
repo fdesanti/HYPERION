@@ -374,7 +374,6 @@ class PosteriorSampler():
                              device   = self.device)
         
         #whiten_kwargs
-        whiten_kwargs = kwargs.get('whiten_kwargs', {})
         whitened_waveform = whitener(h          = projected_template, 
                                      asd        = asd,
                                      time_shift = time_shift, 
