@@ -7,7 +7,7 @@ HYPERION is pipeline for the detection and Parameter Estimation of gravitational
 Clone the repo in a given folder (e.g. the "work" folder)
 
 ```
-git clone git@gitlab.com:mmagwpisa/hyperion.git
+git clone https://github.com/fdesanti/HYPERION.git
 ```
 
 then install the dependencies.
@@ -21,15 +21,15 @@ To use HYPERION as an installed package you need to add it to PYTHONPATH.
 Run the following (on Mac change "bashrc" with "zprofile")
 
 ```
-echo PYTHONPATH = <path_to_work_dir>:$PYTHONPATH > ~/.bashrc  
+echo PYTHONPATH = <path_to_work_dir/HYPERION>:$PYTHONPATH > ~/.bashrc  
 echo export PYTHONPATH > ~/.bashrc  
 source ~/.bashrc
 ```
 
-### A note about PyTorch installation
-By default (on Linux) PyTorch is shipped with the latest CUDA binaries (12.1). 
-Refer to the page https://pytorch.org/get-started/locally/ for other CUDA versions
-(e.g. PcUniverse only works with CUDA <= 11.8)
+### PyTorch installation
+By default (on Linux) PyTorch is shipped with the latest CUDA binaries. 
+Refer to the page https://pytorch.org/get-started/locally/ for other CUDA versions and/or installation
+options.
 
 ```
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
@@ -38,16 +38,16 @@ pip3 install torch torchvision torchaudio --index-url https://download.pytorch.o
 It is therefore recommended to install pytorch before installing the requirements
 
 
-### A note about TEOBResumS-DALI installation
+### TEOBResumS-DALI installation
 TEOBResumS-DALI can be installed with the following steps.
 Warning: the gcc command "make" must be installed on your system
 
 ```
-git clone https://bitbucket.org/eob_ihes/teobresums.git
+git clone https://bitbucket.org/teobresums/teobresums.git
 cd teobresums
-git checkout dev/DALI
+git checkout DALI
 cd Python
-make
+python setup.py build_ext --inplace
 ```
 Then export the path to the Python folder to your PYTHONPATH. 
 
@@ -56,8 +56,6 @@ echo PYTHONPATH="<path_to_Python_folder>:$PYTHONPATH" > ~/.bashrc
 echo export PYTHONPATH > ~/.bashrc
 source ~/.bashrc
 ```
-
-
 
 ## Usage
 
@@ -71,12 +69,12 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 #initialize the Posterior Sampler
 sampler = PosteriorSampler(flow_checkpoint_path=path_to_trained_model, 
-                           waveform_generator = efbt, 
+                           waveform_generator=efbt, 
                            num_posterior_samples=num_samples, 
                            device=device)
 
 #sample posterior
-posterior = sampler.sample_posterior(strain = whitened_strain,
+posterior = sampler.sample_posterior(strain=whitened_strain,
                                      restrict_to_bounds=True)
 
 #Once the posterior is sampled it is also possible to make corner plots
