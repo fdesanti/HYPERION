@@ -85,15 +85,15 @@ embedding_network:
 training_options:
   num_epochs: 300
 
-  batch_size: 51
+  batch_size: 512
 
   initial_learning_rate: 0.0001
 
   steps_per_epoch: 1000
   val_steps_per_epoch: 150
 
-  num_preload_train: 100
-  num_preload_val: 100
+  num_preload_train: 1000
+  num_preload_val: 1000
 
   n_proc: 2 * os.cpu_count() // 3
 

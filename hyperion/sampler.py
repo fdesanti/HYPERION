@@ -310,7 +310,7 @@ class PosteriorSampler():
         
         log.info('Plotting reconstructed waveforms...')
         
-        from ..simulations import WhitenNet
+        from .simulations import WhitenNet
         
         if posterior is None:
             posterior = self.posterior

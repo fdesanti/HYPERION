@@ -12,7 +12,7 @@ from hyperion.training import DatasetGenerator
 from hyperion.simulations import (ASD_Sampler, 
                                   GWDetectorNetwork, 
                                   WaveformGenerator)
-from hyperion.core import PosteriorSampler
+from hyperion import PosteriorSampler
 from bilby.core.result import make_pp_plot
 
 
@@ -28,7 +28,7 @@ if __name__ == '__main__':
     NUM_POSTERIORS = int(options.num_posteriors)
     NUM_SAMPLES    = int(options.num_posterior_samples)
     VERBOSITY      = options.verbosity
-    MODEL_NAME      = options.model_dir
+    MODEL_NAME      = options.model_name
     
     #Setup & load model --------------------------------------------------
     conf_yaml = f'training_results/{MODEL_NAME}/hyperion_config.yml'
@@ -86,7 +86,7 @@ if __name__ == '__main__':
         test_ds.preload_waveforms()
         
         #set up Sampler
-        checkpoint_path = f'training_results/{MODEL_NAME}/{MODEL_NAME}_flow_model'
+        checkpoint_path = f'training_results/{MODEL_NAME}/{MODEL_NAME}_flow_model.pt'
         
         sampler = PosteriorSampler(flow_checkpoint_path  = checkpoint_path, 
                                    waveform_generator    = waveform_generator,

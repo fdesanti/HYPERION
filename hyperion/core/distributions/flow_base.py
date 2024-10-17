@@ -226,6 +226,46 @@ class ResampledMultivariateNormalBase(nn.Module):
         alpha = (1 - Z) ** (self.T - 1)
         log_prob_gaussian = self.multivariate_normal.log_prob(z_samples)
         return torch.log((1 - alpha) * acceptance_prob / Z + alpha) + log_prob_gaussian
+    
+    def sample(self, num_samples, embedded_strain=None):
+        """Sample from the Multivariate Normal distribution using the 
+              Learned Acceptance Rejection Sampling (LARS) procedure"""
+        
+        #initialize the samples
+        samples = torch.empty((num_samples, self.dim), device = self.mean.device)
+        
+        it = 0
+        it_max = self.T // self.bs_factor + 1
+        t=0
+        
+        len_samples = 0
+        
+        #rejection sampling loop
+        while it <= it_max:
+            
+            s_ = self.multivariate_normal.sample(num_samples, embedded_strain)
+            acceptance_prob = self.acceptance_network((s_ - self.mean) / torch.exp(self.var))[:,0]
+            
+            accept = torch.rand_like(acceptance_prob) < acceptance_prob
+            
+            for isamp, a in enumerate(accept):
+                #here either we accept the sample because of the acceptance 
+                #probability or because we reached the maximum number of rejections
+                if a or t == self.T-1:
+                    samples[isamp] = s_[isamp]
+                    len_samples += 1 #increment the number of samples counter
+                    t = 0            #reset the rejection counter
+                else:
+                    #we reject the sample and increment the rejection counter
+                    t += 1 
+            
+                if len_samples == num_samples:
+                    break
+            
+            if len_samples == num_samples:
+                break
+        
+        return samples
         
 # --------------------------------------------
 # Resampled Multivariate Gaussian Conditional
