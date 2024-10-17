@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 from tensordict import TensorDict
 
-from ..core import GWLogger
+from ..core import HYPERION_Logger
 from ..core.fft import *
 from ..config import CONF_DIR
 from ..core.distributions import MultivariatePrior, prior_dict_
@@ -19,7 +19,7 @@ from ..simulations.simulation_utilities import (optimal_snr,
                                                 rescale_to_network_snr, 
                                                 network_optimal_snr)
 
-log = GWLogger()
+log = HYPERION_Logger()
 
 class DatasetGenerator:
     """

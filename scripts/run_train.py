@@ -14,11 +14,11 @@ from hyperion.training import (DatasetGenerator,
 
 from hyperion.config import CONF_DIR
 from hyperion.core.flow import build_flow
-from hyperion.core import GWLogger
+from hyperion.core import HYPERION_Logger
 from hyperion.simulations import (ASD_Sampler, 
                                   GWDetectorNetwork, 
                                   WaveformGenerator)
-log = GWLogger()
+log = HYPERION_Logger()
 
 if __name__ == '__main__':
     parser = OptionParser()
@@ -30,8 +30,11 @@ if __name__ == '__main__':
     PRELOAD    = options.preload_trained
     DEVICE     = options.device
     MODEL_NAME = options.model_name
-
     
+    #check if training results dir exists
+    if not os.path.exists('training_results'):
+        os.mkdir('training_results')
+
     conf_dir = f'training_results/{MODEL_NAME}' if PRELOAD else CONF_DIR
     conf_yaml = conf_dir + '/hyperion_config.yml'
     
@@ -53,7 +56,7 @@ if __name__ == '__main__':
     INITIAL_LEARNING_RATE = float(train_conf['initial_learning_rate']) if not PRELOAD else preload_lr/2
 
     WAVEFORM_MODEL = conf['waveform_model']
-    PRIOR_PATH     = os.path.join(conf_dir, 'prior.yml') if PRELOAD else os.path.join(conf_dir, conf['prior']+'.yml')
+    PRIOR_PATH     = os.path.join(conf_dir, 'priors/prior.yml') if PRELOAD else os.path.join(conf_dir, 'priors/'+conf['prior']+'.yml')
     DURATION       = conf['duration']
     
     if DEVICE is None:

@@ -13,15 +13,15 @@ R_earth = R_earth.value #earth radius value [m]
 c = c.value #speed of light value [m/s]
 
 from ..config import CONF_DIR
-from ..core.utilities import GWLogger
+from ..core.utilities import HYPERION_Logger
 
-log = GWLogger()
+log = HYPERION_Logger()
 
 
 def get_detectors_configs(det_conf_path = None):
     #get the detectors configuration parameters
     if not det_conf_path:
-        det_conf_path = f"{CONF_DIR}/detectors/detectors.yml"
+        det_conf_path = f"{CONF_DIR}/detectors.yml"
     with open(det_conf_path, 'r') as file:
         det_configs = yaml.safe_load(file)    
         

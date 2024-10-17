@@ -7,23 +7,24 @@ from torch.distributions import VonMises as torchVonMises
 from torch.distributions import MultivariateNormal as torchMultivariateNormal
 
 
+# -------------------------
+# Multivariate Gaussian
+# -------------------------
 class MultivariateNormalBase(nn.Module):
     """Multivariate Normal the base distribution for the flow. 
        Exploits the torch.distributions module
        The distribution is initialized to zero mean and unit variance
     
         Args:
-            dim : int  
-                Number of dimensions (i.e. of physical inference parameters). (Default: 10)
-
-            trainable : bool
-                Whether to train the parameters (means and stds) of the distribution during training. (Default: False)
+        ------
+            dim (int)        : Number of dimensions (i.e. of physical inference parameters). (Default: 10)
+            trainable (bool) : Whether to train the parameters (means and stds) of the distribution during training. (Default: False)
                 
             
         Methods:
-            - log_prob: returns the log_prob given samples of dim (N batches, self.dim)
-            
-            - sample: samples from the prior distribution returning a tensor of dim [Num_samples, self.dim])
+        --------
+            - log_prob : returns the log_prob given samples of dim (N batches, self.dim)
+            - sample   : samples from the prior distribution returning a tensor of dim [Num_samples, self.dim])
     
     """
     def __init__(self, 
@@ -53,37 +54,38 @@ class MultivariateNormalBase(nn.Module):
     def MultivariateNormal(self):
         return torchMultivariateNormal(self.mean, self.var, validate_args = False)
     
-    def log_prob(self, samples, embedded_strain=None):
-        """assumes that samples have dim (Nbatch, self.dim) ie 1 sample per batch"""
+    def log_prob(self, z_samples, embedded_strain=None):
+        """assumes that z_samples have dim (Nbatch, self.dim) ie 1 sample per batch"""
         
-        if samples.shape[1] != self.dim:
-            raise ValueError(f'Wrong samples dim. Expected (batch_size, {self.dim}) and got {samples.dim}')
+        if z_samples.shape[1] != self.dim:
+            raise ValueError(f'Wrong z_samples dim. Expected (batch_size, {self.dim}) and got {z_samples.dim}')
         
-        return self.MultivariateNormal.log_prob(samples)
+        return self.MultivariateNormal.log_prob(z_samples)
     
     def sample(self, num_samples, embedded_strain=None):
         
         #by default .samples returns [1, num_samples, dim] so we delete 1 dimension
         return self.MultivariateNormal.sample((1,num_samples)).squeeze(0)
     
-
+    
+# ----------------------------------
+# Multivariate Gaussian Conditional
+# ----------------------------------
 class ConditionalMultivariateNormalBase(nn.Module):
-    """Multivariate Normal the base distribution for the flow. 
+    """Multivariate Normal the base distribution for the flow conditioned on embedded context. 
        Exploits the torch.distributions module
-       The distribution is initialized to zero mean and unit variance
+       The distribution is initialized to zero mean and unit variance. 
+       Both mean and variance are output of FC Networks conditioned on the context.
     
         Args:
-            dim : int  
-                Number of dimensions (i.e. of physical inference parameters). (Default: 10)
-
-            trainable : bool
-                Whether to train the parameters (means and stds) of the distribution during training. (Default: False)
+        -----
+            dim (int)                    : Number of dimensions (i.e. of physical inference parameters). (Default: 10)
+            neural_network_kwargs (dict) : arguments to be passed to the neural network(s) that conditions the distribution.
                 
-            
         Methods:
-            - log_prob: returns the log_prob given samples of dim (N batches, self.dim)
-            
-            - sample: samples from the prior distribution returning a tensor of dim [Num_samples, self.dim])
+        --------
+            - log_prob : returns the log_prob given samples of dim (N batches, self.dim)
+            - sample   : samples from the prior distribution returning a tensor of dim [Num_samples, self.dim])
     
     """
     def __init__(self, 
@@ -97,24 +99,17 @@ class ConditionalMultivariateNormalBase(nn.Module):
         dropout    = neural_network_kwargs.get('dropout', 0.2)
         layer_dim  = neural_network_kwargs.get('layer_dims', 256)
         
-        self.mean_network = nn.Sequential(nn.LazyLinear(layer_dim),
-                                            activation,
-                                            nn.Dropout(dropout),
-                                            nn.Linear(layer_dim, layer_dim),
-                                            activation,
-                                            nn.Dropout(dropout),
-                                            nn.Linear(layer_dim, self.dim), 
-                                            activation
-                                            )
+        self.mean_network = nn.Sequential(nn.LazyLinear(layer_dim), activation,
+                                          nn.Dropout(dropout),
+                                          nn.Linear(layer_dim, layer_dim), activation,
+                                          nn.Dropout(dropout),
+                                          nn.Linear(layer_dim, self.dim), activation)
         
-        self.var_network = nn.Sequential(nn.LazyLinear(layer_dim),
-                                            activation,
-                                            nn.Dropout(dropout),
-                                            nn.Linear(layer_dim, layer_dim),
-                                            activation,
-                                            nn.Dropout(dropout),
-                                            nn.Linear(layer_dim, self.dim), 
-                                            nn.Softplus())
+        self.var_network  = nn.Sequential(nn.LazyLinear(layer_dim), activation,
+                                          nn.Dropout(dropout),
+                                          nn.Linear(layer_dim, layer_dim), activation,
+                                          nn.Dropout(dropout),
+                                          nn.Linear(layer_dim, self.dim), nn.Softplus())
         
         self.eps = 1e-6
     
@@ -122,16 +117,16 @@ class ConditionalMultivariateNormalBase(nn.Module):
     
     
     
-    def log_prob(self, samples, embedded_strain):
-        """assumes that samples have dim (Nbatch, self.dim) ie 1 sample per batch"""
+    def log_prob(self, z_samples, embedded_strain):
+        """assumes that z_samples have dim (Nbatch, self.dim) ie 1 sample per batch"""
         
-        if samples.shape[1] != self.dim:
-            raise ValueError(f'Wrong samples dim. Expected (batch_size, {self.dim}) and got {samples.dim}')
+        if z_samples.shape[1] != self.dim:
+            raise ValueError(f'Wrong z_samples dim. Expected (batch_size, {self.dim}) and got {z_samples.dim}')
         
         mean = self.mean_network(embedded_strain)
         var  = self.var_network(embedded_strain) + self.eps
         
-        return torchMultivariateNormal(mean, torch.diag_embed(var)).log_prob(samples)
+        return torchMultivariateNormal(mean, torch.diag_embed(var)).log_prob(z_samples)
     
     def sample(self, num_samples, embedded_strain):
         
@@ -143,13 +138,182 @@ class ConditionalMultivariateNormalBase(nn.Module):
         #by default .samples returns [1, num_samples, dim] so we delete 1 dimension
         return torchMultivariateNormal(mean, torch.diag_embed(var)).sample((1,num_samples)).squeeze(0)
     
+# --------------------------------
+# Resampled Multivariate Gaussian
+# --------------------------------
+class ResampledMultivariateNormalBase(nn.Module):
+    """Resampled Multivariate Normal the base distribution for the flow. 
+       The distribution is initialized to zero mean and unit variance. 
+       Resampling is based on a Learned Acceptance Rejection Sampling (LARS) procedure,
+       where each sample is accepted or rejected based on the output of a neural network. 
+       
+       Resampling procedure is described in arXiv:2110.15828. 
+       The implementation follows https://github.com/VincentStimper/resampled-base-flows
+    
+        Args:
+        -----
+            dim (int)                  : Number of dimensions (i.e. of physical inference parameters). (Default: 10)
+            T (int)                    : Maximum Number of rejections. (Default: 100)
+            eps (float)                : Discount factor in exponential average of Z. (Default: 0.05)
+            bs_factor (int)            : Factor to increment the batch size for the resampling. (Default: 1)
+            acc_network_kwargs (dict)  : arguments to be passed to the neural network that conditions the distribution.
+                
+        Methods:
+        --------
+            - log_prob : returns the log_prob given samples of dim (N batches, self.dim)
+            - sample   : samples from the prior distribution returning a tensor of dim [Num_samples, self.dim])
+    
+    """
+    def __init__(self, 
+                 dim           :int   = 10,
+                 T             :int   = 100,
+                 eps           :float = 0.05,
+                 bs_factor     :int   = 1,
+                 trainable     :bool  = False,
+                 acc_network_kwargs = {},
+                 ):
+        super(ResampledMultivariateNormalBase, self).__init__()
+        
+        self.dim = dim      
+        self.T   = T
+        self.eps = eps
+        self.bs_factor = bs_factor
+        self.register_buffer("Z", torch.tensor(-1.))
+        
+        #construct the acceptance network
+        activation = acc_network_kwargs.get('activation', nn.ELU())
+        dropout    = acc_network_kwargs.get('dropout', 0.2)
+        layer_dim  = acc_network_kwargs.get('layer_dims', 256)
+        
+        self.acceptance_network = nn.Sequential(nn.LazyLinear(layer_dim), activation,
+                                                nn.Linear(layer_dim, layer_dim), activation,
+                                                nn.Dropout(dropout),
+                                                nn.Linear(layer_dim, 1), nn.Sigmoid())
+        
+        self.multivariate_normal = MultivariateNormalBase(dim, trainable)
+        return
+    
+    @property
+    def mean(self):
+        return self.multivariate_normal.mean.unsqueeze(0)
+    
+    @property
+    def var(self):
+        var_ = self.multivariate_normal.var
+        return torch.diagonal(var_, dim1=-2, dim2=-1)
+    
+    
+    def log_prob(self, z_samples, embedded_strain=None):
+        """assumes that z_samples have dim (Nbatch, self.dim) ie 1 sample per batch"""
+        
+        if z_samples.shape[1] != self.dim:
+            raise ValueError(f'Wrong z_samples dim. Expected (batch_size, {self.dim}) and got {z_samples.dim}')
+        
+        #compute the acceptance probability on latent space samples
+        z_eps = (z_samples - self.mean) / torch.exp(self.var)
+        acceptance_prob = self.acceptance_network(z_eps)[:, 0] #[Nbatch, 1]->[Nbatch]
+        
+        #estimate Z with batch Monte Carlo
+        z_ = torch.randn_like(z_samples)
+        Z_batch = torch.mean(self.acceptance_network(z_))
+        if self.Z < 0.:
+            self.Z = Z_batch.detach()
+        else:
+            self.Z = (1 - self.eps) * self.Z + self.eps * Z_batch.detach()
+        Z = Z_batch - Z_batch.detach() + self.Z
+        
+        #compute the new log_prob
+        alpha = (1 - Z) ** (self.T - 1)
+        log_prob_gaussian = self.multivariate_normal.log_prob(z_samples)
+        return torch.log((1 - alpha) * acceptance_prob / Z + alpha) + log_prob_gaussian
+    
+    def sample(self, num_samples, embedded_strain=None):
+        """Sample from the Multivariate Normal distribution using the 
+              Learned Acceptance Rejection Sampling (LARS) procedure"""
+        
+        #initialize the samples
+        samples = torch.empty((num_samples, self.dim), device = self.mean.device)
+        
+        it = 0
+        it_max = self.T // self.bs_factor + 1
+        t=0
+        
+        len_samples = 0
+        
+        #rejection sampling loop
+        while it <= it_max:
+            
+            s_ = self.multivariate_normal.sample(num_samples, embedded_strain)
+            acceptance_prob = self.acceptance_network((s_ - self.mean) / torch.exp(self.var))[:,0]
+            
+            accept = torch.rand_like(acceptance_prob) < acceptance_prob
+            
+            for isamp, a in enumerate(accept):
+                #here either we accept the sample because of the acceptance 
+                #probability or because we reached the maximum number of rejections
+                if a or t == self.T-1:
+                    samples[isamp] = s_[isamp]
+                    len_samples += 1 #increment the number of samples counter
+                    t = 0            #reset the rejection counter
+                else:
+                    #we reject the sample and increment the rejection counter
+                    t += 1 
+            
+                if len_samples == num_samples:
+                    break
+            
+            if len_samples == num_samples:
+                break
+        
+        return samples
+        
+# --------------------------------------------
+# Resampled Multivariate Gaussian Conditional
+# --------------------------------------------
+class ResampledConditionalMultivariateNormalBase(nn.Module):
+    """Resampled Multivariate Normal the base distribution for the flow conditioned on embedded context. 
+       The distribution is initialized to zero mean and unit variance. 
+       
+       Resampling procedure is described in arXiv:2110.15828. 
+       The implementation follows https://github.com/VincentStimper/resampled-base-flows
+    
+        Args:
+        -----
+            dim (int)                    : Number of dimensions (i.e. of physical inference parameters). (Default: 10)
+            neural_network_kwargs (dict) : arguments to be passed to the neural network(s) that conditions the distribution.
+                
+        Methods:
+        --------
+            - log_prob : returns the log_prob given samples of dim (N batches, self.dim)
+            - sample   : samples from the prior distribution returning a tensor of dim [Num_samples, self.dim])
+    
+    """
+    def __init__(self):
+        return
 
+# ------------------------------
+# Multivariate Gaussian Mixture
+# ------------------------------
 class MultivariateGaussianMixtureBase(nn.Module):
-    """Mixture of Multivariate Normal the base distribution for the flow."""
+    """Mixture of Multivariate Normal the base distribution for the flow. 
+       Mixture weights are initialized to 1/N with N components.
+    
+        Args:
+        -----
+            dim (int)             : Number of dimensions (i.e. of physical inference parameters). (Default: 10)
+            num_components (int)  : Number of components in the mixture. (Default: 2)
+            trainable (bool)      : wether to learn the weights / means / stds of the mixture. (Default: True)
+                
+        Methods:
+        --------
+            - log_prob : returns the log_prob given samples of dim (N batches, self.dim)
+            - sample   : samples from the prior distribution returning a tensor of dim [Num_z, self.dim])
+    
+    """
 
     def __init__(self, 
-                 num_components :int  =  2,
                  dim            :int  =  10,
+                 num_components :int  =  2,
                  trainable      :bool = True,
                  ):
         super(MultivariateGaussianMixtureBase, self).__init__()
@@ -168,15 +332,15 @@ class MultivariateGaussianMixtureBase(nn.Module):
             self.register_buffer("mixture_weights", mixture_weights)
         return
     
-    def log_prob(self, samples, embedded_strain=None):
-        """assumes that samples have dim (Nbatch, self.dim) ie 1 sample per batch"""
+    def log_prob(self, z_samples, embedded_strain=None):
+        """assumes that z_samples have dim (Nbatch, self.dim) ie 1 sample per batch"""
         
-        if samples.shape[1] != self.dim:
-            raise ValueError(f'Wrong samples dim. Expected (batch_size, {self.dim}) and got {samples.dim}')
+        if z_samples.shape[1] != self.dim:
+            raise ValueError(f'Wrong samples dim. Expected (batch_size, {self.dim}) and got {z_samples.dim}')
         
         weights  = F.softmax(self.mixture_weights)
 
-        log_prob = [weights[i].log() + self.mixture_components[i].log_prob(samples) for i in range(self.num_components)]
+        log_prob = [weights[i].log() + self.mixture_components[i].log_prob(z_samples) for i in range(self.num_components)]
         
         return torch.sum(torch.stack(log_prob, axis=0), axis=0)
     
@@ -194,8 +358,28 @@ class MultivariateGaussianMixtureBase(nn.Module):
 
         return samples
 
+# ------------------------------------------
+# Multivariate Gaussian Mixture Conditional
+# ------------------------------------------
 class ConditionalMultivariateGaussianMixtureBase(nn.Module):
-    """Conditional Mixture of Multivariate Normal the base distribution for the flow."""
+    """Multivariate Normal the base distribution for the flow conditioned on embedded context. 
+       Exploits the torch.distributions module
+       The distribution is initialized to zero mean and unit variance. 
+       Mixture weights are the output of a FC network conditioned on the context.
+       Mixture components are instances of ConditionalMultivariateNormalBase
+    
+        Args:
+        -----
+            dim (int)                    : Number of dimensions (i.e. of physical inference parameters). (Default: 10)
+            num_components (int)         : Number of components in the mixture. (Default: 2)
+            neural_network_kwargs (dict) : arguments to be passed to the neural network(s) that conditions the distribution.
+                
+        Methods:
+        --------
+            - log_prob : returns the log_prob given samples of dim (N batches, self.dim)
+            - sample   : samples from the prior distribution returning a tensor of dim [Num_samples, self.dim])
+    
+    """
     def __init__(self, 
                  dim            :int   =  10,
                  num_components :int   =   2,
@@ -214,28 +398,25 @@ class ConditionalMultivariateGaussianMixtureBase(nn.Module):
                                                                                    neural_network_kwargs=neural_network_kwargs) 
                                                  for _ in range(num_components)])
         
-        self.weights_network = nn.Sequential(nn.LazyLinear(layer_dim),
-                                            activation,
-                                            nn.Dropout(dropout),
-                                            nn.Linear(layer_dim, layer_dim),
-                                            activation,
-                                            nn.Dropout(dropout),
-                                            nn.Linear(layer_dim, num_components), 
-                                            nn.Softmax(dim=1))
+        self.weights_network = nn.Sequential(nn.LazyLinear(layer_dim), activation,
+                                             nn.Dropout(dropout),
+                                             nn.Linear(layer_dim, layer_dim), activation,
+                                             nn.Dropout(dropout),
+                                             nn.Linear(layer_dim, num_components), nn.Softmax(dim=1))
     
         return
     
     
     
-    def log_prob(self, samples, embedded_strain):
-        """assumes that samples have dim (Nbatch, self.dim) ie 1 sample per batch"""
+    def log_prob(self, z_samples, embedded_strain):
+        """assumes that z_samples have dim (Nbatch, self.dim) ie 1 sample per batch"""
         
-        if samples.shape[1] != self.dim:
-            raise ValueError(f'Wrong samples dim. Expected (batch_size, {self.dim}) and got {samples.dim}')
+        if z_samples.shape[1] != self.dim:
+            raise ValueError(f'Wrong z_samples dim. Expected (batch_size, {self.dim}) and got {z_samples.dim}')
         
         weights  = self.weights_network(embedded_strain)
 
-        log_prob = [weights[:,i].log() + self.mixture_components[i].log_prob(samples, embedded_strain) for i in range(self.num_components)]
+        log_prob = [weights[:,i].log() + self.mixture_components[i].log_prob(z_samples, embedded_strain) for i in range(self.num_components)]
         
         return torch.sum(torch.stack(log_prob, axis=0), axis=0)
     
@@ -258,24 +439,24 @@ class ConditionalMultivariateGaussianMixtureBase(nn.Module):
             '''
 
         return samples
-
-
+    
+# ---------------------------------
+# Multivariate Gaussian & VonMises
+# ---------------------------------
 class VonMisesNormal(nn.Module):
     """It implements the base distribution for the flow. 
        Exploits the torch.distributions module
     
         Args:
-            - parameters (dict of tuples): dict containing tuples of paramters for the distributions. These needs to be float
-                                          (default {'Normal': (0.0, 1.0), 'VonMises': (0.0, 1.0)})
-            - dim (dict of integers):  dict specifying the dim of each distributions.
-                                        (default: {'Normal': 6, 'VonMises': 4} for the CE case)
-            
-            - device (torch.device): used to specify the device (cuda or cpu)  
+        -----
+            parameters (dict of float tuples) : dict containing tuples of paramters for the distributions. (Default: {'Normal': (0.0, 1.0), 'VonMises': (0.0, 1.0)})
+            dim (dict of integers)            : dict specifying the dim of each distributions. (Default: {'Normal': 6, 'VonMises': 4} for the CE case)
+            device (torch.device)             : used to specify the device (either 'cuda' or 'cpu'). (Default: 'cpu')  
             
         Methods:
-            - log_prob: returns the log_prob given samples of dim (N batches, Normal_dim + VonMises_dim, Num_samples)
-            
-            - sample: samples from the prior distribution returning a tensor of dim (Normal_dim + VonMises_dim, Num_samples)
+        --------
+            - log_prob  : returns the log_prob given samples of dim (N batches, Normal_dim + VonMises_dim, Num_samples)
+            - sample    : samples from the prior distribution returning a tensor of dim (Normal_dim + VonMises_dim, Num_samples)
     
     """
     
@@ -346,15 +527,15 @@ class VonMisesNormal(nn.Module):
         return Normal_mask, VonMises_mask
         
         
-    def log_prob(self, samples, embedded_strain=None):
-        """assumes that samples have dim (Nbatch, N_norm+N_vonmises) ie 1 sample per batch"""
+    def log_prob(self, z_samples, embedded_strain=None):
+        """assumes that z_samples have dim (Nbatch, N_norm+N_vonmises) ie 1 sample per batch"""
         
-        if samples.dim[1] != self.Normal_dim+self.VonMises_dim:
-            raise ValueError("Wrong samples dim. Expected (None, %d, None) and got %s"%((self.Normal_dim+self.VonMises_dim), samples.dim))
+        if z_samples.dim[1] != self.Normal_dim+self.VonMises_dim:
+            raise ValueError("Wrong z_samples dim. Expected (None, %d, None) and got %s"%((self.Normal_dim+self.VonMises_dim), z_samples.dim))
         
-        #print('>>>>>>>>>> samples dim', samples.dim)
-        xn = samples[:, self.Normal_mask]
-        xv = samples[:, self.VonMises_mask]
+        #print('>>>>>>>>>> z_samples dim', z_samples.dim)
+        xn = z_samples[:, self.Normal_mask]
+        xv = z_samples[:, self.VonMises_mask]
         
         
         log_prob = [ self.Normal.log_prob(xn), self.VonMises.log_prob(xv) ]   
@@ -383,6 +564,8 @@ class VonMisesNormal(nn.Module):
 
 base_distributions_dict = {'MultivariateNormalBase'                    : MultivariateNormalBase,
                            'ConditionalMultivariateNormalBase'         : ConditionalMultivariateNormalBase,
+                           'ResampledMultivariateNormalBase'           : ResampledMultivariateNormalBase,
+                           'ResampledConditionalMultivariateNormalBase': ResampledConditionalMultivariateNormalBase,
                            'MultivariateGaussianMixtureBase'           : MultivariateGaussianMixtureBase,
                            'ConditionalMultivariateGaussianMixtureBase': ConditionalMultivariateGaussianMixtureBase,
                            'VonMisesNormal'                            : VonMisesNormal}

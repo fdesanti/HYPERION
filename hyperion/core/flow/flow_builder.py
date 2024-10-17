@@ -4,12 +4,12 @@ import torch
 
 from . import Flow
 from . import CouplingTransform, RandomPermutation, coupling_layer_dict
-from ..utilities import GWLogger
+from ..utilities import HYPERION_Logger
 from ..distributions import MultivariateNormalBase, base_distributions_dict
 from ..neural_networks import EmbeddingNetwork, EmbeddingNetworkAttention, embedding_network_dict
 from ...config import CONF_DIR
 
-log = GWLogger()
+log = HYPERION_Logger()
 
 def build_flow( prior_metadata           :dict = None,
                 flow_kwargs              :dict = None,

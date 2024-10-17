@@ -1,3 +1,4 @@
+
 import os
 import torch
 import pandas as pd
@@ -6,12 +7,13 @@ from pathlib import Path
 from tensordict import TensorDict
 from bilby.gw.result import CBCResult
 
-from .flow import build_flow
-from .utilities import GWLogger
-from ..inference import ImportanceSampling
-from ..simulations import redshift_from_luminosity_distance
+from .core.flow import build_flow
+from .core.utilities import HYPERION_Logger
+from .inference import ImportanceSampling
+from .simulations import redshift_from_luminosity_distance
 
-log = GWLogger()
+log = HYPERION_Logger()
+
 class PosteriorSampler():
     
     def __init__(self, 
@@ -308,7 +310,7 @@ class PosteriorSampler():
         
         log.info('Plotting reconstructed waveforms...')
         
-        from ..simulations import WhitenNet
+        from .simulations import WhitenNet
         
         if posterior is None:
             posterior = self.posterior

@@ -8,7 +8,7 @@ import sys
 import time
 import logging
 
-class GWLogger(logging.Logger):
+class HYPERION_Logger(logging.Logger):
     """
     This class contains a custom logger
     """
