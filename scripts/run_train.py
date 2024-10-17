@@ -30,6 +30,10 @@ if __name__ == '__main__':
     PRELOAD    = options.preload_trained
     DEVICE     = options.device
     MODEL_NAME = options.model_name
+    
+    #check if training results dir exists
+    if not os.path.exists('training_results'):
+        os.mkdir('training_results')
 
     
     conf_dir = f'training_results/{MODEL_NAME}' if PRELOAD else CONF_DIR

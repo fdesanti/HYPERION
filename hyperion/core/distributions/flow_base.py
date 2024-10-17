@@ -7,23 +7,24 @@ from torch.distributions import VonMises as torchVonMises
 from torch.distributions import MultivariateNormal as torchMultivariateNormal
 
 
+# -------------------------
+# Multivariate Gaussian
+# -------------------------
 class MultivariateNormalBase(nn.Module):
     """Multivariate Normal the base distribution for the flow. 
        Exploits the torch.distributions module
        The distribution is initialized to zero mean and unit variance
     
         Args:
-            dim : int  
-                Number of dimensions (i.e. of physical inference parameters). (Default: 10)
-
-            trainable : bool
-                Whether to train the parameters (means and stds) of the distribution during training. (Default: False)
+        ------
+            dim (int)        : Number of dimensions (i.e. of physical inference parameters). (Default: 10)
+            trainable (bool) : Whether to train the parameters (means and stds) of the distribution during training. (Default: False)
                 
             
         Methods:
-            - log_prob: returns the log_prob given samples of dim (N batches, self.dim)
-            
-            - sample: samples from the prior distribution returning a tensor of dim [Num_samples, self.dim])
+        --------
+            - log_prob : returns the log_prob given samples of dim (N batches, self.dim)
+            - sample   : samples from the prior distribution returning a tensor of dim [Num_samples, self.dim])
     
     """
     def __init__(self, 
@@ -66,24 +67,25 @@ class MultivariateNormalBase(nn.Module):
         #by default .samples returns [1, num_samples, dim] so we delete 1 dimension
         return self.MultivariateNormal.sample((1,num_samples)).squeeze(0)
     
-
+    
+# ----------------------------------
+# Multivariate Gaussian Conditional
+# ----------------------------------
 class ConditionalMultivariateNormalBase(nn.Module):
-    """Multivariate Normal the base distribution for the flow. 
+    """Multivariate Normal the base distribution for the flow conditioned on embedded context. 
        Exploits the torch.distributions module
-       The distribution is initialized to zero mean and unit variance
+       The distribution is initialized to zero mean and unit variance. 
+       Both mean and variance are output of FC Networks conditioned on the context.
     
         Args:
-            dim : int  
-                Number of dimensions (i.e. of physical inference parameters). (Default: 10)
-
-            trainable : bool
-                Whether to train the parameters (means and stds) of the distribution during training. (Default: False)
+        -----
+            dim (int)                    : Number of dimensions (i.e. of physical inference parameters). (Default: 10)
+            neural_network_kwargs (dict) : arguments to be passed to the neural network(s) that conditions the distribution.
                 
-            
         Methods:
-            - log_prob: returns the log_prob given samples of dim (N batches, self.dim)
-            
-            - sample: samples from the prior distribution returning a tensor of dim [Num_samples, self.dim])
+        --------
+            - log_prob : returns the log_prob given samples of dim (N batches, self.dim)
+            - sample   : samples from the prior distribution returning a tensor of dim [Num_samples, self.dim])
     
     """
     def __init__(self, 
@@ -143,13 +145,38 @@ class ConditionalMultivariateNormalBase(nn.Module):
         #by default .samples returns [1, num_samples, dim] so we delete 1 dimension
         return torchMultivariateNormal(mean, torch.diag_embed(var)).sample((1,num_samples)).squeeze(0)
     
+# --------------------------------
+# Resampled Multivariate Gaussian
+# --------------------------------
+class ResampledMultivariateNormalBase(nn.Module):
+    def __init__(self):
+        return
+    
 
+
+# ------------------------------
+# Multivariate Gaussian Mixture
+# ------------------------------
 class MultivariateGaussianMixtureBase(nn.Module):
-    """Mixture of Multivariate Normal the base distribution for the flow."""
+    """Mixture of Multivariate Normal the base distribution for the flow. 
+       Mixture weights are initialized to 1/N with N components.
+    
+        Args:
+        -----
+            dim (int)             : Number of dimensions (i.e. of physical inference parameters). (Default: 10)
+            num_components (int)  : Number of components in the mixture. (Default: 2)
+            trainable (bool)      : wether to learn the weights / means / stds of the mixture. (Default: True)
+                
+        Methods:
+        --------
+            - log_prob : returns the log_prob given samples of dim (N batches, self.dim)
+            - sample   : samples from the prior distribution returning a tensor of dim [Num_samples, self.dim])
+    
+    """
 
     def __init__(self, 
-                 num_components :int  =  2,
                  dim            :int  =  10,
+                 num_components :int  =  2,
                  trainable      :bool = True,
                  ):
         super(MultivariateGaussianMixtureBase, self).__init__()
@@ -194,8 +221,28 @@ class MultivariateGaussianMixtureBase(nn.Module):
 
         return samples
 
+# ------------------------------------------
+# Multivariate Gaussian Mixture Conditional
+# ------------------------------------------
 class ConditionalMultivariateGaussianMixtureBase(nn.Module):
-    """Conditional Mixture of Multivariate Normal the base distribution for the flow."""
+    """Multivariate Normal the base distribution for the flow conditioned on embedded context. 
+       Exploits the torch.distributions module
+       The distribution is initialized to zero mean and unit variance. 
+       Mixture weights are the output of a FC network conditioned on the context.
+       Mixture components are instances of ConditionalMultivariateNormalBase
+    
+        Args:
+        -----
+            dim (int)                    : Number of dimensions (i.e. of physical inference parameters). (Default: 10)
+            num_components (int)         : Number of components in the mixture. (Default: 2)
+            neural_network_kwargs (dict) : arguments to be passed to the neural network(s) that conditions the distribution.
+                
+        Methods:
+        --------
+            - log_prob : returns the log_prob given samples of dim (N batches, self.dim)
+            - sample   : samples from the prior distribution returning a tensor of dim [Num_samples, self.dim])
+    
+    """
     def __init__(self, 
                  dim            :int   =  10,
                  num_components :int   =   2,
@@ -258,24 +305,24 @@ class ConditionalMultivariateGaussianMixtureBase(nn.Module):
             '''
 
         return samples
-
-
+    
+# ---------------------------------
+# Multivariate Gaussian & VonMises
+# ---------------------------------
 class VonMisesNormal(nn.Module):
     """It implements the base distribution for the flow. 
        Exploits the torch.distributions module
     
         Args:
-            - parameters (dict of tuples): dict containing tuples of paramters for the distributions. These needs to be float
-                                          (default {'Normal': (0.0, 1.0), 'VonMises': (0.0, 1.0)})
-            - dim (dict of integers):  dict specifying the dim of each distributions.
-                                        (default: {'Normal': 6, 'VonMises': 4} for the CE case)
-            
-            - device (torch.device): used to specify the device (cuda or cpu)  
+        -----
+            parameters (dict of float tuples) : dict containing tuples of paramters for the distributions. (Default: {'Normal': (0.0, 1.0), 'VonMises': (0.0, 1.0)})
+            dim (dict of integers)            : dict specifying the dim of each distributions. (Default: {'Normal': 6, 'VonMises': 4} for the CE case)
+            device (torch.device)             : used to specify the device (either 'cuda' or 'cpu'). (Default: 'cpu')  
             
         Methods:
-            - log_prob: returns the log_prob given samples of dim (N batches, Normal_dim + VonMises_dim, Num_samples)
-            
-            - sample: samples from the prior distribution returning a tensor of dim (Normal_dim + VonMises_dim, Num_samples)
+        --------
+            - log_prob  : returns the log_prob given samples of dim (N batches, Normal_dim + VonMises_dim, Num_samples)
+            - sample    : samples from the prior distribution returning a tensor of dim (Normal_dim + VonMises_dim, Num_samples)
     
     """
     

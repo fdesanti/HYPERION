@@ -95,7 +95,7 @@ training_options:
   num_preload_train: 10000
   num_preload_val: 1000
 
-  n_proc: os.cpu_count()
+  n_proc: 2 * os.cpu_count() // 3
 
   whiten_kwargs:
     method: "gwpy"
