@@ -8,11 +8,11 @@ from tensordict import TensorDict
 from bilby.gw.result import CBCResult
 
 from .core.flow import build_flow
-from .core.utilities import GWLogger
+from .core.utilities import HYPERION_Logger
 from .inference import ImportanceSampling
 from .simulations import redshift_from_luminosity_distance
 
-log = GWLogger()
+log = HYPERION_Logger()
 
 class PosteriorSampler():
     
