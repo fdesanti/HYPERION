@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 from ..core.flow import build_flow
-from ..core.utilities import GWLogger
+from ..core.utilities import HYPERION_Logger
 
 class Trainer: 
     def __init__(self,
@@ -182,7 +182,7 @@ class Trainer:
     
 	
     def train(self, num_epochs, overwrite_history=True):
-        self.log = GWLogger()
+        self.log = HYPERION_Logger()
         
         best_train_loss = np.inf
         best_val_loss   = np.inf

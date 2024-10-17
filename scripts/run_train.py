@@ -14,11 +14,11 @@ from hyperion.training import (DatasetGenerator,
 
 from hyperion.config import CONF_DIR
 from hyperion.core.flow import build_flow
-from hyperion.core import GWLogger
+from hyperion.core import HYPERION_Logger
 from hyperion.simulations import (ASD_Sampler, 
                                   GWDetectorNetwork, 
                                   WaveformGenerator)
-log = GWLogger()
+log = HYPERION_Logger()
 
 if __name__ == '__main__':
     parser = OptionParser()

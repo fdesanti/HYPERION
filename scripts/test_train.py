@@ -11,8 +11,8 @@ from hyperion.simulations import (ASD_Sampler,
                                   GWDetectorNetwork, 
                                   WaveformGenerator)
 
-from hyperion.core import PosteriorSampler, GWLogger
-log = GWLogger()
+from hyperion.core import PosteriorSampler, HYPERION_Logger
+log = HYPERION_Logger()
 
 
 if __name__ == '__main__':
