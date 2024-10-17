@@ -1,1 +1,1 @@
-
+from .sampler import PosteriorSampler
