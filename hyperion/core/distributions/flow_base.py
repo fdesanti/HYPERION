@@ -190,7 +190,6 @@ class ResampledMultivariateNormalBase(nn.Module):
                                                 nn.Dropout(dropout),
                                                 nn.Linear(layer_dim, 1), nn.Sigmoid())
         
-        
         self.multivariate_normal = MultivariateNormalBase(dim, trainable)
         return
     
@@ -226,12 +225,6 @@ class ResampledMultivariateNormalBase(nn.Module):
         #compute the new log_prob
         alpha = (1 - Z) ** (self.T - 1)
         log_prob_gaussian = self.multivariate_normal.log_prob(z_samples)
-        
-        print(f'alpha: {alpha}')
-        print(f'acceptance_prob: {acceptance_prob}')
-        print(f'Z: {Z}')
-        print(f'log', torch.log((1 - alpha) * acceptance_prob / Z + alpha) )
-        
         return torch.log((1 - alpha) * acceptance_prob / Z + alpha) + log_prob_gaussian
         
 # --------------------------------------------
