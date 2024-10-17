@@ -99,24 +99,17 @@ class ConditionalMultivariateNormalBase(nn.Module):
         dropout    = neural_network_kwargs.get('dropout', 0.2)
         layer_dim  = neural_network_kwargs.get('layer_dims', 256)
         
-        self.mean_network = nn.Sequential(nn.LazyLinear(layer_dim),
-                                            activation,
-                                            nn.Dropout(dropout),
-                                            nn.Linear(layer_dim, layer_dim),
-                                            activation,
-                                            nn.Dropout(dropout),
-                                            nn.Linear(layer_dim, self.dim), 
-                                            activation
-                                            )
+        self.mean_network = nn.Sequential(nn.LazyLinear(layer_dim), activation,
+                                          nn.Dropout(dropout),
+                                          nn.Linear(layer_dim, layer_dim), activation,
+                                          nn.Dropout(dropout),
+                                          nn.Linear(layer_dim, self.dim), activation)
         
-        self.var_network = nn.Sequential(nn.LazyLinear(layer_dim),
-                                            activation,
-                                            nn.Dropout(dropout),
-                                            nn.Linear(layer_dim, layer_dim),
-                                            activation,
-                                            nn.Dropout(dropout),
-                                            nn.Linear(layer_dim, self.dim), 
-                                            nn.Softplus())
+        self.var_network  = nn.Sequential(nn.LazyLinear(layer_dim), activation,
+                                          nn.Dropout(dropout),
+                                          nn.Linear(layer_dim, layer_dim), activation,
+                                          nn.Dropout(dropout),
+                                          nn.Linear(layer_dim, self.dim), nn.Softplus())
         
         self.eps = 1e-6
     
@@ -151,6 +144,8 @@ class ConditionalMultivariateNormalBase(nn.Module):
 class ResampledMultivariateNormalBase(nn.Module):
     """Resampled Multivariate Normal the base distribution for the flow. 
        The distribution is initialized to zero mean and unit variance. 
+       Resampling is based on a Learned Acceptance Rejection Sampling (LARS) procedure,
+       where each sample is accepted or rejected based on the output of a neural network. 
        
        Resampling procedure is described in arXiv:2110.15828. 
        The implementation follows https://github.com/VincentStimper/resampled-base-flows
@@ -159,6 +154,7 @@ class ResampledMultivariateNormalBase(nn.Module):
         -----
             dim (int)                  : Number of dimensions (i.e. of physical inference parameters). (Default: 10)
             T (int)                    : Maximum Number of rejections. (Default: 100)
+            eps (float)                : Discount factor in exponential average of Z. (Default: 0.05)
             bs_factor (int)            : Factor to increment the batch size for the resampling. (Default: 1)
             acc_network_kwargs (dict)  : arguments to be passed to the neural network that conditions the distribution.
                 
@@ -169,33 +165,75 @@ class ResampledMultivariateNormalBase(nn.Module):
     
     """
     def __init__(self, 
-                 dim           :int =  10,
-                 T             :int =  100,
-                 bs_factor     :int =  1,
+                 dim           :int   = 10,
+                 T             :int   = 100,
+                 eps           :float = 0.05,
+                 bs_factor     :int   = 1,
+                 trainable     :bool  = False,
                  acc_network_kwargs = {},
                  ):
         super(ResampledMultivariateNormalBase, self).__init__()
         
         self.dim = dim      
         self.T   = T
+        self.eps = eps
         self.bs_factor = bs_factor
+        self.register_buffer("Z", torch.tensor(-1.))
         
         #construct the acceptance network
         activation = acc_network_kwargs.get('activation', nn.ELU())
         dropout    = acc_network_kwargs.get('dropout', 0.2)
         layer_dim  = acc_network_kwargs.get('layer_dims', 256)
         
-        self.acceptance_network = nn.Sequential(nn.LazyLinear(layer_dim),
-                                                activation,
+        self.acceptance_network = nn.Sequential(nn.LazyLinear(layer_dim), activation,
+                                                nn.Linear(layer_dim, layer_dim), activation,
                                                 nn.Dropout(dropout),
-                                                nn.Linear(layer_dim, layer_dim),
-                                                activation,
-                                                nn.Dropout(dropout),
-                                                nn.Linear(layer_dim, self.dim), 
-                                                activation)
+                                                nn.Linear(layer_dim, 1), nn.Sigmoid())
         
         
+        self.multivariate_normal = MultivariateNormalBase(dim, trainable)
+        return
     
+    @property
+    def mean(self):
+        return self.multivariate_normal.mean.unsqueeze(0)
+    
+    @property
+    def var(self):
+        var_ = self.multivariate_normal.var
+        return torch.diagonal(var_, dim1=-2, dim2=-1)
+    
+    
+    def log_prob(self, z_samples, embedded_strain=None):
+        """assumes that z_samples have dim (Nbatch, self.dim) ie 1 sample per batch"""
+        
+        if z_samples.shape[1] != self.dim:
+            raise ValueError(f'Wrong z_samples dim. Expected (batch_size, {self.dim}) and got {z_samples.dim}')
+        
+        #compute the acceptance probability on latent space samples
+        z_eps = (z_samples - self.mean) / torch.exp(self.var)
+        acceptance_prob = self.acceptance_network(z_eps)[:, 0] #[Nbatch, 1]->[Nbatch]
+        
+        #estimate Z with batch Monte Carlo
+        z_ = torch.randn_like(z_samples)
+        Z_batch = torch.mean(self.acceptance_network(z_))
+        if self.Z < 0.:
+            self.Z = Z_batch.detach()
+        else:
+            self.Z = (1 - self.eps) * self.Z + self.eps * Z_batch.detach()
+        Z = Z_batch - Z_batch.detach() + self.Z
+        
+        #compute the new log_prob
+        alpha = (1 - Z) ** (self.T - 1)
+        log_prob_gaussian = self.multivariate_normal.log_prob(z_samples)
+        
+        print(f'alpha: {alpha}')
+        print(f'acceptance_prob: {acceptance_prob}')
+        print(f'Z: {Z}')
+        print(f'log', torch.log((1 - alpha) * acceptance_prob / Z + alpha) )
+        
+        return torch.log((1 - alpha) * acceptance_prob / Z + alpha) + log_prob_gaussian
+        
 # --------------------------------------------
 # Resampled Multivariate Gaussian Conditional
 # --------------------------------------------
@@ -327,14 +365,11 @@ class ConditionalMultivariateGaussianMixtureBase(nn.Module):
                                                                                    neural_network_kwargs=neural_network_kwargs) 
                                                  for _ in range(num_components)])
         
-        self.weights_network = nn.Sequential(nn.LazyLinear(layer_dim),
-                                            activation,
-                                            nn.Dropout(dropout),
-                                            nn.Linear(layer_dim, layer_dim),
-                                            activation,
-                                            nn.Dropout(dropout),
-                                            nn.Linear(layer_dim, num_components), 
-                                            nn.Softmax(dim=1))
+        self.weights_network = nn.Sequential(nn.LazyLinear(layer_dim), activation,
+                                             nn.Dropout(dropout),
+                                             nn.Linear(layer_dim, layer_dim), activation,
+                                             nn.Dropout(dropout),
+                                             nn.Linear(layer_dim, num_components), nn.Softmax(dim=1))
     
         return
     

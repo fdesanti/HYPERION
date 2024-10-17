@@ -10,9 +10,9 @@ Instructions for the TEOBResumS waveform model:
 
 import torch
 from importlib import import_module
-from hyperion.core.utilities import GWLogger
+from hyperion.core.utilities import HYPERION_Logger
 
-log = GWLogger()
+log = HYPERION_Logger()
 
 '''
 try:

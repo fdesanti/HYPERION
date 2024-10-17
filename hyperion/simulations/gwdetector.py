@@ -13,9 +13,9 @@ R_earth = R_earth.value #earth radius value [m]
 c = c.value #speed of light value [m/s]
 
 from ..config import CONF_DIR
-from ..core.utilities import GWLogger
+from ..core.utilities import HYPERION_Logger
 
-log = GWLogger()
+log = HYPERION_Logger()
 
 
 def get_detectors_configs(det_conf_path = None):

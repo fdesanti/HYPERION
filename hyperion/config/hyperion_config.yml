@@ -46,7 +46,7 @@ coupling_layers:
   #num_bins:         4
 
 base_distribution:
-  dist_name:         "ConditionalMultivariateNormalBase"
+  dist_name:         "ResampledMultivariateNormalBase"
   kwargs:
     dim:              13
     #trainable:        true
@@ -85,15 +85,15 @@ embedding_network:
 training_options:
   num_epochs: 300
 
-  batch_size: 512
+  batch_size: 51
 
   initial_learning_rate: 0.0001
 
   steps_per_epoch: 1000
   val_steps_per_epoch: 150
 
-  num_preload_train: 10000
-  num_preload_val: 1000
+  num_preload_train: 100
+  num_preload_val: 100
 
   n_proc: 2 * os.cpu_count() // 3
 

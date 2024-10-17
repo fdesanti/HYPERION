@@ -10,9 +10,9 @@ from time import time
 from astropy.time import Time
 from astropy.units.si import sday
 
-from ..utilities import GWLogger
+from ..utilities import HYPERION_Logger
 
-log = GWLogger()
+log = HYPERION_Logger()
 class Flow(nn.Module):
     """Class that manages the flow model"""
     
