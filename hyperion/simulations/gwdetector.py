@@ -21,7 +21,7 @@ log = HYPERION_Logger()
 def get_detectors_configs(det_conf_path = None):
     #get the detectors configuration parameters
     if not det_conf_path:
-        det_conf_path = f"{CONF_DIR}/detectors/detectors.yml"
+        det_conf_path = f"{CONF_DIR}/detectors.yml"
     with open(det_conf_path, 'r') as file:
         det_configs = yaml.safe_load(file)    
         
