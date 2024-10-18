@@ -6,7 +6,6 @@ from torch.distributions import Normal as torchNormal
 from torch.distributions import VonMises as torchVonMises
 from torch.distributions import MultivariateNormal as torchMultivariateNormal
 
-
 # -------------------------
 # Multivariate Gaussian
 # -------------------------
@@ -115,8 +114,21 @@ class ConditionalMultivariateNormalBase(nn.Module):
     
         return
     
-    
-    
+    @property
+    def mean(self):
+        return self._mean
+    @mean.setter
+    def mean(self, value):
+        self._mean = value
+        
+    @property
+    def var(self):
+        return self._var
+    @var.setter
+    def var(self, value):
+        self._var = value
+
+
     def log_prob(self, z_samples, embedded_strain):
         """assumes that z_samples have dim (Nbatch, self.dim) ie 1 sample per batch"""
         
@@ -125,16 +137,17 @@ class ConditionalMultivariateNormalBase(nn.Module):
         
         mean = self.mean_network(embedded_strain)
         var  = self.var_network(embedded_strain) + self.eps
-        
+        self.mean = mean
+        self.var  = var
         return torchMultivariateNormal(mean, torch.diag_embed(var)).log_prob(z_samples)
     
     def sample(self, num_samples, embedded_strain):
-        
         #compute the mean and variance
         #NB here we assume embedded_strain has dim [1, strain_dim] (i.e. 1 sample per batch)
         mean = self.mean_network(embedded_strain).squeeze(0)
         var  = self.var_network(embedded_strain).squeeze(0) + self.eps
-
+        self.mean = mean
+        self.var  = var
         #by default .samples returns [1, num_samples, dim] so we delete 1 dimension
         return torchMultivariateNormal(mean, torch.diag_embed(var)).sample((1,num_samples)).squeeze(0)
     
@@ -199,6 +212,7 @@ class ResampledMultivariateNormalBase(nn.Module):
     
     @property
     def var(self):
+        #REVIEW - check if this has to be the variance or the standard deviation
         var_ = self.multivariate_normal.var
         return torch.diagonal(var_, dim1=-2, dim2=-1)
     
@@ -210,7 +224,7 @@ class ResampledMultivariateNormalBase(nn.Module):
             raise ValueError(f'Wrong z_samples dim. Expected (batch_size, {self.dim}) and got {z_samples.dim}')
         
         #compute the acceptance probability on latent space samples
-        z_eps = (z_samples - self.mean) / torch.exp(self.var)
+        z_eps = (z_samples - self.mean(embedded_strain)) / torch.exp(self.var(embedded_strain))
         acceptance_prob = self.acceptance_network(z_eps)[:, 0] #[Nbatch, 1]->[Nbatch]
         
         #estimate Z with batch Monte Carlo
@@ -242,7 +256,6 @@ class ResampledMultivariateNormalBase(nn.Module):
         
         #rejection sampling loop
         while it <= it_max:
-            
             s_ = self.multivariate_normal.sample(num_samples, embedded_strain)
             acceptance_prob = self.acceptance_network((s_ - self.mean) / torch.exp(self.var))[:,0]
             
@@ -258,10 +271,8 @@ class ResampledMultivariateNormalBase(nn.Module):
                 else:
                     #we reject the sample and increment the rejection counter
                     t += 1 
-            
                 if len_samples == num_samples:
                     break
-            
             if len_samples == num_samples:
                 break
         
@@ -270,7 +281,7 @@ class ResampledMultivariateNormalBase(nn.Module):
 # --------------------------------------------
 # Resampled Multivariate Gaussian Conditional
 # --------------------------------------------
-class ResampledConditionalMultivariateNormalBase(nn.Module):
+class ResampledConditionalMultivariateNormalBase(ResampledMultivariateNormalBase):
     """Resampled Multivariate Normal the base distribution for the flow conditioned on embedded context. 
        The distribution is initialized to zero mean and unit variance. 
        
@@ -288,9 +299,95 @@ class ResampledConditionalMultivariateNormalBase(nn.Module):
             - sample   : samples from the prior distribution returning a tensor of dim [Num_samples, self.dim])
     
     """
-    def __init__(self):
+    def __init__(self, 
+                 dim           :int   = 10,
+                 T             :int   = 100,
+                 eps           :float = 0.05,
+                 bs_factor     :int   = 1,
+                 acc_network_kwargs   = {},
+                 neural_network_kwargs= {},             
+                 ):
+        super().__init__(dim, T, eps, bs_factor, acc_network_kwargs)
+        
+        self.multivariate_normal = ConditionalMultivariateNormalBase(dim, neural_network_kwargs)
         return
-
+    
+    @property
+    def mean(self):
+        return self.multivariate_normal.mean
+    
+    @property
+    def var(self):
+        #REVIEW - check if this has to be the variance or the standard deviation
+        var_ = self.multivariate_normal.var
+        return torch.diagonal(var_, dim1=-2, dim2=-1)
+    
+    def log_prob(self, z_samples, embedded_strain=None):
+        """assumes that z_samples have dim (Nbatch, self.dim) ie 1 sample per batch"""
+        
+        if z_samples.shape[1] != self.dim:
+            raise ValueError(f'Wrong z_samples dim. Expected (batch_size, {self.dim}) and got {z_samples.dim}')
+        
+        #compute the gaussian log_prob
+        #NOTE - we moved it here so that the means/vars are already computed by the ConditionalMultivariateNormalBase class
+        log_prob_gaussian = self.multivariate_normal.log_prob(z_samples, embedded_strain)
+        
+        #compute the acceptance probability on latent space samples
+        z_eps = (z_samples - self.mean) / torch.exp(self.var)
+        acceptance_prob = self.acceptance_network(z_eps)[:, 0] #[Nbatch, 1]->[Nbatch]
+        
+        #estimate Z with batch Monte Carlo
+        z_ = torch.randn_like(z_samples)
+        Z_batch = torch.mean(self.acceptance_network(z_))
+        if self.Z < 0.:
+            self.Z = Z_batch.detach()
+        else:
+            self.Z = (1 - self.eps) * self.Z + self.eps * Z_batch.detach()
+        Z = Z_batch - Z_batch.detach() + self.Z
+        
+        #compute the new log_prob
+        alpha = (1 - Z) ** (self.T - 1)
+        return torch.log((1 - alpha) * acceptance_prob / Z + alpha) + log_prob_gaussian
+    
+    def sample(self, num_samples, embedded_strain=None):
+        """Sample from the Multivariate Normal distribution using the 
+              Learned Acceptance Rejection Sampling (LARS) procedure"""
+        
+        #initialize the samples
+        samples = torch.empty((num_samples, self.dim), device = self.mean.device)
+        
+        it = 0
+        it_max = self.T // self.bs_factor + 1
+        t=0
+        
+        len_samples = 0
+        
+        #rejection sampling loop
+        while it <= it_max:
+            s_ = self.multivariate_normal.sample(num_samples, embedded_strain)
+            acceptance_prob = self.acceptance_network((s_ - self.mean) / torch.exp(self.var))[:,0]
+            
+            accept = torch.rand_like(acceptance_prob) < acceptance_prob
+            
+            for isamp, a in enumerate(accept):
+                #here either we accept the sample because of the acceptance 
+                #probability or because we reached the maximum number of rejections
+                if a or t == self.T-1:
+                    samples[isamp] = s_[isamp]
+                    len_samples += 1 #increment the number of samples counter
+                    t = 0            #reset the rejection counter
+                else:
+                    #we reject the sample and increment the rejection counter
+                    t += 1 
+                if len_samples == num_samples:
+                    break
+            if len_samples == num_samples:
+                break
+        
+        return samples
+    
+    
+    
 # ------------------------------
 # Multivariate Gaussian Mixture
 # ------------------------------
