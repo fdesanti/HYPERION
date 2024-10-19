@@ -224,7 +224,7 @@ class ResampledMultivariateNormalBase(nn.Module):
             raise ValueError(f'Wrong z_samples dim. Expected (batch_size, {self.dim}) and got {z_samples.dim}')
         
         #compute the acceptance probability on latent space samples
-        z_eps = (z_samples - self.mean(embedded_strain)) / torch.exp(self.var(embedded_strain))
+        z_eps = (z_samples - self.mean) / torch.exp(self.var)
         acceptance_prob = self.acceptance_network(z_eps)[:, 0] #[Nbatch, 1]->[Nbatch]
         
         #estimate Z with batch Monte Carlo
