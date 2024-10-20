@@ -61,8 +61,7 @@ if __name__ == '__main__':
     
     if DEVICE is None:
         if torch.cuda.is_available():
-            num_gpus = torch.cuda.device_count()
-            DEVICE = f'cuda:{num_gpus-1}'
+            DEVICE = 'cuda'
         else:
             DEVICE = 'cpu'
     

@@ -28,19 +28,19 @@ parameters:
       distribution: "uniform"
       kwargs:
         minimum: 50.0
-        maximum: 180.0
+        maximum: 200.0
 
     m2:                        
       distribution: "uniform"
       kwargs:
         minimum: 50.0
-        maximum: 180.0
+        maximum: 200.0
 
     H_hyp:                      # Initial E_eob
       distribution: "uniform"
       kwargs:
         minimum: 1.0002
-        maximum: 1.01
+        maximum: 1.005
       
     j_hyp:                      # initial pphi_eob (angular momentum)
       #distribution: "delta"
