@@ -46,10 +46,10 @@ coupling_layers:
   #num_bins:         4
 
 base_distribution:
-  dist_name:         "ResampledMultivariateNormalBase"
+  dist_name:         "ConditionalMultivariateNormalBase"
   kwargs:
     dim:              13
-    trainable:        true
+    #trainable:        true
     #num_components:   3
 
 embedding_network:

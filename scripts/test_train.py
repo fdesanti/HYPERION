@@ -44,7 +44,6 @@ if __name__ == '__main__':
         if torch.cuda.is_available():
             num_gpus = torch.cuda.device_count()
             DEVICE = f'cuda:{num_gpus-1}'
-            #device = 'cuda'
         else:
             DEVICE = 'cpu'
     

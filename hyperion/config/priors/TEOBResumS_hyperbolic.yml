@@ -40,7 +40,7 @@ parameters:
       distribution: "uniform"
       kwargs:
         minimum: 1.0002
-        maximum: 1.01
+        maximum: 1.005
       
     j_hyp:                      # initial pphi_eob (angular momentum)
       #distribution: "delta"
