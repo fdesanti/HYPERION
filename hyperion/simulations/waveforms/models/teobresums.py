@@ -118,6 +118,9 @@ class  TEOBResumSDALI():
             parameters['q'] = m1 / m2
             parameters.pop('m1')
             parameters.pop('m2')
+            
+            if 'luminosity_distance' in parameters.keys():
+                parameters['distance'] = parameters.pop('luminosity_distance')
     
         return parameters
     
