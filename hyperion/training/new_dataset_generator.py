@@ -224,7 +224,7 @@ class DatasetGenerator:
         #store the waveforms as a TensorDict
         wvfs = {'hp': hp, 'hc': hc}
         tcoals = {'tcoal': tcoal}
-
+        
         self.preloaded_wvfs = TensorDict.from_dict(wvfs).to(self.device)
         self.tcoals = TensorDict.from_dict(tcoals).to(self.device)
         
