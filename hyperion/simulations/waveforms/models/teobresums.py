@@ -103,7 +103,6 @@ class  TEOBResumSDALI():
     def fs(self):
         return self.kwargs['srate_interp']
     
-    
     @staticmethod
     def _check_masses(parameters):
         """

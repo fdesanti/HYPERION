@@ -10,7 +10,7 @@ __all__ = ['fft', 'rfft', 'fftfreq', 'rfftfreq', 'ifft', 'irfft']
 class FFT():
     def __call__(self, input, norm=1, **kwargs):
         ft = torch.fft.fft(input, **kwargs) / norm
-        ft[...,1:]/=2
+        #ft[...,1:]/=2
         return ft
 
 class RFFT():
@@ -29,7 +29,7 @@ class RFFTFREQ():
     
 class IFFT():
     def __call__(self, input, norm=1, **kwargs):
-        input[...,1:]/=2
+        #input[...,1:]/=2
         ift = torch.fft.ifft(input, **kwargs) * norm
         return ift
     
