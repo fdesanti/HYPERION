@@ -4,8 +4,11 @@ Fully Connected Residual Neural Network implementation with the Attention Mechan
 
 import torch
 import torch.nn as nn
-from  hyperion.core.neural_networks.strain_embedding import ResBlock
-from  hyperion.core.neural_networks.torch_layers import GlobalMaxPooling1D, GlobalAvgPooling1D, Slicer
+from  hyperion.core.neural_networks.torch_layers import (GlobalMaxPooling1D, 
+                                                         GlobalAvgPooling1D, 
+                                                         ResBlock,
+                                                         Slicer
+                                                         )
 
 
 class EmbeddingNetworkAttention(nn.Module):

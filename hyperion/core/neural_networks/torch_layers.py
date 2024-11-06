@@ -26,7 +26,6 @@ class GlobalAvgPooling1D(nn.Module):
      def forward(self, input):
           return torch.mean(input, axis=self.step_axis)
 
-
 class SeparableConv1d(nn.Module):
     """
     Implements SeparableConv1d as in the Xception architecture
@@ -48,7 +47,53 @@ class SeparableConv1d(nn.Module):
         out = self.pointwise(out)
         return out
 
+class ResBlock(nn.Module):
+    """Implementation of the ResNet Block"""
+    
+    def __init__(self, 
+                 input_dim, 
+                 output_dim, 
+                 use_batch_norm = True, 
+                 activation = nn.ELU(),
+                 dropout_probability=0.0):
+        super(ResBlock, self).__init__()
+        
+        self.input_dim      = input_dim
+        self.output_dim     = output_dim
+        self.use_batch_norm = use_batch_norm
+        self.activation     = activation
+        self.dropout        = nn.Dropout(dropout_probability)
+        
+        if use_batch_norm:
+            self.batch_norm_layer = nn.LayerNorm(output_dim)#nn.BatchNorm1d(output_dim, track_running_stats=False)
+            
+        if input_dim != output_dim:
+            self.linear_layer = nn.Linear(input_dim, output_dim)
+            
+        self.res_block = nn.ModuleList([
+            nn.Linear(output_dim, output_dim)
+            for _ in range(2)
+        ])
+        
+    def forward(self, input):
+        
+        if self.input_dim != self.output_dim:
+            x = self.activation(self.linear_layer(input))
+        else:
+            x = input
+            
+        residual = x 
+        for layer in self.res_block:
+            x = self.activation(layer(x))
+            x = self.dropout(x)
 
+        out = x + residual
+        
+        if self.use_batch_norm:
+            out = self.batch_norm_layer(out)
+            
+        return out
+    
 class Slicer(nn.Module):
     """
     Slices the input strain tensor into 
