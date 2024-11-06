@@ -32,7 +32,7 @@ class Rand():
 class BasePrior():
     """Base class for Prior Distributions"""
     
-    def __init__(self, minimum=None, maximum=None, device = 'cpu', seed = None):
+    def __init__(self, minimum=None, maximum=None, device='cpu', seed=None):
 
         
         self.device  = device
@@ -451,23 +451,39 @@ class q_uniform_in_components(BasePrior):
     
 class Mchirp_uniform_in_components(BasePrior):
     """
-    Class that manages Chirp Mass Mchirp prior from uniform distributed masses.
-    
-    Note:
-    -----
-        This prior differs from the usual p(Mchirp) \propto Mchirp given that 
-        we sample Mchirp from uniformly distributed masses m1, m2.
+        Class that manages Chirp Mass Mchirp prior from uniform distributed masses
+        or mass ratio and total mass..
+        
+        Note:
+        -----
+            This prior differs from the usual p(Mchirp) \propto Mchirp given that 
+            we sample Mchirp from uniformly distributed masses m1, m2.
     """
     
-    def __init__(self, m1, m2):
-        assert isinstance(m1, UniformPrior), "m1 is not an instance of UniformPrior"
-        assert isinstance(m2, UniformPrior), "m2 is not an instance of UniformPrior"
+    def __init__(self, m1=None, m2=None, M=None, q=None):
+        if m1 is not None and m2 is not None:
+            assert isinstance(m1, UniformPrior), "m1 is not an instance of UniformPrior"
+            assert isinstance(m2, UniformPrior), "m2 is not an instance of UniformPrior"
+            self.m1 = m1
+            self.m2 = m2
+            device = m1.device
+            # Calculate minimum and maximum Mchirp for m1, m2
+            minimum = float((m1.minimum * m2.minimum) ** (3/5) / (m1.minimum + m2.minimum) ** (1/5))
+            maximum = float((m1.maximum * m2.maximum) ** (3/5) / (m1.maximum + m2.maximum) ** (1/5))
         
-        self.m1 = m1
-        self.m2 = m2
-        minimum = float((m1.minimum*m2.minimum)**(3/5)/(m1.minimum+m2.minimum)**(1/5))
-        maximum = float((m1.maximum*m2.maximum)**(3/5)/(m1.maximum+m2.maximum)**(1/5))
-        super(Mchirp_uniform_in_components, self).__init__(minimum, maximum, m1.device)
+        elif M is not None and q is not None:
+            assert isinstance(M, UniformPrior), "M is not an instance of UniformPrior"
+            assert isinstance(q, UniformPrior), "q is not an instance of UniformPrior"
+            self.M = M
+            self.q = q
+            device = M.device
+            #minimum/maximum will be estimated numerically when sampling
+            minimum, maximum = None, None
+        
+        else:
+            raise ValueError("Please provide either (m1, m2) or (M, q)")
+        
+        super(Mchirp_uniform_in_components, self).__init__(minimum, maximum, device)
         return
     
     @property
@@ -487,15 +503,20 @@ class Mchirp_uniform_in_components(BasePrior):
         return self._std
     
     def sample(self, sample_shape, standardize = False, dtype=None):
-        m1 = self.m1.sample(sample_shape, dtype=dtype)
-        m2 = self.m2.sample(sample_shape, dtype=dtype)
-        Mchirp = (m1*m2)**(3/5)/(m1+m2)**(1/5)
+        if hasattr(self, 'm1'):
+            m1 = self.m1.sample(sample_shape, dtype=dtype)
+            m2 = self.m2.sample(sample_shape, dtype=dtype)
+            Mchirp = (m1*m2)**(3/5)/(m1+m2)**(1/5)
+        else:
+            M = self.M.sample(sample_shape, dtype=dtype)
+            q = self.q.sample(sample_shape, dtype=dtype)
+            Mchirp = M * q**(3/5) / (1+q)**(6/5)
+
         if standardize:
             Mchirp = self.standardize_samples(Mchirp)
         return Mchirp
     
-
-
+    
 prior_dict_ = {'uniform'  : UniformPrior, 
                'delta'    : DeltaPrior, 
                'cos'      : CosinePrior,

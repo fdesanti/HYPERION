@@ -24,17 +24,28 @@ parameters:
 
   intrinsic:
 
-    m1:                         
-      distribution: "uniform"
-      kwargs:
-        minimum: 50.0
-        maximum: 200.0
+    #m1:                         
+    #  distribution: "uniform"
+    #  kwargs:
+    #    minimum: 50.0
+    #    maximum: 200.0
 
-    m2:                        
+    #m2:                        
+    #  distribution: "uniform"
+    #  kwargs:
+    #    minimum: 50.0
+    #    maximum: 200.0
+
+    M:
       distribution: "uniform"
       kwargs:
-        minimum: 50.0
-        maximum: 200.0
+        minimum: 100.0
+        maximum: 400.0
+    q:
+      distribution: "uniform"
+      kwargs:
+        minimum: 0.125
+        maximum: 1.0
 
     H_hyp:                      # Initial E_eob
       distribution: "uniform"

@@ -53,11 +53,11 @@ base_distribution:
     #num_components:   3
 
 embedding_network:
-  model:            "KENN"
+  model:            "CNN+ResNet+Attention"
   kwargs:
-    d_model: 512
-    chunk_size: 0.5
-    encoder_layers: 2
+    #d_model: 512
+    #chunk_size: 0.5
+    #encoder_layers: 2
     num_blocks:       5
     block_dims:       [2048, 1024, 512, 256]
     strain_out_dim:   256
@@ -65,15 +65,15 @@ embedding_network:
     dropout_probability: 0.2
 
     #slicer kwargs:
-    #overlap : 15
-    #segment_len: 0.2
+    overlap : 15
+    segment_len: 0.2
 
     #attention kwargs
-    #num_heads: 32
-    #add_bias_kv: true
+    num_heads: 32
+    add_bias_kv: true
 
-    #CNN_filters                   : [32, 64, 128]
-    #CNN_kernel_sizes              : [7, 7, 7]
+    CNN_filters                   : [32, 64, 128]
+    CNN_kernel_sizes              : [7, 7, 7]
     #CNN_localization_filters     : [16, 32, 16, 32, 64, 128]
     #CNN_localization_kernel_sizes: [128, 64, 32, 16, 8, 4]
     #CNN_localization_kernel_sizes: [7, 7, 5, 5, 3, 3]
