@@ -24,7 +24,7 @@ import torch
 import multiprocess as mp
 mp.set_start_method('spawn', force=True) # It only works with 'spawn' method when doing inference
 
-from ...core.fft import fft, fftfreq
+from ...core.fft import rfft, rfftfreq
 
 pi = torch.tensor(torch.pi)
 
@@ -78,7 +78,7 @@ class GWLikelihood():
     
     @property
     def frequencies(self):
-        return fftfreq(self.duration * self.fs, d=1/self.fs, device=self.device)
+        return rfftfreq(self.duration * self.fs, d=1/self.fs, device=self.device)
     
     @property
     def delta_f(self):
@@ -110,12 +110,14 @@ class GWLikelihood():
                                                                           already whitened
         
         """
-        integrand = (a.conj() * b)
+        integrand = (a.conj() * b / psd)
+        '''
         if psd is not None: 
             psd = psd.type(a.type()) #recast to complex dtype if necessary
             integrand /= psd
+        '''
 
-        return (4 / self.duration) * torch.sum(integrand.real, dim=-1)
+        return (4 / self.duration) * torch.sum(integrand.real) 
     
 
     def noise_log_Likelihood(self, strain, psd):
@@ -134,13 +136,19 @@ class GWLikelihood():
         """
         
         logZn = 0.0
-        
+        #import matplotlib.pyplot as plt
+        #plt.figure()
         for ifo in strain.keys():
             N = strain[ifo].shape[-1]
+            print("fs: ", self.fs)
+            mask = (self.frequencies > 10) * (self.frequencies < 1000)
+            frequency_domain_strain =  rfft(strain[ifo], n=N, norm=self.fs) / self.duration
             
-            frequency_domain_strain =  fft(strain[ifo], norm=self.fs)
-            
-            logZn -= 0.5 * self._inner_product(frequency_domain_strain, frequency_domain_strain, N, psd[ifo])
+            logZn -= 0.5 * self._inner_product(frequency_domain_strain[mask], frequency_domain_strain[mask], N, psd[ifo][mask])
+            #plt.loglog(self.frequencies[mask].cpu().numpy(), torch.abs(frequency_domain_strain[mask]).cpu().numpy(), label=ifo)
+        #plt.legend()
+        #plt.savefig("psd.png", bbox_inches='tight')
+        
         print(f"Noise Log Likelihood: {logZn.real}")
         return logZn.real
     
@@ -171,7 +179,7 @@ class GWLikelihood():
         for ifo in strain.keys():
             N = strain[ifo].shape[-1]
             
-            frequency_domain_strain = fft(strain[ifo], norm=self.fs)
+            frequency_domain_strain = rfft(strain[ifo], norm=self.fs)
 
             kappa    = self._inner_product(frequency_domain_strain, frequency_domain_template[ifo], N, psd[ifo])
             rho_opt  = self._inner_product(frequency_domain_template[ifo], frequency_domain_template[ifo], N, psd[ifo])
@@ -211,7 +219,7 @@ class GWLikelihood():
         frequency_domain_template = dict()
         for ifo in self.det_network.names:
 
-            hf  =  fft(template[ifo], norm=self.fs)
+            hf  =  rfft(template[ifo], norm=self.fs)
             
             dt = (tcoal + time_delays[ifo]).unsqueeze(-1)
                         

@@ -84,10 +84,12 @@ class GWLikelihood():
             
             #logL -= (2. / self.duration) * torch.sum(torch.conj(frequency_domain_strain) * frequency_domain_strain / (psd[det_name])) / self.fs
 
-            T = len(strain[det_name]/self.fs)
-            logL -= (2. / T) * torch.sum(torch.abs(frequency_domain_strain)** 2 / psd[det_name])
+            T = len(strain[det_name])/self.fs
+            
+            logL -= (2./T) * torch.sum(torch.abs(frequency_domain_strain)** 2 / psd[det_name]) / self.fs
             #logL -= (2. / T) * sum(abs(frequency_domain_strain) ** 2 / (psd[det_name]))
             #logL += self._gaussian_likelihood(frequency_domain_strain, 0, psd[det_name])
+        print(f"Noise Log Likelihood: {logL.real}")
         return logL.real
     
     
