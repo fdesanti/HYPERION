@@ -277,8 +277,8 @@ class WhitenNet:
             if method == 'gwpy':
                 if not fduration:
                     fduration = self.duration
-                nout = (hf.size()[-1] - 1) * 2
-                ht = irfft(hf*nout, n=nout)
+                nout  = (hf.size()[-1] - 1) * 2
+                ht    = irfft(hf*nout, n=nout)   #NOTE - for this ifft method see https://github.com/gwpy/gwpy/blob/main/gwpy/frequencyseries/frequencyseries.py
                 ntaps = int((fduration * self.fs))
                 fir   = fir_from_transfer(1/asd[det], ntaps=ntaps, window=window, ncorner=ncorner)
                 '''

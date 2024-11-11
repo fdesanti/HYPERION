@@ -53,7 +53,7 @@ base_distribution:
     #num_components:   3
 
 embedding_network:
-  model:            "CNN+ResNet+Attention"
+  model:            "CNN+ResNet"
   kwargs:
     #d_model: 512
     #chunk_size: 0.5
@@ -65,17 +65,17 @@ embedding_network:
     dropout_probability: 0.2
 
     #slicer kwargs:
-    overlap : 0
-    segment_len: 0.2
+    #overlap : 0
+    #segment_len: 0.2
 
     #attention kwargs
-    num_heads: 32
-    add_bias_kv: true
+    #num_heads: 32
+    #add_bias_kv: true
 
     CNN_filters                   : [32, 64, 128]
     CNN_kernel_sizes              : [7, 7, 7]
-    #CNN_localization_filters     : [16, 32, 16, 32, 64, 128]
-    #CNN_localization_kernel_sizes: [128, 64, 32, 16, 8, 4]
+    CNN_localization_filters     : [16, 32, 16, 32, 64, 128]
+    CNN_localization_kernel_sizes: [128, 64, 32, 16, 8, 4]
     #CNN_localization_kernel_sizes: [7, 7, 5, 5, 3, 3]
 
 
@@ -85,14 +85,14 @@ embedding_network:
 training_options:
   num_epochs: 150
 
-  batch_size: 512
+  batch_size: 256
 
   initial_learning_rate: 0.0001
 
   steps_per_epoch: 1000
   val_steps_per_epoch: 150
 
-  num_preload_train: 10000
+  num_preload_train: 5000
   num_preload_val: 1000
 
   n_proc: 2 * os.cpu_count() // 3

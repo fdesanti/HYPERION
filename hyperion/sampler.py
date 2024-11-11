@@ -336,7 +336,7 @@ class PosteriorSampler():
             high = posterior[key].quantile(upper_quantile)
             mask = mask & (posterior[key] >= low) & (posterior[key] <= high)
         
-        posterior = posterior[mask]
+        #posterior = posterior[mask]
         
         if num_wvf is None:
             num_wvf = len(posterior)
@@ -355,9 +355,10 @@ class PosteriorSampler():
             
         #get waveform samples
         projected_template, tcoal = self.waveform_generator(posterior, project_onto_detectors=True)
+        print(projected_template['L1'][0].max())
         projected_template = TensorDict.from_dict(projected_template).to(self.device)
-        for det in projected_template.keys():
-            projected_template[det] /= posterior['luminosity_distance'].unsqueeze(-1)
+        #for det in projected_template.keys():
+        #    projected_template[det] /= posterior['luminosity_distance'].unsqueeze(-1)
         
         #compute time_shifts
         time_shift = self.waveform_generator.det_network.time_delay_from_earth_center(posterior['ra'], 
