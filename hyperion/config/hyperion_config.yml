@@ -15,7 +15,7 @@ ASD_reference_run: O3_GW190521 #reference run for the ASDs
 
 use_reference_asd: True #use the reference run for the ASDs
 
-fmin: 8 #low frequency cutoff for ASD
+fmin: 10 #low frequency cutoff for ASD
 
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "polarization", "inclination", "time_shift", "ra", "dec"]
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "time_shift", "ra", "dec"]
@@ -25,7 +25,7 @@ waveform_model: "TEOBResumSDALI"
 
 prior: "TEOBResumS_hyperbolic"
 
-inference_parameters: ["M", "Mchirp", "q", "H_hyp", "j_hyp", "r_hyp", "luminosity_distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
+inference_parameters: ["M", "Mchirp", "q", "H_hyp", "j_hyp", "r_hyp", "chi1", "chi2", "luminosity_distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
 #inference_parameters: ["M", "q", "ecc", "distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
 
 duration: 2 #duration in seconds for the simulated signals
@@ -40,42 +40,42 @@ flow:
   
 
 coupling_layers:
-  num_features:     13
-  num_identity:     7
-  num_transformed:  6
+  num_features:     15
+  num_identity:     8
+  num_transformed:  7
   #num_bins:         4
 
 base_distribution:
   dist_name:         "ConditionalMultivariateNormalBase"
   kwargs:
-    dim:              13
+    dim:              15
     #trainable:        true
     #num_components:   3
 
 embedding_network:
-  model:            "CNN+ResNet+Attention"
+  model:            "CNN+ResNet"
   kwargs:
-    #d_model: 1024
+    #d_model: 512
     #chunk_size: 0.5
-    #encoder_layers: 4
-    num_blocks:       5
+    #encoder_layers: 2
+    num_blocks:       3
     block_dims:       [2048, 1024, 512, 256]
     strain_out_dim:   256
     use_batch_norm:   false
     dropout_probability: 0.2
 
     #slicer kwargs:
-    overlap : 15
-    segment_len: 0.2
+    #overlap : 0
+    #segment_len: 0.2
 
     #attention kwargs
-    num_heads: 32
-    add_bias_kv: true
+    #num_heads: 32
+    #add_bias_kv: true
 
     CNN_filters                   : [32, 64, 128]
     CNN_kernel_sizes              : [7, 7, 7]
-    #CNN_localization_filters     : [16, 32, 16, 32, 64, 128]
-    #CNN_localization_kernel_sizes: [128, 64, 32, 16, 8, 4]
+    CNN_localization_filters     : [16, 32, 16, 32, 64, 128]
+    CNN_localization_kernel_sizes: [128, 64, 32, 16, 8, 4]
     #CNN_localization_kernel_sizes: [7, 7, 5, 5, 3, 3]
 
 
@@ -92,7 +92,7 @@ training_options:
   steps_per_epoch: 1000
   val_steps_per_epoch: 150
 
-  num_preload_train: 10000
+  num_preload_train: 5000
   num_preload_val: 1000
 
   n_proc: 2 * os.cpu_count() // 3
@@ -104,16 +104,16 @@ training_options:
   add_noise: True
 
   lr_schedule:
-    scheduler: CosineAnnealingLR
-    kwargs:
-      T_max: 300 #has to be equal to num_epochs
-    
-    #scheduler: ReduceLROnPlateau
+    #scheduler: CosineAnnealingLR
     #kwargs:
-    #  factor:    0.5
-    #  patience:  20
-    #  mode:      min
-    #  threshold: 0
+    #  T_max: 150 #has to be equal to num_epochs
+    
+    scheduler: ReduceLROnPlateau
+    kwargs:
+      factor:    0.5
+      patience:  20
+      mode:      min
+      threshold: 0
     
   optimizer:
     algorithm: Adam

@@ -1,2 +1,2 @@
 from .importance_sampling import *
-from .likelihood import GWLikelihood
+from .old_likelihood import GWLikelihood

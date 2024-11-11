@@ -25,10 +25,13 @@ class IS_Priors(MultivariatePrior):
         self.flow = flow        
         
         priors = flow.prior_metadata['parameters'].copy()
-
+        '''
         for p in ['M', 'Mchirp', 'q']:
             if p in priors:
                 priors.pop(p)
+        '''
+        if 'M' in priors and 'Mchirp' in priors:
+            priors.pop('Mchirp')
 
         super(IS_Priors, self).__init__(priors, device=device)
         return
@@ -189,7 +192,7 @@ class ImportanceSampling():
                     log flow posterior defined as log q(\theta| s) = log N(f^-1(u)) + log J(f^-1(u))
         """
         
-        
+        logZ_noise = self._noise_log_evidence(strain, psd)
         #sampling flow posterior
         theta, log_posterior, medians, ks_stat  = self._sample_flow_posterior(whitened_strain, event_time)
         
@@ -204,21 +207,22 @@ class ImportanceSampling():
         '''
         
         #add parameters not estimated by HYPERION
-
-        if 'M' in theta.keys() and 'q' in theta.keys():
         
-            theta['m2'] = theta['q'] * theta['M'] / (1 + theta['q'])  #m2 = qM/(1+q)   m1 = M-m2
-            theta['m1'] = theta['M'] - theta['m2']
-            theta.pop('M')
-            theta.pop('q')
+        if 'M' in theta.keys() and 'q' in theta.keys():
+            if not all([name in theta.keys() for name in ['M', 'q']]):
+                theta['m2'] = theta['q'] * theta['M'] / (1 + theta['q'])  #m2 = qM/(1+q)   m1 = M-m2
+                theta['m1'] = theta['M'] - theta['m2']
+                theta.pop('M')
+                theta.pop('q')
             if 'Mchirp' in theta.keys():
                 theta.pop('Mchirp')
         
         elif 'Mchirp' in theta.keys() and 'q' in theta.keys():
-            theta['m1'] = (theta['Mchirp'] * (1 + theta['q'])**(1/5)) * theta['q']**(-3/5)
-            theta['m2'] = theta['m1'] * theta['q']
-            theta.pop('Mchirp')
-            theta.pop('q')
+            if not all([name in theta.keys() for name in ['Mchirp', 'q']]):
+                theta['m1'] = (theta['Mchirp'] * (1 + theta['q'])**(1/5)) * theta['q']**(-3/5)
+                theta['m2'] = theta['m1'] * theta['q']
+                theta.pop('Mchirp')
+                theta.pop('q')
         
         
         #FIXME - in the case of TEOBResumS j_hyp might be missing/it's better to manage

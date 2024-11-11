@@ -103,25 +103,25 @@ class  TEOBResumSDALI():
     def fs(self):
         return self.kwargs['srate_interp']
     
-    
     @staticmethod
-    def _check_masses(parameters):
+    def _check_parameters(parameters):
         """
-        Check if the parameters contains single masses and convert them to
+        If the parameters contains single masses and convert them to
         total mass M and mass ratio q.
+        If parameters contains luminosity_distance as a key we convert it to distance.
         """
+        #check masses 
         if all(p in parameters.keys() for p in ['m1', 'm2']):
-            
             m2, m1 = sorted([parameters['m1'], parameters['m2']])
-
             parameters['M'] = m1 + m2
             parameters['q'] = m1 / m2
             parameters.pop('m1')
             parameters.pop('m2')
-            
-            if 'luminosity_distance' in parameters.keys():
-                parameters['distance'] = parameters.pop('luminosity_distance')
-    
+
+        #check luminosity distance  
+        if 'luminosity_distance' in parameters.keys():
+            parameters['distance'] = parameters.pop('luminosity_distance')
+        
         return parameters
     
 
@@ -132,14 +132,13 @@ class  TEOBResumSDALI():
         # Update the parameters      
         pars = self.kwargs.copy()
 
-        waveform_parameters = self._check_masses(waveform_parameters)
+        waveform_parameters = self._check_parameters(waveform_parameters)
         pars.update(waveform_parameters)
        
         # Run the model
         eob_output = self.EOBRunPy(pars)
         
         output = {}
-        
         output['t']  = torch.from_numpy(eob_output[0])
         output['hp'] = torch.from_numpy(eob_output[1])
         output['hc'] = torch.from_numpy(eob_output[2])

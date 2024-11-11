@@ -24,8 +24,9 @@ import torch
 import multiprocess as mp
 mp.set_start_method('spawn', force=True) # It only works with 'spawn' method when doing inference
 
-from ...core.fft import fft, fftfreq
+from ...core.fft import rfft, rfftfreq
 
+pi = torch.tensor(torch.pi)
 
 class GWLikelihood():
     """
@@ -77,14 +78,14 @@ class GWLikelihood():
     
     @property
     def frequencies(self):
-        return fftfreq(self.duration * self.fs, d=1/self.fs, device=self.device)
+        return rfftfreq(self.duration * self.fs, d=1/self.fs, device=self.device)
     
     @property
     def delta_f(self):
         return self.frequencies[1] - self.frequencies[0]
     
     
-    def _inner_product(self, a, b, psd=None):
+    def _inner_product(self, a, b, N=1, psd=None):
         """
         Computes the inner product between two frequency series. 
         Works with batched data.
@@ -109,12 +110,14 @@ class GWLikelihood():
                                                                           already whitened
         
         """
-        integrand = (a.conj() * b)
+        integrand = (a.conj() * b / psd)
+        '''
         if psd is not None: 
             psd = psd.type(a.type()) #recast to complex dtype if necessary
             integrand /= psd
+        '''
 
-        return 4 * self.delta_f * torch.sum(integrand.real, dim=-1)
+        return (4 / self.duration) * torch.sum(integrand.real) 
     
 
     def noise_log_Likelihood(self, strain, psd):
@@ -133,12 +136,20 @@ class GWLikelihood():
         """
         
         logZn = 0.0
-        
+        #import matplotlib.pyplot as plt
+        #plt.figure()
         for ifo in strain.keys():
-            frequency_domain_strain =  fft(strain[ifo], norm=self.fs)
+            N = strain[ifo].shape[-1]
+            print("fs: ", self.fs)
+            mask = (self.frequencies > 10) * (self.frequencies < 1000)
+            frequency_domain_strain =  rfft(strain[ifo], n=N, norm=self.fs) / self.duration
             
-            logZn -= 0.5 * self._inner_product(frequency_domain_strain, frequency_domain_strain, psd[ifo])
-
+            logZn -= 0.5 * self._inner_product(frequency_domain_strain[mask], frequency_domain_strain[mask], N, psd[ifo][mask])
+            #plt.loglog(self.frequencies[mask].cpu().numpy(), torch.abs(frequency_domain_strain[mask]).cpu().numpy(), label=ifo)
+        #plt.legend()
+        #plt.savefig("psd.png", bbox_inches='tight')
+        
+        print(f"Noise Log Likelihood: {logZn.real}")
         return logZn.real
     
 
@@ -166,10 +177,12 @@ class GWLikelihood():
         #compute the log likelihood
         logL = 0.0
         for ifo in strain.keys():
-            frequency_domain_strain = fft(strain[ifo], norm=self.fs)
+            N = strain[ifo].shape[-1]
+            
+            frequency_domain_strain = rfft(strain[ifo], norm=self.fs)
 
-            kappa    = self._inner_product(frequency_domain_strain, frequency_domain_template[ifo], psd[ifo])
-            rho_opt  = self._inner_product(frequency_domain_template[ifo], frequency_domain_template[ifo], psd[ifo])
+            kappa    = self._inner_product(frequency_domain_strain, frequency_domain_template[ifo], N, psd[ifo])
+            rho_opt  = self._inner_product(frequency_domain_template[ifo], frequency_domain_template[ifo], N, psd[ifo])
             logL_ifo = kappa - 0.5 * rho_opt
 
             logL    += logL_ifo
@@ -199,21 +212,20 @@ class GWLikelihood():
         
         time_delays = self.det_network.time_delay_from_earth_center(theta['ra'], 
                                                                     theta['dec'])
-        tcoal  = theta['tcoal'].median().to(self.device) - tcoal.squeeze(1).to(self.device)
+        tcoal  = theta['tcoal'].to(self.device) - tcoal.squeeze(1).to(self.device)
         
         
-
         n = self.waveform_generator.duration * self.fs
         frequency_domain_template = dict()
         for ifo in self.det_network.names:
 
-            hf  =  fft(template[ifo], norm=self.fs)
+            hf  =  rfft(template[ifo], norm=self.fs)
             
             dt = (tcoal + time_delays[ifo]).unsqueeze(-1)
                         
             #take into account the time shift
             frequency_domain_template[ifo] = hf * torch.exp(-1j * 2 * torch.pi * self.frequencies * dt) 
+
+            frequency_domain_template[ifo] *= torch.exp(-1j*pi/2)
         
         return frequency_domain_template
-    
-     

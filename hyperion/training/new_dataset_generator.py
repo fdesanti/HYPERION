@@ -143,11 +143,22 @@ class DatasetGenerator:
         #    (Eg. the total mass M =m1+m2 or q=m2/m1 that have no simple joint distribution) 
         #    In this way we store however the metadata (eg. min and max values) without compromising the simulation 
 
+        #NOTE - this requires m1 and m2 to be uniformly sampled in the prior
         for p in ['M', 'Mchirp', 'q']:
-
+            #NOTE - the following if statement is skipped if the parameter is already in the prior
+            #       (e.g. if we sample directly in total mass M and mass ratio q with certain priors)
             if p in self.inference_parameters and not p in self.full_prior.keys():
-
-                self.full_prior[p] = prior_dict_[p](self.full_prior['m1'], self.full_prior['m2'])
+                #NOTE - this second if statement is needed specifically when Mchirp is in the inference parameters
+                #       but not in the prior. Therefore we must check if we are sampling m1/m2 or M/q
+                #       because the Mchirp_uniform_in_components prior accepts both options
+                if 'm1' in self.full_prior.keys() and 'm2' in self.full_prior.keys():
+                    kwargs = {'m1': self.full_prior['m1'], 'm2': self.full_prior['m2']}
+                elif 'M' in self.full_prior.keys() and 'q' in self.full_prior.keys():
+                    kwargs = {'M': self.full_prior['M'], 'q': self.full_prior['q']}
+                else:
+                    raise ValueError('Cannot compute M, Mchirp and q from the prior samples')
+                
+                self.full_prior[p] = prior_dict_[p](**kwargs)
                 min, max = float(self.full_prior[p].minimum), float(self.full_prior[p].maximum)
                 
                 metadata = {'distribution':f'{p}_uniform_in_components', 'kwargs':{'minimum': min, 'maximum': max}}
@@ -161,7 +172,8 @@ class DatasetGenerator:
     
 
     def _compute_M_Mchirp_and_q(self, prior_samples):
-
+        
+        #check wether m1 and m2 are sampled by the prior
         if all([p in prior_samples.keys() for p in ['m1', 'm2']]):
 
             #sorting m1 and m2 so that m2 <= m1
@@ -177,12 +189,37 @@ class DatasetGenerator:
             
             if 'q' in self.inference_parameters:
                 prior_samples['q'] = (m2/m1)
+        
+        #otherwise we check if Mchirp and q are sampled by the prior
+        elif all([p in prior_samples.keys() for p in ['Mchirp', 'q']]):
+            
+            Mchirp, q = prior_samples['Mchirp'], prior_samples['q']
+            m1 = Mchirp*(1+q)**(1/5)/q**(3/5)
+            m2 = q*m1
+
+            if 'M' in self.inference_parameters:
+                prior_samples['M'] = (m1+m2)
+            
+            if 'q' in self.inference_parameters:
+                prior_samples['q'] = (m2/m1)
+
+        #otherwise we check if M and q are sampled by the prior
+        elif all([p in prior_samples.keys() for p in ['M', 'q']]):
+            
+            M, q = prior_samples['M'], prior_samples['q']
+            m1 = M/(1+q)
+            m2 = q*m1
+            
+            if 'Mchirp' in self.inference_parameters:
+                prior_samples['Mchirp'] = (m1*m2)**(3/5)/(m1+m2)**(1/5)
+        
+        #any other combination is not allowed
+        else:
+            raise ValueError('Cannot compute M, Mchirp and q from the prior samples')
 
         return prior_samples
          
-    
-    
-    
+
     def standardize_parameters(self, prior_samples):
         """Standardize prior samples to zero mean and unit variance"""
         
@@ -224,7 +261,7 @@ class DatasetGenerator:
         #store the waveforms as a TensorDict
         wvfs = {'hp': hp, 'hc': hc}
         tcoals = {'tcoal': tcoal}
-
+        
         self.preloaded_wvfs = TensorDict.from_dict(wvfs).to(self.device)
         self.tcoals = TensorDict.from_dict(tcoals).to(self.device)
         
