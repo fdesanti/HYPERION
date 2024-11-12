@@ -9,13 +9,13 @@ detectors: ["L1", "H1", "V1"]
 
 reference_gps_time: 1242442967.4 #1370692818 #1242442967.4 #1370692818
 
-fs: 4096 #sampling frequency Hz for simulations & inference 
+fs: 2048 #sampling frequency Hz for simulations & inference 
 
 ASD_reference_run: O3_GW190521 #reference run for the ASDs
 
 use_reference_asd: True #use the reference run for the ASDs
 
-fmin: 10 #low frequency cutoff for ASD
+fmin: 8 #low frequency cutoff for ASD
 
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "polarization", "inclination", "time_shift", "ra", "dec"]
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "time_shift", "ra", "dec"]
@@ -53,7 +53,7 @@ base_distribution:
     #num_components:   3
 
 embedding_network:
-  model:            "CNN+ResNet"
+  model:            "CNN+ResNet+Attention"
   kwargs:
     #d_model: 512
     #chunk_size: 0.5
@@ -83,9 +83,9 @@ embedding_network:
 # TRAINING options
 #============================
 training_options:
-  num_epochs: 150
+  num_epochs: 300
 
-  batch_size: 256
+  batch_size: 512
 
   initial_learning_rate: 0.0001
 

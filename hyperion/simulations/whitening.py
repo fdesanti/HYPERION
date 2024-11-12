@@ -297,7 +297,7 @@ class WhitenNet:
                 
                 #convert back to the time domain
                 # we divide by the noise standard deviation to ensure to have unit variance
-                whitened[det] = irfft(hf_w, norm=fft_norm)
+                whitened[det] = irfft(hf_w, n=self.n, norm=fft_norm)
             
             if normalize:
                 whitened[det] /= self.noise_std
