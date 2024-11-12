@@ -1,11 +1,11 @@
 
 import os
-import torch
-import pandas as pd
+import torch 
+import pandas as pd 
 
 from pathlib import Path
-from tensordict import TensorDict
-from bilby.gw.result import CBCResult
+from tensordict import TensorDict 
+from bilby.gw.result import CBCResult 
 
 from .core.flow import build_flow
 from .core.utilities import HYPERION_Logger
@@ -391,9 +391,9 @@ class PosteriorSampler():
         
         
         
-        import matplotlib.pyplot as plt
-        import numpy as np
-        import pandas as pd
+        import matplotlib.pyplot as plt 
+        import numpy as np 
+        import pandas as pd 
         reconstructed_wvf_output_dir = f'{self.output_dir}/reconstructed_waveform'
         if not os.path.exists(reconstructed_wvf_output_dir):
             os.makedirs(reconstructed_wvf_output_dir)

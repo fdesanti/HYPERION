@@ -25,7 +25,7 @@ waveform_model: "TEOBResumSDALI"
 
 prior: "TEOBResumS_hyperbolic"
 
-inference_parameters: ["M", "Mchirp", "q", "H_hyp", "j_hyp", "r_hyp", "chi1", "chi2", "luminosity_distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
+inference_parameters: ["M", "Mchirp", "q", "H_hyp", "j_hyp", "r_hyp", "luminosity_distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
 #inference_parameters: ["M", "q", "ecc", "distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
 
 duration: 2 #duration in seconds for the simulated signals
@@ -40,15 +40,15 @@ flow:
   
 
 coupling_layers:
-  num_features:     15
-  num_identity:     8
-  num_transformed:  7
+  num_features:     13
+  num_identity:     7
+  num_transformed:  6
   #num_bins:         4
 
 base_distribution:
   dist_name:         "ConditionalMultivariateNormalBase"
   kwargs:
-    dim:              15
+    dim:              13
     #trainable:        true
     #num_components:   3
 
@@ -72,8 +72,8 @@ embedding_network:
     #num_heads: 32
     #add_bias_kv: true
 
-    CNN_filters                   : [32, 64, 128]
-    CNN_kernel_sizes              : [7, 7, 7]
+    CNN_filters                  : [32, 64, 128]
+    CNN_kernel_sizes             : [7, 7, 7]
     CNN_localization_filters     : [16, 32, 16, 32, 64, 128]
     CNN_localization_kernel_sizes: [128, 64, 32, 16, 8, 4]
     #CNN_localization_kernel_sizes: [7, 7, 5, 5, 3, 3]

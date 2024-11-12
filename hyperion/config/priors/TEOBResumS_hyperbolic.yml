@@ -11,8 +11,8 @@ waveform_kwargs:
   initial_frequency   : 5      # Initial frequency in Hz. Default = 0.02
   #nqcs
   nqc                : 'manual'              #options are ["none", "manual", "auto"]
-  nqc_coefs_flx      : 'nrfit_spin202002'    #options are ["none", "nrfit_spin202002", "nrfit_nospin201602"]
-  nqc_coefs_hlm      : 'nrfit_spin202002'    #options are ["none", "nrfit_spin202002", "nrfit_nospin201602", "compute"]
+  nqc_coefs_flx      : 'nrfit_nospin201602'    #options are ["none", "nrfit_spin202002", "nrfit_nospin201602"]
+  nqc_coefs_hlm      : 'nrfit_nospin201602'    #options are ["none", "nrfit_spin202002", "nrfit_nospin201602", "compute"]
   
 
 
@@ -79,17 +79,17 @@ parameters:
         minimum: 0.0
         maximum: 2 * torch.pi
 
-    chi1:                       # Dimensionless spin of the primary
-      distribution: "uniform"
-      kwargs:
-        minimum: -0.1
-        maximum: 0.1
+    #chi1:                       # Dimensionless spin of the primary
+    #  distribution: "uniform"
+    #  kwargs:
+    #    minimum: -0.1
+    #    maximum: 0.1
     
-    chi2:                       # Dimensionless spin of the secondary          
-      distribution: "uniform"
-      kwargs:
-       minimum: -0.1
-       maximum: 0.1
+    #chi2:                       # Dimensionless spin of the secondary          
+    #  distribution: "uniform"
+    #  kwargs:
+    #   minimum: -0.1
+    #   maximum: 0.1
 
 #=================================
 # EXTRINSIC PARAMETERS
