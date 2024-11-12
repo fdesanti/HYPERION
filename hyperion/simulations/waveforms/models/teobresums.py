@@ -8,7 +8,7 @@ Instructions for the TEOBResumS waveform model:
 >>> python setup.py install
 """
 
-import torch
+import torch 
 from importlib import import_module
 from hyperion.core.utilities import HYPERION_Logger
 
