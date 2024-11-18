@@ -71,7 +71,7 @@ class Flow(nn.Module):
     def log_prob(self, inputs, strain=None, asd=None, evidence=False):
         """computes the loss function"""
         
-        if strain is not None:
+        if strain is not None or hasattr(self, 'embedding_network'):
             embedded_strain = self.embedding_network(strain, asd)
         else:
             embedded_strain = None
