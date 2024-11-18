@@ -4,26 +4,12 @@ HYPERION is pipeline for the detection and Parameter Estimation of gravitational
 
 ## Installation
 
-Clone the repo in a given folder (e.g. the "work" folder)
+To install hyperion you can clone this repository then install it with pip
 
 ```
 git clone https://github.com/fdesanti/HYPERION.git
-```
-
-then install the dependencies.
-
-```
-cd hyperion
-pip install -r requirements.txt
-```
-
-To use HYPERION as an installed package you need to add it to PYTHONPATH. 
-Run the following (on Mac change "bashrc" with "zprofile")
-
-```
-echo PYTHONPATH = <path_to_work_dir/HYPERION>:$PYTHONPATH > ~/.bashrc  
-echo export PYTHONPATH > ~/.bashrc  
-source ~/.bashrc
+cd HYPERION
+pip install -e .
 ```
 
 ### PyTorch installation
@@ -40,7 +26,6 @@ It is therefore recommended to install pytorch before installing the requirement
 
 ### TEOBResumS-DALI installation
 TEOBResumS-DALI can be installed with the following steps.
-Warning: the gcc command "make" must be installed on your system
 
 ```
 git clone https://bitbucket.org/teobresums/teobresums.git
@@ -56,6 +41,8 @@ echo PYTHONPATH="<path_to_Python_folder>:$PYTHONPATH" > ~/.bashrc
 echo export PYTHONPATH > ~/.bashrc
 source ~/.bashrc
 ```
+
+Substitute ~/.bashrc with ~/.zprofile if you're on MacOS
 
 ## Usage
 

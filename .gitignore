@@ -12,6 +12,7 @@
 
 # Cached directories
 __pycache__/
+*.egg-info/
 
 #trained model directory
 scripts/training_results/
