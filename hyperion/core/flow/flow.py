@@ -68,12 +68,13 @@ class Flow(nn.Module):
     
         
 
-    def log_prob(self, inputs, strain, asd, evidence=False):
+    def log_prob(self, inputs, strain=None, asd=None, evidence=False):
         """computes the loss function"""
         
-        
-        embedded_strain = self.embedding_network(strain, asd)
-        
+        if strain is not None:
+            embedded_strain = self.embedding_network(strain, asd)
+        else:
+            embedded_strain = None
         
         if evidence:
             embedded_strain = torch.cat([embedded_strain for _ in range(inputs.shape[0])], dim = 0)

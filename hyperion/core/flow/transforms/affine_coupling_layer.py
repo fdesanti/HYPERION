@@ -51,8 +51,11 @@ class AffineCouplingLayer(nn.Module):
         outputs = torch.empty_like(inputs)                   #full of zeros of shape as input
         outputs[:, :self.num_identity] = inputs[:, :self.num_identity] #untransformed output
         
-
-        x = torch.cat([inputs[:, :self.num_identity], embedded_strain], dim=1)
+        if embedded_strain is not None:
+            x = torch.cat([inputs[:, :self.num_identity], embedded_strain], dim=1)
+        else:
+            x = inputs[:, :self.num_identity]
+            
         s = self.s_network(x)
         
         t = self.t_network(x)
@@ -67,10 +70,10 @@ class AffineCouplingLayer(nn.Module):
         return outputs, logabsdet
     
     
-    def forward(self, inputs, embedded_strain):
+    def forward(self, inputs, embedded_strain=None):
         return self._coupling_transform(inputs, embedded_strain, inverse=False)
         
         
-    def inverse(self, inputs, embedded_strain):
+    def inverse(self, inputs, embedded_strain=None):
         return self._coupling_transform(inputs, embedded_strain, inverse=True)
         

@@ -24,7 +24,7 @@ class CouplingTransform(nn.Module):
         return
     
     @staticmethod
-    def _cascade(inputs, layers, embedded_strain):
+    def _cascade(inputs, layers, embedded_strain=None):
         batch_size = inputs.shape[0]
         outputs = inputs
         total_logabsdet = inputs.new_zeros(batch_size)
@@ -33,7 +33,7 @@ class CouplingTransform(nn.Module):
             total_logabsdet += logabsdet
         return outputs, total_logabsdet
 
-    def forward(self, inputs, embedded_strain):
+    def forward(self, inputs, embedded_strain=None):
         """Forward pass (training)
         Args: 
             - inputs: tensor of shape [N batch, N posterior parameters] coming from the dataset
@@ -45,7 +45,7 @@ class CouplingTransform(nn.Module):
         layers = self._transforms
         return self._cascade(inputs, layers, embedded_strain)
 
-    def inverse(self, inputs, embedded_strain):
+    def inverse(self, inputs, embedded_strain=None):
         """Inverse pass (inference)
         Args: 
             - inputs: tensor of shape [N prior samples, N posterior parameters] coming from the sampled prior
@@ -55,7 +55,7 @@ class CouplingTransform(nn.Module):
             - _cascade() of the layers in self._transforms.inverse in reversed order 
         """
         layers = (transform.inverse for transform in self._transforms[::-1])
-        if inputs.shape[0]!= embedded_strain.shape[0]:
+        if embedded_strain is not None and inputs.shape[0]!= embedded_strain.shape[0]:
             s = torch.cat([embedded_strain for _ in range(inputs.shape[0])], dim = 0)
         else:
             s = embedded_strain

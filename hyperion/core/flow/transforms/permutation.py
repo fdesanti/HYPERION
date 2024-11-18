@@ -23,7 +23,7 @@ class RandomPermutation(nn.Module):
         
         return outputs, logabsdet
     
-    def inverse(self, inputs, embedded_straub=None):
+    def inverse(self, inputs, embedded_strain=None):
         
         batch_size = inputs.shape[0]
         outputs    = inputs[:, torch.argsort(self._permutation)]

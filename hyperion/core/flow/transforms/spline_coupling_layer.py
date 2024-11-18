@@ -72,7 +72,7 @@ class SplineCouplingLayer(nn.Module):
     
 
     
-    def _coupling_transform(self, inputs, embedded_strain, inverse=False):
+    def _coupling_transform(self, inputs, embedded_strain=None, inverse=False):
         """Implements the coupling transform in both forward/inverse pass
         
         Args:
@@ -97,7 +97,10 @@ class SplineCouplingLayer(nn.Module):
         outputs[:, :self.num_identity] = inputs[:, :self.num_identity] #untransformed output
         
         #concatenate the identity inputs with the embedded strain
-        x = torch.cat([inputs[:, :self.num_identity], embedded_strain], dim=1)
+        if embedded_strain is not None:
+            x = torch.cat([inputs[:, :self.num_identity], embedded_strain], dim=1)
+        else:
+            x = inputs[:, :self.num_identity]
         
     
         #compute the widths, heights and derivatives and reshape them into the right shape
@@ -123,9 +126,9 @@ class SplineCouplingLayer(nn.Module):
     
 
 
-    def forward(self, inputs, embedded_strain):
+    def forward(self, inputs, embedded_strain=None):
         return self._coupling_transform(inputs, embedded_strain, inverse=False)
         
-    def inverse(self, inputs, embedded_strain):
+    def inverse(self, inputs, embedded_strain=None):
         return self._coupling_transform(inputs, embedded_strain, inverse=True)
 
