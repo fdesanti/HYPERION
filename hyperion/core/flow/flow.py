@@ -28,9 +28,11 @@ class Flow(nn.Module):
         
         self.base_distribution = base_distribution
         self.transformation    = transformation
-        self.embedding_network = embedding_network
         self.prior_metadata    = prior_metadata
         self.configuration     = configuration
+
+        if embedding_network is not None:
+            self.embedding_network = embedding_network
            
         return
 
