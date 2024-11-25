@@ -28,9 +28,11 @@ class Flow(nn.Module):
         
         self.base_distribution = base_distribution
         self.transformation    = transformation
-        self.embedding_network = embedding_network
         self.prior_metadata    = prior_metadata
         self.configuration     = configuration
+
+        if embedding_network is not None:
+            self.embedding_network = embedding_network
            
         return
 
@@ -68,12 +70,13 @@ class Flow(nn.Module):
     
         
 
-    def log_prob(self, inputs, strain, asd, evidence=False):
+    def log_prob(self, inputs, strain=None, asd=None, evidence=False):
         """computes the loss function"""
         
-        
-        embedded_strain = self.embedding_network(strain, asd)
-        
+        if strain is not None and hasattr(self, 'embedding_network'):
+            embedded_strain = self.embedding_network(strain, asd)
+        else:
+            embedded_strain = None
         
         if evidence:
             embedded_strain = torch.cat([embedded_strain for _ in range(inputs.shape[0])], dim = 0)

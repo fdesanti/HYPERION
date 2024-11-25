@@ -2,11 +2,14 @@ from setuptools import setup, find_packages
 
 __version__ = "1.0"
 
+with open('README.md', encoding='utf-8') as f:
+    long_description = f.read()
+
 setup(
     name                          = "hyperion",
     version                       = __version__,
     description                   = "HYPERION: a fast Normalizing Flow bayesian Sampler for Gravitational Wave Observations",
-    long_description              = open('README.md', encoding='utf-8').read(),
+    long_description              = long_description,
     long_description_content_type = 'text/markdown',
     url                           = "https://github.com/fdesanti/HYPERION",
     author                        = "Federico De Santi",

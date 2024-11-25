@@ -25,7 +25,7 @@ waveform_model: "TEOBResumSDALI"
 
 prior: "TEOBResumS_hyperbolic"
 
-inference_parameters: ["M", "Mchirp", "q", "H_hyp", "r_hyp", "luminosity_distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
+inference_parameters: ["M", "Mchirp", "q", "H_hyp", "j_hyp", "r_hyp", "luminosity_distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
 #inference_parameters: ["M", "q", "ecc", "distance", "inclination", "polarization", "coalescence_angle", "tcoal", "ra", "dec"]
 
 duration: 2 #duration in seconds for the simulated signals
@@ -39,15 +39,15 @@ flow:
   coupling: 'spline'
   
 coupling_layers:
-  num_features:     12
-  num_identity:     6
+  num_features:     13
+  num_identity:     7
   num_transformed:  6
   #num_bins:         4
 
 base_distribution:
   dist_name:         "ConditionalMultivariateNormalBase"
   kwargs:
-    dim:              12
+    dim:              13
     #trainable:        true
     #num_components:   3
 
@@ -110,7 +110,7 @@ training_options:
     scheduler: ReduceLROnPlateau
     kwargs:
       factor:    0.5
-      patience:  20
+      patience:  15
       mode:      min
       threshold: 0
     
