@@ -23,6 +23,7 @@ setup(
                       "torchaudio", 
                       "tensordict", 
                       "numpy",
+                      "multiprocess"
                       #plotting and I/O
                       "seaborn", 
                       "pyyaml", 
