@@ -4,12 +4,12 @@ HYPERION is pipeline for the detection and Parameter Estimation of gravitational
 
 ## Installation
 
-To install hyperion you can clone this repository then install it with pip
+To install hyperion you can clone this repository then install it
 
 ```
 git clone https://github.com/fdesanti/HYPERION.git
 cd HYPERION
-pip install -e .
+python setup.py install
 ```
 
 ### PyTorch installation
