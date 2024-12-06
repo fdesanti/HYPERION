@@ -51,7 +51,7 @@ class AffineCouplingLayer(nn.Module):
         self.num_transformed   = num_transformed if num_transformed is not None else num_features//2
         self.volume_preserving = volume_preserving
         
-        assert num_features == num_identity + num_transformed, 'The number of features must be equal to the sum of the number of identity and transformed features'
+        assert self.num_features == self.num_identity + self.num_transformed, 'The number of features must be equal to the sum of the number of identity and transformed features'
     
         if s_network is not None:
             self.s_network = s_network
