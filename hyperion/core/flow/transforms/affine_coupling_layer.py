@@ -61,7 +61,7 @@ class AffineCouplingLayer(nn.Module):
                                            nn.LazyLinear(linear_dim), s_activation, 
                                            nn.LazyLinear(linear_dim), s_activation, 
                                            nn.Dropout(dropout_probability), 
-                                           nn.LazyLinear(num_transformed), s_activation)
+                                           nn.LazyLinear(self.num_transformed), s_activation)
         if t_network is not None:
             self.t_network = t_network
         else:
@@ -70,7 +70,7 @@ class AffineCouplingLayer(nn.Module):
                                            nn.LazyLinear(linear_dim), t_activation, 
                                            nn.LazyLinear(linear_dim), t_activation, 
                                            nn.Dropout(dropout_probability), 
-                                           nn.LazyLinear(num_transformed), t_activation)
+                                           nn.LazyLinear(self.num_transformed), t_activation)
             
 
     def _coupling_transform(self, inputs, embedded_strain, inverse):
