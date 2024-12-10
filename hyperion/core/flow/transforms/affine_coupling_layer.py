@@ -2,8 +2,8 @@
 
 import torch
 import torch.nn as nn
-
-class AffineCouplingLayer(nn.Module):
+from .coupling_transform import CouplingLayer
+class AffineCouplingLayer(CouplingLayer):
     """
         Affine Coupling Layer implementation for the flow.
         The forward transformation is defined as an exponential rescaling plus a translation:
@@ -44,11 +44,8 @@ class AffineCouplingLayer(nn.Module):
                  dropout_probability = 0.2,
                  volume_preserving   = False
                  ):
-        super(AffineCouplingLayer, self).__init__()
-        
-        self.num_features      = num_features
-        self.num_identity      = num_identity    if num_identity is not None else num_features - num_features//2
-        self.num_transformed   = num_transformed if num_transformed is not None else num_features//2
+        super(AffineCouplingLayer, self).__init__(num_features, num_identity, num_transformed)
+
         self.volume_preserving = volume_preserving
         
         assert self.num_features == self.num_identity + self.num_transformed, 'The number of features must be equal to the sum of the number of identity and transformed features'
@@ -100,11 +97,5 @@ class AffineCouplingLayer(nn.Module):
             logabsdet = torch.sum(s, dim=(1))
 
         return outputs, logabsdet
-    
-    
-    def forward(self, inputs, embedded_strain=None):
-        return self._coupling_transform(inputs, embedded_strain, inverse=False)
-        
-    def inverse(self, inputs, embedded_strain=None):
-        return self._coupling_transform(inputs, embedded_strain, inverse=True)
+
         
