@@ -27,27 +27,31 @@ class MultivariateNormalBase(nn.Module):
     
     """
     def __init__(self, 
-                 dim        :int  =  10,
-                 trainable  :bool = False,
+                 dim        =  10,
+                 mean       =  None,
+                 var        =  None,
+                 trainable  = False,
+                 
                  ):
         super(MultivariateNormalBase, self).__init__()
         self.dim = dim
         self.trainable = trainable
+
+        if not mean: mean = torch.zeros(dim)
+        if not var:  var  = torch.eye(dim)
         
-        self.initialize_distribution()
+        self.initialize_distribution(mean, var)
         return
     
-    def initialize_distribution(self):
+    def initialize_distribution(self, mean, var):
         """Initializes the distributions given the paramters from the __init__"""
         
         if self.trainable:
-            self.mean = nn.Parameter(torch.randn((self.dim)))
-            self.var  = nn.Parameter(torch.eye(self.dim))
-            #self.mean = nn.Parameter(torch.zeros(self.dim))
-            #self.var  = nn.Parameter(torch.randint(1, 6, (self.dim,)) * torch.eye(self.dim))
+            self.mean = nn.Parameter(mean)
+            self.var  = nn.Parameter(var)
         else:
-            self.register_buffer("mean", torch.zeros(self.dim))
-            self.register_buffer("var",  torch.eye(self.dim))
+            self.register_buffer("mean", mean)
+            self.register_buffer("var",  var)
 
     @property
     def MultivariateNormal(self):
