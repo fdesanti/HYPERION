@@ -37,8 +37,8 @@ class MultivariateNormalBase(nn.Module):
         self.dim = dim
         self.trainable = trainable
 
-        if not mean: mean = torch.zeros(dim)
-        if not var:  var  = torch.eye(dim)
+        if mean is None: mean = torch.zeros(dim)
+        if var  is None: var  = torch.eye(dim)
         
         self.initialize_distribution(mean, var)
         return
