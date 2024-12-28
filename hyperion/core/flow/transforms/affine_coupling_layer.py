@@ -48,9 +48,7 @@ class AffineCouplingLayer(CouplingLayer):
         super(AffineCouplingLayer, self).__init__(num_features, num_identity, num_transformed)
 
         self.volume_preserving = volume_preserving
-        
-        assert self.num_features == self.num_identity + self.num_transformed, 'The number of features must be equal to the sum of the number of identity and transformed features'
-    
+            
         if s_network is not None:
             self.s_network = s_network
         else:

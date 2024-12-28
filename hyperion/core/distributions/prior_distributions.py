@@ -601,6 +601,7 @@ class MultivariatePrior():
         prior_metadata['priors'] = self.priors
         prior_metadata['means']  = {name: prior.mean for name, prior in self.priors.items()}
         prior_metadata['stds']   = {name: prior.std  for name, prior in self.priors.items()}
+        prior_metadata['bounds'] = {name: (prior.minimum, prior.maximum) for name, prior in self.priors.items()}
         prior_metadata['inference_parameters'] = self.names
         return prior_metadata
     
