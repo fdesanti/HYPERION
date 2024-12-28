@@ -55,7 +55,7 @@ class MultivariateNormalBase(nn.Module):
 
     @property
     def MultivariateNormal(self):
-        return torchMultivariateNormal(self.mean, self.var, validate_args = False)
+        return torchMultivariateNormal(self.mean, scale_tril=self.var, validate_args = False)
     
     def log_prob(self, z_samples, embedded_strain=None):
         """assumes that z_samples have dim (Nbatch, self.dim) ie 1 sample per batch"""
@@ -143,7 +143,7 @@ class ConditionalMultivariateNormalBase(nn.Module):
         var  = self.var_network(embedded_strain) + self.eps
         self.mean = mean
         self.var  = var
-        return torchMultivariateNormal(mean, torch.diag_embed(var)).log_prob(z_samples)
+        return torchMultivariateNormal(mean, scale_tril=torch.diag_embed(var)).log_prob(z_samples)
     
     def sample(self, num_samples, embedded_strain):
         #compute the mean and variance

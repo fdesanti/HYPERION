@@ -3,6 +3,7 @@
 import torch
 import torch.nn as nn
 from .coupling_transform import CouplingLayer
+
 class AffineCouplingLayer(CouplingLayer):
     """
         Affine Coupling Layer implementation for the flow.
@@ -97,5 +98,3 @@ class AffineCouplingLayer(CouplingLayer):
             logabsdet = torch.sum(s, dim=(1))
 
         return outputs, logabsdet
-
-        
