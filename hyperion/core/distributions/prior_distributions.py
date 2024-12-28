@@ -589,6 +589,21 @@ class MultivariatePrior():
 
         return priors
     
+    @property
+    def metadata(self):
+        if not hasattr(self, '_metadata'):
+            self._metadata = self._get_prior_metadata()
+        return self._metadata
+
+    def _get_prior_metadata(self):
+        """Returns a dictionary containing the prior metadata"""
+        prior_metadata = dict()
+        prior_metadata['priors'] = self.priors
+        prior_metadata['means']  = {name: prior.mean for name, prior in self.priors.items()}
+        prior_metadata['stds']   = {name: prior.std  for name, prior in self.priors.items()}
+        prior_metadata['inference_parameters'] = self.names
+        return prior_metadata
+    
     def add_prior(self, new_prior_dict, seed=None):
         prior_dict = self.prior_dict.copy()
         prior_dict.update(new_prior_dict)    
