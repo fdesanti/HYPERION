@@ -2,21 +2,21 @@
 
 import torch
 import torch.nn as nn
-from tensordict import TensorDict
 
 from tqdm import tqdm
 from time import time
-
+from tensordict import TensorDict
 from astropy.time import Time
 from astropy.units.si import sday
 
 from ..utilities import HYPERION_Logger
+from ..distributions import TensorSamples
 
 log = HYPERION_Logger()
+
 class Flow(nn.Module):
     """Class that manages the flow model"""
-    
-    
+
     def __init__(self,
                  base_distribution,
                  transformation,
@@ -33,15 +33,12 @@ class Flow(nn.Module):
 
         if embedding_network is not None:
             self.embedding_network = embedding_network
-           
-        return
 
     @property
     def inference_parameters(self):
         if not hasattr(self, '_inference_parameters'):
             self._inference_parameters = self.prior_metadata['inference_parameters']
         return self._inference_parameters
-    
     
     @property
     def priors(self):
@@ -61,16 +58,14 @@ class Flow(nn.Module):
             self._stds = self.prior_metadata['stds']
         return self._stds
 
-    
     @property
     def reference_time(self):
         if not hasattr(self, '_reference_time'):
             self._reference_time = self.configuration['reference_gps_time']
         return self._reference_time
     
-        
-
-    def log_prob(self, inputs, strain=None, asd=None, evidence=False):
+    
+    def log_prob(self, inputs, strain=None, asd=None):
         """computes the loss function"""
         
         if strain is not None and hasattr(self, 'embedding_network'):
@@ -78,9 +73,6 @@ class Flow(nn.Module):
         else:
             embedded_strain = None
         
-        if evidence:
-            embedded_strain = torch.cat([embedded_strain for _ in range(inputs.shape[0])], dim = 0)
-
         transformed_samples, logabsdet = self.transformation(inputs, embedded_strain)  #makes the forward pass 
         
         log_prob = self.base_distribution.log_prob(transformed_samples, embedded_strain)
@@ -89,26 +81,31 @@ class Flow(nn.Module):
     
      
 
-    def sample(self, num_samples, strain, asd=None, batch_size = 50000, restrict_to_bounds=False, post_process=True, event_time = None, verbose = True, return_log_prob=False):
+    def sample(self, num_samples, strain=None, asd=None, batch_size = 50000, restrict_to_bounds=False, post_process=True, event_time = None, verbose = True, return_log_prob=False):
         start = time()
         
-        samples = []
+        #embedding strain
+        if strain is not None and hasattr(self, 'embedding_network'):
+            embedded_strain = self.embedding_network(strain, asd)
+        else:
+            embedded_strain = None
         
-        embedded_strain      = self.embedding_network(strain)
+        samples              = []
         nsteps               = num_samples // batch_size if num_samples>=batch_size else 1
         batch_samples        = batch_size if num_samples > batch_size else num_samples
         disable_progress_bar = True if not verbose or nsteps == 1 else True
 
-        
+        #sampling
         for _ in tqdm(range(nsteps), disable=disable_progress_bar):
-    
+            #sample from the latent base distribution
             prior_samples = self.base_distribution.sample(batch_samples, embedded_strain)
-
+            #transform back to the original space
             flow_samples, inverse_logabsdet = self.transformation.inverse(prior_samples, embedded_strain)
-            
             samples.append(flow_samples)
+        
         samples = torch.cat(samples, dim = 0)          
 
+        #post-processing
         if post_process:
             processed_samples_dict = self._post_process_samples(samples, restrict_to_bounds, event_time) 
         else:
@@ -116,11 +113,10 @@ class Flow(nn.Module):
             for i, name in enumerate(self.inference_parameters):
                 processed_samples_dict[name] = samples[:,i]
 
-        processed_samples_dict = TensorDict.from_dict(processed_samples_dict)
-
-        #processed_samples_df = pd.DataFrame.from_dict(processed_samples_dict)
+        processed_samples_dict = TensorSamples.from_dict(processed_samples_dict)
 
         end=time()
+
         if verbose:
             log.info(f"Sampling took {end-start:.3f} seconds")
         
