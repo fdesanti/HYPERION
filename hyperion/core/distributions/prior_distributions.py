@@ -610,6 +610,18 @@ class MultivariatePrior():
         self.__init__(prior_dict, seed, self.device)
         return self
     
+    def standardize_samples(self, samples):
+        """Standardizes samples"""
+        for key in samples.keys():
+            samples[key] = self.priors[key].standardize_samples(samples[key])
+        return samples
+    
+    def de_standardize_samples(self, samples):
+        """De-standardizes samples"""
+        for key in samples.keys():
+            samples[key] = self.priors[key].de_standardize_samples(samples[key])
+        return samples
+
     def log_prob(self, samples):
         """Samples must be a dictionary containing a set of parameter samples of shape [Nbatch, 1]"""
         logP = torch.stack([self.priors[name].log_prob(samples[name]) for name in samples.keys()], dim = -1)
