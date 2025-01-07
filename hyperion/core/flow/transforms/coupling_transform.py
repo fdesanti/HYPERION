@@ -3,6 +3,37 @@
 import torch
 import torch.nn as nn
 
+class CouplingLayer(nn.Module):
+    """Base class for the CouplingLayer
+    
+        Args:
+        -----
+            num_features     (int): Number of features in the input tensor
+            num_identity     (int): Number of features that are not transformed. 
+                                    If None then num_features - num_features//2 (Default. None)
+            num_transformed  (int): Number of features that are transformed. 
+                                    If None then num_features//2 (Default. None)``
+    """
+    def __init__(self, 
+                 num_features, 
+                 num_identity    = None,
+                 num_transformed = None,
+                 ):
+        super(CouplingLayer, self).__init__()
+        self.num_features    = num_features
+        self.num_identity    = num_identity    if num_identity    is not None else num_features - num_features // 2
+        self.num_transformed = num_transformed if num_transformed is not None else num_features // 2
+        assert self.num_features == self.num_identity + self.num_transformed, 'The number of features must be equal to the sum of the number of identity and transformed features'
+
+    def _coupling_transform(self, inputs, embedded_strain, inverse):
+        raise NotImplementedError
+
+    def forward(self, inputs, embedded_strain=None):
+        return self._coupling_transform(inputs, embedded_strain, inverse=False)
+    
+    def inverse(self, inputs, embedded_strain=None):
+        return self._coupling_transform(inputs, embedded_strain, inverse=True)
+
 class CouplingTransform(nn.Module):
     """Class that implements the full Coupling transform
     

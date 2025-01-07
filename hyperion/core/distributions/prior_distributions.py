@@ -13,35 +13,45 @@ class Rand():
     for reproducibility
     """
     def __init__(self, seed = None, device = 'cpu'):
-        
         if seed is not None:
             self.rng = torch.Generator(device)
             self.rng.manual_seed(seed)
         else:
             self.rng = None
-        
 
     def __call__(self, sample_shape, device, dtype=None):
         return torch.rand(sample_shape, generator = self.rng, device = device, dtype=dtype)
 
-
+#=======================================
+#TensorDict Wrapper Class
+#=======================================
+class TensorSamples(TensorDict):
+    """Wrapper class for TensorDict to better manage samples"""
+    
+    def flatten(self):
+        """Returns the samples as a single tensor"""
+        return torch.stack([self[key] for key in self.keys()], dim=-1)
+    
+    def to_tensor(self):
+        """Returns the samples as a single tensor"""
+        return self.flatten()
+    
+    def numpy(self):
+        """Returns the samples as a numpy array"""
+        return self.flatten().cpu().numpy()
 
 #=======================================
 # Analytical Prior Distributions
 #=======================================
 class BasePrior():
     """Base class for Prior Distributions"""
-    
     def __init__(self, minimum=None, maximum=None, device='cpu', seed=None):
 
-        
         self.device  = device
         self.rand    = Rand(seed, device)
         self.minimum = minimum
         self.maximum = maximum
         assert self.maximum >= self.minimum, f"maximum must be >= than minimum, given {maximum} and {minimum} respectively"
-
-        return
     
     @property
     def minimum(self):
@@ -62,7 +72,6 @@ class BasePrior():
             self._maximum = torch.tensor(value).to(self.device)
         else:
             self._maximum = self.sample((N_)).max()
-        
         
     @property
     def mean(self):
@@ -98,8 +107,6 @@ class BasePrior():
     def sample(self, sample_shape):
         raise NotImplementedError
     
-    
-
 
 class UniformPrior(BasePrior):
 
@@ -559,8 +566,6 @@ class MultivariatePrior():
         
         self.priors = self._load_priors(self.prior_dict, self.seed, self.device)
         self.names  = list(self.prior_dict.keys())
-
-        return
     
     @staticmethod
     def _load_priors(prior_dict, seed, device):
@@ -588,14 +593,40 @@ class MultivariatePrior():
 
         return priors
     
+    @property
+    def metadata(self):
+        if not hasattr(self, '_metadata'):
+            self._metadata = self._get_prior_metadata()
+        return self._metadata
+
+    def _get_prior_metadata(self):
+        """Returns a dictionary containing the prior metadata"""
+        prior_metadata = dict()
+        prior_metadata['priors'] = self.priors
+        prior_metadata['means']  = {name: prior.mean for name, prior in self.priors.items()}
+        prior_metadata['stds']   = {name: prior.std  for name, prior in self.priors.items()}
+        prior_metadata['bounds'] = {name: (prior.minimum, prior.maximum) for name, prior in self.priors.items()}
+        prior_metadata['inference_parameters'] = self.names
+        return prior_metadata
+    
     def add_prior(self, new_prior_dict, seed=None):
-        
         prior_dict = self.prior_dict.copy()
         prior_dict.update(new_prior_dict)    
         self.__init__(prior_dict, seed, self.device)
-        
         return self
     
+    def standardize_samples(self, samples):
+        """Standardizes samples"""
+        for key in samples.keys():
+            samples[key] = self.priors[key].standardize_samples(samples[key])
+        return samples
+    
+    def de_standardize_samples(self, samples):
+        """De-standardizes samples"""
+        for key in samples.keys():
+            samples[key] = self.priors[key].de_standardize_samples(samples[key])
+        return samples
+
     def log_prob(self, samples):
         """Samples must be a dictionary containing a set of parameter samples of shape [Nbatch, 1]"""
         logP = torch.stack([self.priors[name].log_prob(samples[name]) for name in samples.keys()], dim = -1)
@@ -605,7 +636,7 @@ class MultivariatePrior():
         samples = dict()
         for name in self.names:
             samples[name] = self.priors[name].sample(sample_shape, standardize, dtype=dtype)
-        samples = TensorDict.from_dict(samples)
+        samples = TensorSamples.from_dict(samples)
         return samples
             
         

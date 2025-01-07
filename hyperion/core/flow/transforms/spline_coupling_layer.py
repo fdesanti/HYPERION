@@ -5,8 +5,9 @@ import torch
 import torch.nn as nn
 
 from .splines import unconstrained_rational_quadratic_spline
+from .coupling_transform import CouplingLayer
 
-class SplineCouplingLayer(nn.Module):
+class SplineCouplingLayer(CouplingLayer):
     """
     Class that implements the single Coupling Layer with RationalQuadraticSplines
     
@@ -28,48 +29,37 @@ class SplineCouplingLayer(nn.Module):
     """
     
     def __init__(self,
-                 num_features        = 10,
-                 num_identity        =  5,
-                 num_transformed     =  5,
+                 num_features,
+                 num_identity        =  None,
+                 num_transformed     =  None,
                  num_bins            =  8,
-                 tail_bound          =  2,
+                 tail_bound          =  2.0,
                  linear_dim          =  512,
                  activation          =  nn.ELU(),
                  dropout_probability = 0.2
                  ):
-        super(SplineCouplingLayer, self).__init__()
+        super(SplineCouplingLayer, self).__init__(num_features, num_identity, num_transformed)
         
-        #assert isinstance(neural_network, nn.Module), 'A torch neural network module must be passed'
-        
-    
-        self.num_features       = num_features
-        self.num_identity       = num_identity
-        self.num_transformed    = num_transformed
         self.tail_bound         = tail_bound
         self.num_bins           = num_bins
         self.linear_dim         = linear_dim
         
-    
         self.h_network = nn.Sequential(nn.LazyLinear(linear_dim), activation, 
+                                       nn.LazyLinear(linear_dim), activation,
                                        nn.Dropout(dropout_probability), 
-                                       nn.LazyLinear(num_transformed*num_bins))
+                                       nn.LazyLinear(self.num_transformed*num_bins))
         
         self.w_network = nn.Sequential(nn.LazyLinear(linear_dim), activation,
+                                       nn.LazyLinear(linear_dim), activation,
                                        nn.Dropout(dropout_probability), 
-                                       nn.LazyLinear(num_transformed*num_bins))
+                                       nn.LazyLinear(self.num_transformed*num_bins))
         
         self.d_network = nn.Sequential(nn.LazyLinear(linear_dim), activation,
+                                       nn.LazyLinear(linear_dim), activation,
                                        nn.Dropout(dropout_probability), 
-                                       nn.LazyLinear(num_transformed*(num_bins-1)))
+                                       nn.LazyLinear(self.num_transformed*(num_bins-1)))
         
         self.scaling_factor = torch.sqrt(torch.tensor(self.linear_dim).float())
-    
-        assert num_features == num_identity + num_transformed, 'The number of features must be equal to the sum of the number of identity and transformed features'
-                                                                                                                                                     
-
-        
-        return
-    
 
     
     def _coupling_transform(self, inputs, embedded_strain=None, inverse=False):
@@ -123,12 +113,3 @@ class SplineCouplingLayer(nn.Module):
         outputs[:, self.num_identity:] = transformed
             
         return outputs, logabsdet.sum(dim=1)
-    
-
-
-    def forward(self, inputs, embedded_strain=None):
-        return self._coupling_transform(inputs, embedded_strain, inverse=False)
-        
-    def inverse(self, inputs, embedded_strain=None):
-        return self._coupling_transform(inputs, embedded_strain, inverse=True)
-
