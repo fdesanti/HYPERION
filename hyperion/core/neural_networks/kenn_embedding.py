@@ -29,7 +29,7 @@ class KennEmbedding(Kenn):
         #create a KennConfig instance
         kenn_config = KennConfig(KennAttentionHead, KennAttention, **kenn_params)
         super().__init__(kenn_config)
-
+        '''
         #=======================================================================
         # Construct ResNet blocks
         #=======================================================================
@@ -53,12 +53,12 @@ class KennEmbedding(Kenn):
         
         #pre ResNet Layer
         self.pre_resnet_linear = nn.Sequential(nn.LazyLinear(block_dims[0]), activation)
-
+        '''
     def _get_kenn_params(self, config):
         # Obtains the name of the parameters accepted by KennConfig
         kenn_init_params = inspect.signature(KennConfig).parameters
         return {k: v for k, v in config.items() if k in kenn_init_params}
-    
+    '''
     def forward(self, strain, asd=None):
         #We first apply the KENN embedding forward method and then the ResNet blocks
         embedded_strain = super().forward(strain, asd)
@@ -71,6 +71,7 @@ class KennEmbedding(Kenn):
             embedded_strain = res_layer(embedded_strain)        
         
         return embedded_strain
+    '''
 
     
 
