@@ -39,7 +39,7 @@ parameters:
     M:
       distribution: "uniform"
       kwargs:
-        minimum: 100.0
+        minimum: 150.0
         maximum: 300.0
     q:
       distribution: "uniform"
@@ -50,8 +50,8 @@ parameters:
     H_hyp:                      # Initial E_eob
       distribution: "uniform"
       kwargs:
-        minimum: 1.00
-        maximum: 1.001
+        minimum: 1.0005
+        maximum: 1.005
       
     j_hyp:                      # initial pphi_eob (angular momentum)
       #distribution: "delta"
@@ -65,10 +65,10 @@ parameters:
       distribution: "uniform"
       kwargs:
         minimum: 10
-        maximum: 200
+        maximum: 100
 
     inclination:
-      distribution: "sin"
+      distribution: "uniform"
       kwargs:
         minimum: 0.0
         maximum: torch.pi
