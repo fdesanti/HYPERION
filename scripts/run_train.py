@@ -51,12 +51,12 @@ if __name__ == '__main__':
         preload_lr = learning_rates[-1] if len(learning_rates) > 0 else learning_rates
             
 
-    NUM_EPOCHS            = int(train_conf['num_epochs'])
+    NUM_EPOCHS            = int(train_conf['num_epochs']) if not PRELOAD else int(train_conf['num_epochs']) - len(learning_rates)
     BATCH_SIZE            = int(train_conf['batch_size'])
     INITIAL_LEARNING_RATE = float(train_conf['initial_learning_rate']) if not PRELOAD else preload_lr/2
 
     WAVEFORM_MODEL = conf['waveform_model']
-    PRIOR_PATH     = os.path.join(conf_dir, 'priors/prior.yml') if PRELOAD else os.path.join(conf_dir, 'priors/'+conf['prior']+'.yml')
+    PRIOR_PATH     = os.path.join(conf_dir, 'prior.yml') if PRELOAD else os.path.join(conf_dir, 'priors/'+conf['prior']+'.yml')
     DURATION       = conf['duration']
     
     if DEVICE is None:
