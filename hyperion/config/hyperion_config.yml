@@ -9,13 +9,13 @@ detectors: ["L1", "H1"]
 
 reference_gps_time: 1242442967.4 #1370692818 #1242442967.4 #1370692818
 
-fs: 2048 #sampling frequency Hz for simulations & inference 
+fs: 1024 #sampling frequency Hz for simulations & inference 
 
 ASD_reference_run: O3_GW190521 #reference run for the ASDs
 
 use_reference_asd: True #use the reference run for the ASDs
 
-fmin: 8 #low frequency cutoff for ASD
+fmin: 10 #low frequency cutoff for ASD
 
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "polarization", "inclination", "time_shift", "ra", "dec"]
 #inference_parameters: ["M", "q", "e0", "p_0", "distance", "time_shift", "ra", "dec"]
@@ -36,7 +36,7 @@ duration: 4 #duration in seconds for the simulated signals
 #============================
 flow:
   num_coupling_layers: 36
-  coupling: 'spline'
+  coupling: 'affine'
   
 coupling_layers:
   num_features:     13
@@ -45,7 +45,7 @@ coupling_layers:
   #num_bins:         4
 
 base_distribution:
-  dist_name:         "ConditionalMultivariateNormalBase"
+  dist_name:         "MultivariateNormalBase"
   kwargs:
     dim:              13
     #trainable:        true
@@ -94,7 +94,7 @@ training_options:
   num_preload_train: 5000
   num_preload_val: 1000
 
-  n_proc: 2 * os.cpu_count() // 3
+  n_proc: '8'
 
   whiten_kwargs:
     method: "gwpy"
