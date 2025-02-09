@@ -8,7 +8,7 @@
 waveform_kwargs:
   # Initial conditions and output time grid
   domain              : 0         # Time domain. EOBSPA is not available for eccentric waveforms!
-  initial_frequency   : 5      # Initial frequency in Hz. Default = 0.02
+  #initial_frequency   : 5      # Initial frequency in Hz. Default = 0.02
   #nqcs
   nqc                : 'manual'              #options are ["none", "manual", "auto"]
   nqc_coefs_flx      : 'nrfit_nospin201602'    #options are ["none", "nrfit_spin202002", "nrfit_nospin201602"]
@@ -39,7 +39,7 @@ parameters:
     M:
       distribution: "uniform"
       kwargs:
-        minimum: 100.0
+        minimum: 150.0
         maximum: 300.0
     q:
       distribution: "uniform"
@@ -50,16 +50,16 @@ parameters:
     H_hyp:                      # Initial E_eob
       distribution: "uniform"
       kwargs:
-        minimum: 1.00
-        maximum: 1.001
+        minimum: 1.0005
+        maximum: 1.005
       
     j_hyp:                      # initial pphi_eob (angular momentum)
       #distribution: "delta"
       distribution: "uniform"
       kwargs:
         #value: 4.0
-        minimum: 3.9
-        maximum: 4.1
+        minimum: 3.8
+        maximum: 4.2
 
     r_hyp:                      # initial ratial separation
       distribution: "uniform"
@@ -68,7 +68,7 @@ parameters:
         maximum: 200
 
     inclination:
-      distribution: "sin"
+      distribution: "uniform"
       kwargs:
         minimum: 0.0
         maximum: torch.pi

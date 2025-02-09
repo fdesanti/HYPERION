@@ -22,7 +22,7 @@ def build_flow( prior_metadata           :dict = None,
 
     #loading a saved model
     if checkpoint_path is not None:
-        checkpoint = torch.load(checkpoint_path, map_location=torch.device('cpu'))
+        checkpoint = torch.load(checkpoint_path, map_location=torch.device('cpu'), weights_only=True)
         prior_metadata = checkpoint['prior_metadata']
         kwargs = checkpoint['configuration']
 

@@ -1,0 +1,57 @@
+name: Python Tests and Update README with Badge on Top
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+
+      - name: Run tests
+        run: pytest
+
+  update-readme:
+    needs: test
+    runs-on: ubuntu-latest
+    if: ${{ success() }}  # This job will only run if all tests pass
+    steps:
+      - name: Checkout repository with push permissions
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepend test badge to README
+        run: |
+          # Define the test badge to be added at the top of the README
+          BADGE="![Test Status](https://img.shields.io/badge/Tests-Passed-brightgreen)"
+          # Prepend the badge and a blank line to the existing README.md content
+          { echo "$BADGE"; echo ""; cat README.md; } > README.new.md
+          mv README.new.md README.md
+
+      - name: Commit and push updated README
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add README.md
+          # The commit message includes "[skip ci]" to prevent retriggering the workflow
+          git commit -m "Update README with test badge on top [skip ci]" || echo "No changes to commit"
+          git push
