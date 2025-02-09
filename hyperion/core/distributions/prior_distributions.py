@@ -457,7 +457,7 @@ class q_uniform_in_components(BasePrior):
     
     
 class Mchirp_uniform_in_components(BasePrior):
-    """
+    r"""
         Class that manages Chirp Mass Mchirp prior from uniform distributed masses
         or mass ratio and total mass..
         

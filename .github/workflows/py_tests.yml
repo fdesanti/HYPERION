@@ -2,7 +2,7 @@ name: Python Tests and Update README with Badge on Top
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, importance_sampling]
   pull_request:
     branches: [ main ]
 
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.9, 3.10, 3.11]
+        python-version: ['3.9', '3.10', '3.11']
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
