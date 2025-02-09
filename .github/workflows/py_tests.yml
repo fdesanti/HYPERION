@@ -27,7 +27,7 @@ jobs:
           pip install .
 
       - name: Run tests
-        run: pytest
+        run: pytest tests/
 
   update-readme:
     needs: test
