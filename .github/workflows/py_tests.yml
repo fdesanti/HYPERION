@@ -1,5 +1,8 @@
 name: Python Tests and Update README with Badge on Top
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: [ main, importance_sampling]
