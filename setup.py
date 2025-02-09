@@ -32,7 +32,7 @@ setup(
                       "tqdm", 
                       #gw related
                       "astropy", 
-                      "bilby"],  
+                      "bilby<=2.3.0"],  
     scripts=['scripts/run_train.py', 
              'scripts/test_train.py', 
              'scripts/pp_plot.py'],

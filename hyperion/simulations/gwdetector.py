@@ -17,13 +17,18 @@ from ..core.utilities import HYPERION_Logger
 
 log = HYPERION_Logger()
 
-
 def get_detectors_configs(det_conf_path = None):
     #get the detectors configuration parameters
-    if not det_conf_path:
-        det_conf_path = f"{CONF_DIR}/detectors.yml"
-    with open(det_conf_path, 'r') as file:
-        det_configs = yaml.safe_load(file)    
+    try:
+        if not det_conf_path:
+            det_conf_path = f"{CONF_DIR}/detectors.yml"
+        with open(det_conf_path, 'r') as file:
+            det_configs = yaml.safe_load(file)    
+    
+    except (FileNotFoundError, OSError) as e:
+        log.error(e)
+        log.error(f"Detector configuration file not found at {det_conf_path}")
+        det_configs = dict()
         
     return det_configs
 

@@ -5,7 +5,6 @@ import pandas as pd
 
 from pathlib import Path
 from tensordict import TensorDict 
-from bilby.gw.result import CBCResult 
 
 from .core.flow import build_flow
 from .core.utilities import HYPERION_Logger
@@ -136,6 +135,8 @@ class PosteriorSampler():
     
     def to_bilby(self, posterior=None, **kwargs):
         """Export sampler results to a bilby CBC result object."""
+        from bilby.gw.result import CBCResult 
+
         
         if posterior is None:
             posterior = self.posterior
