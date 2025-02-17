@@ -83,6 +83,10 @@ class Flow(nn.Module):
 
     def sample(self, num_samples, strain=None, asd=None, batch_size = 50000, restrict_to_bounds=False, post_process=True, event_time = None, verbose = True, return_log_prob=False):
         start = time()
+
+        #cast correctly
+        num_samples = int(num_samples)
+        batch_size  = int(batch_size)
         
         #embedding strain
         if strain is not None and hasattr(self, 'embedding_network'):
@@ -172,8 +176,9 @@ class Flow(nn.Module):
                     max_b = eval(bounds['maximum']) if isinstance(bounds['maximum'], str) else bounds['maximum']
                 total_mask *= ((processed_samples_dict[name]<=max_b) * (processed_samples_dict[name]>=min_b))
             except:
+                log.warning(f"Could not restrict samples for {name} to bounds")
                 continue
-            
+
         for name in self.inference_parameters:
             restricted_samples_dict [name] = processed_samples_dict[name][total_mask]
         return restricted_samples_dict
