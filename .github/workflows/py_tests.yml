@@ -70,6 +70,7 @@ jobs:
             else
               echo "Badge not found, nothing to remove."
             fi
+          fi
 
       - name: Commit and push updated README if modified
         run: |
@@ -82,5 +83,6 @@ jobs:
             git push
           else
             echo "No changes to commit."
+          fi
 
       
