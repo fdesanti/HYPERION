@@ -93,7 +93,7 @@ class Flow(nn.Module):
         samples              = []
         nsteps               = num_samples // batch_size if num_samples>=batch_size else 1
         batch_samples        = batch_size if num_samples > batch_size else num_samples
-        disable_progress_bar = True if not verbose or nsteps == 1 else True
+        disable_progress_bar = True if not verbose or nsteps == 1 else False
 
         #sampling
         for _ in tqdm(range(nsteps), disable=disable_progress_bar):

@@ -36,26 +36,50 @@ jobs:
   update-readme:
     needs: test
     runs-on: ubuntu-latest
-    if: ${{ success() }}  # This job will only run if all tests pass
+    if: always()  # Run regardless of test outcome
     steps:
       - name: Checkout repository with push permissions
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Prepend test badge to README
-        run: |
-          # Define the test badge to be added at the top of the README
-          BADGE="![Test Status](https://img.shields.io/badge/Tests-Passed-brightgreen)"
-          # Prepend the badge and a blank line to the existing README.md content
-          { echo "$BADGE"; echo ""; cat README.md; } > README.new.md
-          mv README.new.md README.md
+      - name: Set test result environment variable
+        run: echo "TEST_RESULT=${{ needs.test.result }}" >> $GITHUB_ENV
 
-      - name: Commit and push updated README
+      - name: Update README with test badge based on test results
+        run: |
+          # Define the test badge as a variable.
+          BADGE="![Test Status](https://img.shields.io/badge/Tests-Passed-brightgreen)"
+          
+          if [ "$TEST_RESULT" = "success" ]; then
+            echo "Tests passed. Ensuring badge is present."
+            # Check if the badge is already present.
+            if grep -Fq "$BADGE" README.md; then
+              echo "Badge already present, no update needed."
+            else
+              # Prepend the badge and a blank line to the README.
+              { echo "$BADGE"; echo ""; cat README.md; } > README.new.md
+              mv README.new.md README.md
+            fi
+          else
+            echo "Tests failed. Removing badge if present."
+            # Check if the badge is in the README.
+            if grep -Fq "$BADGE" README.md; then
+              # Remove any line containing the badge.
+              sed -i "/$(echo "$BADGE" | sed 's/\//\\\//g')/d" README.md
+            else
+              echo "Badge not found, nothing to remove."
+            fi
+
+      - name: Commit and push updated README if modified
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add README.md
-          # The commit message includes "[skip ci]" to prevent retriggering the workflow
-          git commit -m "Update README with test badge on top [skip ci]" || echo "No changes to commit"
-          git push
+          # Only commit if there are staged changes.
+          if ! git diff-index --quiet HEAD --; then
+            git commit -m "Update README based on test result [skip ci]"
+            git push
+          else
+            echo "No changes to commit."
+          fi
