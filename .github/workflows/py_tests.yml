@@ -42,10 +42,10 @@ jobs:
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-
+  
       - name: Set test result environment variable
         run: echo "TEST_RESULT=${{ needs.test.result }}" >> $GITHUB_ENV
-
+  
       - name: Update README with test badge based on test results
         run: |
           # Define the test badge as a variable.
@@ -82,4 +82,5 @@ jobs:
             git push
           else
             echo "No changes to commit."
-          fi
+
+      
