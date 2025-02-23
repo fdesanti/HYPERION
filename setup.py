@@ -16,6 +16,8 @@ setup(
     author_email                  = "f.desanti@campus.unimib.it",
     license                       = "MIT",
     packages                      = find_packages(),
+    include_package_data          = True,
+    package_data                  = {"hyperion": ["config/*"]},  
     install_requires              = [
                       #torch-related
                       "torch>=2.1.0", 
