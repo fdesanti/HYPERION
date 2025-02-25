@@ -2,7 +2,7 @@ name: Build and Deploy Documentation
 
 on:
   push:
-    branches: [ none ]
+    branches: [ none]
   pull_request:
     branches: [ none ]
 
@@ -21,6 +21,10 @@ jobs:
       - name: Install dependencies
         run: |
           pip install sphinx sphinx_rtd_theme
+
+      - name: Generate API docs
+        run: |
+          sphinx-apidoc -f -o docs/api hyperion
 
       - name: Build the documentation
         working-directory: docs
