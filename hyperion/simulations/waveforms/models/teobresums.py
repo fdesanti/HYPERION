@@ -1,11 +1,18 @@
 """
 Instructions for the TEOBResumS waveform model:
 
->>> git clone https://git.ligo.org/rossella.gamba/teobresums
+>>> git clone https://bitbucket.org/teobresums/teobresums.git
 >>> cd teobresums
->>> git checkout dev/DALI
+>>> git checkout DALI
 >>> cd Python
->>> python setup.py install
+>>> python setup.py build_ext --inplace
+
+Then export the path to the Python folder to your PYTHONPATH. 
+>>> echo PYTHONPATH="<path_to_Python_folder>:$PYTHONPATH" > ~/.bashrc
+>>> echo export PYTHONPATH > ~/.bashrc
+>>> source ~/.bashrc
+
+Substitute ~/.bashrc with ~/.zprofile if you're on MacOS
 """
 
 import torch 
@@ -13,14 +20,6 @@ from importlib import import_module
 from hyperion.core.utilities import HYPERION_Logger
 
 log = HYPERION_Logger()
-
-'''
-try:
-    import EOBRun_module
-except ModuleNotFoundError as e: 
-    log.error(e)
-    log.warning("Unable to import EOBRun_module. Please refer to the documentation to install it. TEOBResumSDALI waveform model won't work otherwise")
-'''
 
 
 def modes_to_k(modes):
@@ -43,7 +42,6 @@ class  TEOBResumSDALI():
     
     def __init__(self, fs, **kwargs):
         try:
-        #import EOBRun_module
             eob_module = import_module('EOBRun_module')
             self.EOBRunPy = eob_module.EOBRunPy
         except ModuleNotFoundError as e: 
