@@ -59,7 +59,8 @@ class  TEOBResumSDALI():
         'interp_uniform_grid': "yes",  # interpolate mode by mode on a uniform grid. Default = "no" (no interpolation)
         'initial_frequency'  : .02,     # in Hz if use_geometric_units = 0, else in geometric units
         'ecc_freq'           : 1,      # Use periastron (0), average (1) or apastron (2) frequency for initial condition computation. Default = 1
-
+        'j_hyp'              : 4.0,    # Angular momentum for an hyperbolic capture. Default = 4.0
+        
         # Modes
         'use_mode_lm'        : modes_to_k(modes), # List of modes to use/output through EOBRunPy.
 
