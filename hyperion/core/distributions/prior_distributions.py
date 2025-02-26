@@ -1,5 +1,6 @@
 import torch
-from tensordict import TensorDict
+
+from ..types import TensorSamples
 from torch.distributions import Gamma
 
 N_ = int(1e7)
@@ -21,24 +22,6 @@ class Rand():
 
     def __call__(self, sample_shape, device, dtype=None):
         return torch.rand(sample_shape, generator = self.rng, device = device, dtype=dtype)
-
-#=======================================
-#TensorDict Wrapper Class
-#=======================================
-class TensorSamples(TensorDict):
-    """Wrapper class for TensorDict to better manage samples"""
-    
-    def flatten(self):
-        """Returns the samples as a single tensor"""
-        return torch.stack([self[key] for key in self.keys()], dim=-1)
-    
-    def to_tensor(self):
-        """Returns the samples as a single tensor"""
-        return self.flatten()
-    
-    def numpy(self):
-        """Returns the samples as a numpy array"""
-        return self.flatten().cpu().numpy()
 
 #=======================================
 # Analytical Prior Distributions
@@ -219,8 +202,6 @@ class CosinePrior(BasePrior):
         if standardize:
             samples = self.standardize_samples(samples)
         return samples
-    
-    
     
     
 class SinePrior(BasePrior):

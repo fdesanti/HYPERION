@@ -5,12 +5,12 @@ import torch.nn as nn
 
 from tqdm import tqdm
 from time import time
-from tensordict import TensorDict
+
 from astropy.time import Time
 from astropy.units.si import sday
 
+from ..types import TensorSamples
 from ..utilities import HYPERION_Logger
-from ..distributions import TensorSamples
 
 log = HYPERION_Logger()
 

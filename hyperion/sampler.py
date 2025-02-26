@@ -4,10 +4,13 @@ import torch
 import pandas as pd 
 
 from pathlib import Path
-from tensordict import TensorDict 
+
+
 
 from .core.flow import build_flow
-from .core.utilities import HYPERION_Logger
+from .core.types import TensorSamples
+from .core.utilities import HYPERION_Logger, latexify
+
 from .inference import ImportanceSampling
 from .simulations import redshift_from_luminosity_distance
 
@@ -156,12 +159,7 @@ class PosteriorSampler():
         
         return CBCResult(**bilby_kwargs)
     
-    def plot_skymap(self, posterior=None, **skymap_kwargs):
-        """Wrapper to Bilby plot skymap method."""
-        
-        bilby_result = self.to_bilby(posterior=posterior)
-        return bilby_result.plot_skymap(**skymap_kwargs)
-    
+    @latexify
     def plot_corner(self, posterior=None, injection_parameters=None, figname=None, **corner_kwargs):
         """Wrapper to Bilby plot corner method."""
         
@@ -183,6 +181,12 @@ class PosteriorSampler():
         default_corner_kwargs.update(corner_kwargs)
         figname = str(self.output_dir) + '/corner_plot.png' if figname is None else figname
         return bilby_result.plot_corner(filename=figname, truth=injection_parameters, **default_corner_kwargs)
+    
+    def plot_skymap(self, posterior=None, **skymap_kwargs):
+        """Wrapper to Bilby plot skymap method."""
+        
+        bilby_result = self.to_bilby(posterior=posterior)
+        return bilby_result.plot_skymap(**skymap_kwargs)
     
 
     def sample_posterior(self, **sampling_kwargs):
