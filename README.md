@@ -2,7 +2,7 @@
 
 # `HYPERION` - HYPer-fast close EncounteR Inference from Observations with Normalizing-flows 
 
-HYPERION is pipeline for the detection and Parameter Estimation of gravitational waves from Close Encounters (see e.g. https://arxiv.org/abs/1909.02143) based on Normalizing Flows (https://arxiv.org/abs/1912.02762) 
+HYPERION is pipeline based on [Normalizing Flows](https://arxiv.org/abs/1912.02762) for the detection and Parameter Estimation of gravitational waves from [Close Encounters](https://arxiv.org/abs/1909.02143)
 
 ## Installation
 
@@ -16,7 +16,7 @@ python setup.py install
 
 ### PyTorch installation
 By default (on Linux) PyTorch is shipped with the latest CUDA binaries. 
-Refer to the page https://pytorch.org/get-started/locally/ for other CUDA versions and/or installation
+Refer to the page [PyTorch page](https://pytorch.org/get-started/locally/) for other CUDA versions and/or installation
 options.
 
 ```
@@ -25,26 +25,6 @@ pip3 install torch torchvision torchaudio --index-url https://download.pytorch.o
 
 It is therefore recommended to install pytorch before installing the requirements
 
-
-### TEOBResumS-DALI installation
-TEOBResumS-DALI can be installed with the following steps.
-
-```
-git clone https://bitbucket.org/teobresums/teobresums.git
-cd teobresums
-git checkout DALI
-cd Python
-python setup.py build_ext --inplace
-```
-Then export the path to the Python folder to your PYTHONPATH. 
-
-```
-echo PYTHONPATH="<path_to_Python_folder>:$PYTHONPATH" > ~/.bashrc
-echo export PYTHONPATH > ~/.bashrc
-source ~/.bashrc
-```
-
-Substitute ~/.bashrc with ~/.zprofile if you're on MacOS
 
 ## Usage
 
