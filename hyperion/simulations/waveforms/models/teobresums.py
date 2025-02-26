@@ -130,12 +130,14 @@ class  TEOBResumSDALI():
         # Update the parameters      
         pars = self.kwargs.copy()
 
+        #check parameter consistency
         waveform_parameters = self._check_parameters(waveform_parameters)
         pars.update(waveform_parameters)
        
         # Run the model
         eob_output = self.EOBRunPy(pars)
         
+        #set the output
         output = {}
         output['t']  = torch.from_numpy(eob_output[0])
         output['hp'] = torch.from_numpy(eob_output[1])
