@@ -1,11 +1,8 @@
-
 import os
 import torch 
 import pandas as pd 
 
 from pathlib import Path
-
-
 
 from .core.flow import build_flow
 from .core.types import TensorSamples
@@ -49,7 +46,7 @@ class PosteriorSampler():
             self.output_dir = Path(flow_checkpoint_path).parent.absolute()
 
         self.device = device
-        return
+        
     
     #@property 
     def latex_labels(self, parameters=None): 
@@ -108,12 +105,10 @@ class PosteriorSampler():
         if not hasattr(self, '_posterior'):
             raise ValueError('Posterior has not been sampled yet. Run the "sample_posterior" method.')
         return self._posterior
-    
     @posterior.setter
     def posterior(self, posterior):
         self._posterior = posterior
         
-    
     @property
     def importance_weights(self):
         if not hasattr(self, '_importance_weights'):
@@ -140,11 +135,10 @@ class PosteriorSampler():
         """Export sampler results to a bilby CBC result object."""
         from bilby.gw.result import CBCResult 
 
-        
         if posterior is None:
             posterior = self.posterior
        
-        if isinstance(posterior, TensorDict):
+        if isinstance(posterior, TensorSamples):
             posterior= dict(posterior.cpu())
         
         parameter_keys = list(posterior.keys())
@@ -218,7 +212,7 @@ class PosteriorSampler():
         
         Args:
         -----
-            posterior (dict or TensorDict): posterior samples. (Default: uses the previously sampled posterior)
+            posterior  (dict, TensorDict): posterior samples. (Default: uses the previously sampled posterior)
             cosmology (astropy.cosmology): cosmology object to compute redshift from luminosity distance. (Default: Planck18)
         
         Returns:
@@ -261,34 +255,32 @@ class PosteriorSampler():
         
         Returns:
         --------
-            importance_weights: (torch.Tensor)
-                A tensor containing the importance weights.
+            importance_weights (torch.Tensor): A tensor containing the importance weights.
                 
         Note:
         -----
             For a list of the input arguments see the documentation of the ImportanceSampling.compute_model_evidence method.
-
-        
         """
         self.IS_results = self.IS.compute_model_evidence(**importance_sampling_kwargs)
         
-        return self.IS_results['stats']['weights'], self.IS_results['stats']['valid_samples']
+        return self.IS_results['weights'], self.IS_results['valid_samples']
     
-    def reweight_posterior(self, posterior=None, num_samples=None, importance_weights=None, importance_sampling_kwargs=None):
+    def reweight_posterior(self, posterior=None, num_samples=None, importance_weights=None, **importance_sampling_kwargs):
         """
         Sample from the importance reweighted posterior.
         
         Args:
         -----
-            importance_weights: (torch.Tensor)
-                A tensor containing the importance weights.
+            posterior         (TensorSamples): A dictionary containing the posterior samples.
+            num_samples                 (int): Number of samples to draw from the reweighted posterior.
+            importance_weights (torch.Tensor): A tensor containing the importance weights.
+            importance_sampling_kwargs (dict): A dictionary containing the importance sampling arguments.
         
         Returns:
         --------
             reweighted_posterior: (dict)
                 A dictionary containing the reweighted samples from the posterior distribution.
         """
-        
         log.info('Peforming Importance Sampling...')
         
         if posterior is None:
@@ -298,12 +290,12 @@ class PosteriorSampler():
         if importance_weights is None:
             if importance_sampling_kwargs is None:
                 raise ValueError('Either importance_weights or importance_sampling_kwargs must be provided.')
+            log.info('Computing importance weights...')
             importance_weights, valid_samples = self.sample_importance_weights(**importance_sampling_kwargs)
         
         #discard invalid samples in regular posterior
         self.posterior = posterior[valid_samples]
-        if not num_samples:
-            num_samples = len(self.posterior)
+        if not num_samples: num_samples = len(self.posterior)
         
         reweighted_indexes = torch.multinomial(importance_weights, num_samples, replacement=True)
         self.reweighted_posterior = self.posterior[reweighted_indexes]
