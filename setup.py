@@ -34,7 +34,9 @@ setup(
                       #gw related
                       "astropy", 
                       "pycbc",
-                      "bilby<=2.3.0"],  
+                      "bilby", 
+                      #other
+                      "scipy<=1.12.0"], #this is to solve a conflict with bilby
 
     scripts = ['scripts/run_train.py', 
                'scripts/test_train.py', 

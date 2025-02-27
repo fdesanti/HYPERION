@@ -42,8 +42,11 @@ class PosteriorSampler():
         #other attributes
         if output_dir:
             self.output_dir = output_dir  
-        else:
+        elif flow_checkpoint_path:
             self.output_dir = Path(flow_checkpoint_path).parent.absolute()
+        else:
+            self.output_dir = os.getcwd()
+            log.warning("No directory provided, using the current one")
 
         self.device = device
         

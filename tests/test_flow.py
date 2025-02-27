@@ -7,6 +7,7 @@ from torch.optim import Adam
 from hyperion.core.flow import *
 from hyperion.core.distributions import *
 
+
 def _test_flow(coupling):
     """Test unconditional flow training."""
     prior = MultivariatePrior(dict(x=UniformPrior(-1, 1), y=UniformPrior(-1, 1)))
