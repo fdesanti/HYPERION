@@ -5,7 +5,7 @@ permissions:
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, importance_sampling ]
   pull_request:
     branches: [ main ]
 
