@@ -1,4 +1,6 @@
 import torch
+import warnings
+warnings.filterwarnings("ignore", "Wswiglal-redir-stdio")
 
 from pycbc.waveform import get_td_waveform, get_fd_waveform
 
