@@ -1,9 +1,12 @@
 import torch 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from scipy.stats import kstest
 from .likelihood import  GWLikelihood
+from ...core.utilities import latexify
 from ...core.distributions.prior_distributions import MultivariatePrior
+
 
 class IS_Priors(MultivariatePrior):
     """ 
@@ -90,6 +93,46 @@ class ImportanceSampling():
     @property
     def inference_parameters(self):
         return self.flow.inference_parameters
+    
+    @staticmethod
+    @latexify
+    def plot_IS_results(IS_results, savepath=None, **rcParams):
+        """
+        Produces a plot with the Importance Sampling results. 
+        More specifically a scatter plot of the log flow posterior vs log prior + log likelihood
+        with a colormap given by the importance weights.
+
+        Args:
+        -----
+            IS_results (dict): Dictionary produced by the compute_model_evidence method
+            savepath   (Path): (Optional) path to which save the plot
+
+        Returns:
+        --------
+            fig (plt.fig): plot figure object 
+        """
+        #extract what we need
+        valid_samples  = IS_results['valid_samples']
+        log_prior      = IS_results['log_prior'][valid_samples]
+        log_likelihood = IS_results['log_likelihood']
+        log_posterior  = IS_results['log_posterior'][valid_samples]
+        weights        = IS_results['weights']
+
+        
+        #update rcParams
+        plt.rcParams['font.size'] = rcParams.get('fontsize', 18)
+
+        #create the plot
+        fig, ax = plt.subplots()
+        ax.scatter(log_posterior.cpu().numpy(), (log_prior+log_likelihood).cpu().numpy(),  c=weights.cpu().numpy(), cmap='viridis', s=2)
+        ax.set_xlabel(r'$\log q_\phi(\theta|s)$')
+        ax.set_ylabel(r'$\log \,p(\theta) + \log \,\mathcal{L}(s|\theta)$')
+        cbar = fig.colorbar(ax.collections[0], ax=ax)
+        cbar.set_label(r'$w_i$')
+        if savepath:
+            plt.savefig(savepath, bbox_inches='tight', dpi=200)
+        plt.show()
+        return fig
     
     @staticmethod
     def sample_efficiency( weights):
@@ -211,6 +254,9 @@ class ImportanceSampling():
         self._log10B  = self._logB/torch.log(torch.tensor(10))
         
         return self._logB, self._log10B, IS_results
+    
+    
+
     
     
     def compute_model_evidence(self, strain, whitened_strain, psd, event_time, normalize_weights=False):

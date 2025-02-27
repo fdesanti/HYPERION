@@ -5,6 +5,7 @@
 *.hdf5
 *.ipynb
 *.out
+deprecated*
 
 # Compiled files
 *.pyc
