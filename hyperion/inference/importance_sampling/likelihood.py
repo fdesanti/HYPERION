@@ -7,7 +7,7 @@ from ...core.fft import rfft, rfftfreq
 pi = torch.tensor(torch.pi)
 
 class GWLikelihood():
-    """
+    r"""
     Standard Gravitational Wave Gaussian Likelihood class implementation (see arxiv.org/pdf/1809.02293 (eq. 44) 
     We implement the Gaussian likelihood as follows:
 

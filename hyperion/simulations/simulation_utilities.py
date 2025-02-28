@@ -64,12 +64,12 @@ def noise_weighted_inner_product(a, b, psd, duration):
 
 
 def optimal_snr(frequency_domain_template, psd, duration):
-    """
+    r"""
     Computes the optimal SNR of a signal.
     
     .. math::
     
-        SNR_{opt} = \sqrt{(\tilde{h}|\tilde{h})}
+        \rho_{opt} = \sqrt{(\tilde{h}|\tilde{h})}
     
     Args:
     -----
@@ -86,12 +86,12 @@ def optimal_snr(frequency_domain_template, psd, duration):
     
     
 def matched_filter_snr(frequency_domain_template, frequency_domain_strain, psd, duration):
-    """
+    r"""
     Computes the matched filter SNR of a signal.
     
     .. math::
     
-        SNR^2 = \dfrac{(\tilde{h}|\tilde{s})}{\sqrt{(\tilde{h}|\tilde{h})}}
+        \rho^2 = \dfrac{(\tilde{h}|\tilde{s})}{\sqrt{(\tilde{h}|\tilde{h})}}
 
     Args:
     -----
@@ -114,12 +114,12 @@ def matched_filter_snr(frequency_domain_template, frequency_domain_strain, psd, 
 
 
 def network_optimal_snr(frequency_domain_strain, psd, duration):
-    """
+    r"""
     Computes the network SNR of a signal given by
     
     .. math::
 
-        SNR_{net} = \sqrt{\sum_{det} SNR_{det}^2}
+        \rho_{net} = \sqrt{\sum_{det} SNR_{det}^2}
 
     Args:
     -----
