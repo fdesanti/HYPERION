@@ -79,6 +79,3 @@ class KennEmbedding(Kenn):
         
         return embedded_strain
     '''
-
-    
-
