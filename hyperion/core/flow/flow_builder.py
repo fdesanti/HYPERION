@@ -19,7 +19,23 @@ def build_flow( prior_metadata           :dict = None,
                 checkpoint_path                = None,
                 config_file                    = None,
                ):
+    
+    """
+    Build a Flow object from scratch or from a saved model.
 
+    Args:
+        prior_metadata           (dict): Metadata of the prior distribution
+        flow_kwargs              (dict): Hyperparameters of the flow
+        coupling_layers_kwargs   (dict): Hyperparameters of the coupling layers
+        base_distribution_kwargs (dict): Hyperparameters of the base distribution
+        embedding_network_kwargs (dict): Hyperparameters of the embedding network
+        checkpoint_path           (str): Path to a saved model
+        config_file               (str): Path to a configuration file
+    
+    Returns:
+        Flow: a Flow object
+    """
+    
     #loading a saved model
     if checkpoint_path is not None:
         checkpoint = torch.load(checkpoint_path, map_location=torch.device('cpu'), weights_only=True)
