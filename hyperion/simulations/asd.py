@@ -13,7 +13,6 @@ class ASD_Sampler():
     Class that samples a new ASD from a reference one by generating random amplitude and phase for each frequency bin.
 
     Args:
-    -----
         ifo           (str): Detector identifier (e.g. L1, H1 or V1). If given it will use the default O3 asd stored in the config dir. Mutually exclusive with asd_file.
         reference_run (str): Reference run of the detector. Mutually exclusive with asd_file. (Default: 'O3')
         asd_file      (str): Path to asd (.txt) file specifying the reference asd. Mutually exclusive with ifo and reference_run. (Default: None)
@@ -89,16 +88,14 @@ class ASD_Sampler():
         Sample a new ASD from the reference one by generating random amplitude and phase for each frequency bin.
 
         Args:
-        -----
             batch_size         (int): Batch size for output sampled ASDs
             noise             (bool): If True, return the noise timeseries generated from the sampled ASD. (Default: False)
             use_reference_asd (bool): If True, return the reference ASD. (Default: False)
 
         Returns:
-        --------
-            sampled_asd    (torch.Tensor): Sampled ASD of shape [batch_size, fs//2+1]
-            noise_from_asd (torch.Tensor): Noise timeseries generated from the sampled ASD. (Only if noise=True)
-                
+            tuple: A tuple containing:
+                - **sampled_asd** (torch.Tensor): Sampled ASD of shape [batch_size, fs//2+1].
+                - **noise_from_asd** (torch.Tensor): Noise timeseries generated from the sampled ASD. (Only if noise=True)
         """
 
         asd_shape = (batch_size, len(self.f))

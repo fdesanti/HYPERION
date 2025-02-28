@@ -9,7 +9,7 @@ API_DIR = os.path.join(os.path.dirname(__file__), "api")
 PACKAGE_PREFIX = "hyperion."
 
 def organize_api_files():
-    """Move files from a flat structure into subfolders based on the main module."""
+    """Move files from a flat structure into nested subfolders based on the full module path."""
     print(f"Organizing API files in: {API_DIR}")
     print(f"Using package prefix: '{PACKAGE_PREFIX}'")
     for filename in os.listdir(API_DIR):
@@ -18,25 +18,25 @@ def organize_api_files():
             continue
 
         print(f"Processing file: {filename}")
-        # Remove the package prefix.
-        remainder = filename[len(PACKAGE_PREFIX):]  # e.g. "core.flow.transforms.permutation.rst"
-        parts = remainder.split(".")
-        if len(parts) < 2:
+        # Remove the package prefix and file extension.
+        base_name = filename[len(PACKAGE_PREFIX):-4]  # e.g. "core.flow.transforms.permutation"
+        parts = base_name.split(".")
+        if not parts:
             print(f"Skipping file (unexpected format): {filename}")
             continue
 
-        # Use the first part as the main module folder (e.g. "core")
-        main_module = parts[0]
-        target_folder = os.path.join(API_DIR, main_module)
+        # Build the nested folder path from all parts except the last.
+        if len(parts) > 1:
+            target_folder = os.path.join(API_DIR, *parts[:-1])
+        else:
+            target_folder = API_DIR
+
         if not os.path.exists(target_folder):
             os.makedirs(target_folder)
             print(f"Created folder: {target_folder}")
 
-        # Rebuild the new filename from the remaining parts.
-        new_filename = ".".join(parts[1:])
-        if not new_filename.endswith(".rst"):
-            new_filename += ".rst"
-
+        # The new file name is the last part plus the extension.
+        new_filename = parts[-1] + ".rst"
         src_path = os.path.join(API_DIR, filename)
         dst_path = os.path.join(target_folder, new_filename)
         print(f"Moving '{src_path}' to '{dst_path}'")
@@ -60,52 +60,45 @@ def replace_package_prefix_in_files():
                 with open(file_path, "w", encoding="utf-8") as f:
                     f.writelines(new_lines)
 
-def generate_subfolder_index(subfolder_path):
-    """Generate an index.rst in a subfolder that lists all .rst files (except its own index)."""
+def generate_indexes_for_directory(dir_path):
+    """
+    Recursively generate an index.rst in dir_path that lists:
+      - All subdirectories (referencing their own index.rst)
+      - All .rst files in dir_path (except index.rst itself)
+    """
     entries = []
-    for fname in sorted(os.listdir(subfolder_path)):
-        if fname.endswith(".rst") and fname != "index.rst":
-            doc_name = os.path.splitext(fname)[0]
+    subdirectories = []
+    for entry in sorted(os.listdir(dir_path)):
+        full_entry = os.path.join(dir_path, entry)
+        if os.path.isdir(full_entry):
+            subdirectories.append(entry)
+        elif entry.endswith(".rst") and entry != "index.rst":
+            doc_name = os.path.splitext(entry)[0]
             entries.append(doc_name)
-    if entries:
-        index_path = os.path.join(subfolder_path, "index.rst")
-        # Instead of appending " API", simply use the folder name capitalized.
-        folder_title = os.path.basename(subfolder_path).capitalize()
+
+    # Create an index if there are any files or subdirectories
+    if entries or subdirectories:
+        index_path = os.path.join(dir_path, "index.rst")
+        folder_title = os.path.basename(dir_path) if os.path.basename(dir_path) else "API Documentation"
         with open(index_path, "w", encoding="utf-8") as f:
             f.write(f"{folder_title}\n{'=' * len(folder_title)}\n\n")
             f.write(".. toctree::\n")
             f.write("   :maxdepth: 2\n\n")
+            # List subdirectories first
+            for sub in subdirectories:
+                f.write(f"   {sub}/index\n")
+            # Then list any individual .rst files
             for entry in entries:
                 f.write(f"   {entry}\n")
-        print(f"Created index in {subfolder_path}")
+        print(f"Created index in {dir_path}")
 
-def generate_top_level_index():
-    """Generate the top-level index.rst in API_DIR that includes each subfolder's index."""
-    subfolder_indexes = []
-    for entry in sorted(os.listdir(API_DIR)):
-        full_path = os.path.join(API_DIR, entry)
-        if os.path.isdir(full_path):
-            index_file = os.path.join(full_path, "index.rst")
-            if os.path.exists(index_file):
-                # Reference the subfolder index relative to API_DIR.
-                subfolder_indexes.append(f"{entry}/index")
-    top_index_path = os.path.join(API_DIR, "index.rst")
-    with open(top_index_path, "w", encoding="utf-8") as f:
-        title = "API Documentation"
-        f.write(f"{title}\n{'=' * len(title)}\n\n")
-        f.write(".. toctree::\n")
-        f.write("   :maxdepth: 2\n\n")
-        for sub_index in subfolder_indexes:
-            f.write(f"   {sub_index}\n")
-    print(f"Created top-level API index at {top_index_path}")
+    # Recurse into subdirectories.
+    for sub in subdirectories:
+        generate_indexes_for_directory(os.path.join(dir_path, sub))
 
 def generate_indexes():
-    """Generate indexes for all subfolders and the top-level API index."""
-    for entry in os.listdir(API_DIR):
-        subfolder_path = os.path.join(API_DIR, entry)
-        if os.path.isdir(subfolder_path):
-            generate_subfolder_index(subfolder_path)
-    generate_top_level_index()
+    """Generate indexes for all directories under API_DIR recursively."""
+    generate_indexes_for_directory(API_DIR)
 
 def main():
     organize_api_files()
