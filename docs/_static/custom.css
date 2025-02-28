@@ -10,3 +10,8 @@ body {
     word-wrap: break-word !important;
     overflow-x: auto !important;
 }
+
+/* Make return field names bold */
+.field-list dt.field-name {
+    font-weight: bold;
+}

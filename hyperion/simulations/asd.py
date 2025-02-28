@@ -18,7 +18,7 @@ class ASD_Sampler():
         asd_file      (str): Path to asd (.txt) file specifying the reference asd. Mutually exclusive with ifo and reference_run. (Default: None)
         fs          (float): Sampling frequency of output generated ASD. (Default: 2048 Hz)
         duration    (float): Duration of strain timeseries (seconds). Used to compute the proper frequency array. (Default: 2)
-        device        (str): Device on which perform the computation. Either 'cpu' or 'cuda:n' (Default: 'cpu')
+        device        (str): Device on which perform the computation. Either 'cpu' or 'cuda' (Default: 'cpu')
         random_seed   (int): Random seed to set the random number generator for reproducibility. (Default: None)
         fmin        (float): Minimum frequency to consider in the generated ASD. (Default: None)
     
