@@ -29,15 +29,23 @@ class IS_Priors(MultivariatePrior):
     
 
 class ImportanceSampling():    
-    """
+    r"""
     Class that performs Importance Sampling to estimate the Bayes Factor:
+
     .. math::
+
         \mathcal{B} = \frac{Z_{\text{model}}}{Z_{\text{noise}}}
+
     where
+
     .. math::
+
         Z_{\text{model}} = \frac{1}{N} \sum \frac{p(\theta)\, p(s|\theta)}{q(\theta|s)}
+
     and
+
     .. math::
+
         Z_{\text{noise}} = \text{noise likelihood}
     
     Args:
@@ -46,9 +54,7 @@ class ImportanceSampling():
         waveform_generator   (WaveformGenerator): Waveform Generator object
         device                             (str): Either 'cpu' or 'cuda'. (Default 'cpu')
         num_posterior_samples              (int): Number of posterior samples to draw
-        reference_posterior_samples (TensorDict): (Optional) reference posterior samples to compare with. 
-                                                  They are used in the FAR computation to derive a 
-                                                  detection statistics based on Bayes Factor
+        reference_posterior_samples (TensorDict): (Optional) reference posterior samples to compare with. They are used in the FAR computation to derive a detection statistics based on Bayes Factor
     """
     def __init__(self, 
                  flow, 
@@ -136,7 +142,7 @@ class ImportanceSampling():
     
     @staticmethod
     def sample_efficiency( weights):
-        """
+        r"""
         Computes the sampling efficiency of the Importance Sampling method.
         It is defined as:
 
@@ -185,9 +191,7 @@ class ImportanceSampling():
             theta        (TensorSamples): Posterior samples
             log_posterior (torch.Tensor): Log flow posterior defined as log \(q(\theta| s) = log N(f^{-1}(u)) + log J(f^{-1}(u))\)
             medians               (list): Medians of the posterior samples
-            ks_stat              (float): Kolmogorov-Smirnov statistic comparing posterior samples to reference samples. 
-                                          If no reference samples are provided, it returns 'None'
-        
+            ks_stat              (float): Kolmogorov-Smirnov statistic comparing posterior samples to reference samples. If no reference samples are provided, it returns 'None'
         """
         torch_strain = torch.stack([whitened_strain[det] for det in self.det_names]).unsqueeze(0)
         
@@ -212,7 +216,7 @@ class ImportanceSampling():
         return theta, log_posterior, medians, ks_stat
    
     def compute_Bayes_factor(self, strain, whitened_strain, psd, event_time):
-        """
+        r"""
         Method that computes the Bayes factor of signal vs noise hypotheses.
         The Bayes factor is defined as:
 
@@ -237,8 +241,7 @@ class ImportanceSampling():
         --------
             logB      (float): Natural logarithm of the Bayes factor
             log10B    (float): Logarithm (base 10) of the Bayes factor
-            IS_results (dict): Dictionary containing the results of the Importance Sampling method. 
-                               See compute_model_evidence() method for details.
+            IS_results (dict): Dictionary containing the results of the Importance Sampling method. See compute_model_evidence() method for details.
         """
         #run the Importance Sampling method    
         IS_results = self.compute_model_evidence(strain, whitened_strain, psd, event_time)
@@ -255,12 +258,8 @@ class ImportanceSampling():
         
         return self._logB, self._log10B, IS_results
     
-    
-
-    
-    
     def compute_model_evidence(self, strain, whitened_strain, psd, event_time, normalize_weights=False):
-        """
+        r"""
         Computes the model evidence \( Z \) using Importance Sampling.
         The model evidence is defined as:
 

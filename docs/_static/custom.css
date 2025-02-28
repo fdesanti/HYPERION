@@ -1,0 +1,12 @@
+/* Wrap general text */
+body {
+    word-wrap: break-word !important;
+    white-space: normal !important;
+}
+
+/* Force code blocks to wrap long lines */
+.highlight pre {
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    overflow-x: auto !important;
+}
