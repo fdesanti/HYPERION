@@ -52,7 +52,7 @@ class ImportanceSampling():
         waveform_generator   (WaveformGenerator): Waveform Generator object
         device                             (str): Either 'cpu' or 'cuda'. (Default 'cpu')
         num_posterior_samples              (int): Number of posterior samples to draw
-        reference_posterior_samples (TensorDict): (Optional) reference posterior samples to compare with. They are used in the FAR computation to derive a detection statistics based on Bayes Factor
+        reference_posterior_samples (TensorDict, optional): Reference posterior samples to compare with. They are used in the FAR computation to derive a detection statistics based on Bayes Factor
     """
     def __init__(self, 
                  flow, 
@@ -107,8 +107,8 @@ class ImportanceSampling():
         with a colormap given by the importance weights.
 
         Args:
-            IS_results (dict): Dictionary produced by the compute_model_evidence method
-            savepath   (Path): (Optional) path to which save the plot
+            IS_results           (dict): Dictionary produced by the compute_model_evidence method
+            savepath   (Path, optional): Path to which save the plot
 
         Returns:
             fig (plt.fig): plot figure object 

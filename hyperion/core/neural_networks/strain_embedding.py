@@ -7,7 +7,23 @@ import torch.nn as nn
 from .torch_layers import GlobalMaxPooling1D, ResBlock
 
 class EmbeddingNetwork(nn.Module):
-    
+    """
+    Embedding Network implementation as in PhysRevD.109.102004
+
+    Args:
+        strain_shape  (list): Shape of the input strain tensor
+        fs             (int): Sampling frequency of the strain data
+        num_blocks     (int): Number of residual blocks
+        block_dims     (list): List of dimensions of the residual blocks
+        strain_out_dim  (int): Output dimension of the embedding network
+        use_batch_norm (bool): Use batch normalization. (Default: True)
+        activation (torch.nn.Module): Activation function. (Default nn.ELU())
+        dropout_probability  (float): Dropout probability. (Default 0.0)
+        CNN_filters           (list): List of filters for the CNN layers
+        CNN_kernel_sizes       (list): List of kernel sizes for the CNN layers
+        CNN_localization_filters (list): List of filters for the localization CNN layers
+
+    """
     def __init__(self, 
                  strain_shape : list, 
                  fs = None,
@@ -141,12 +157,9 @@ class EmbeddingNetwork(nn.Module):
         #ASD Embedding
         #asd_embed = self.ASD_embedding(asd*1e20)
         
-
         #Morphology CNN
         out_CNN = self.CNN(s)
-        #print('morphology CNN', out_CNN)
 
-        
         #Localization CNN
         out_CNN_localization = torch.tensor([], device=strain.device)
         
@@ -155,7 +168,6 @@ class EmbeddingNetwork(nn.Module):
         out_CNN_localization = self.out_CNN_localization_block_linear(out_CNN_localization)
         
         out_CNN_localization = self.Dropout(out_CNN_localization)
-        #print('out CNN localization', out_CNN_localization)
         
         #Combination of the two CNN blocks
         out = torch.cat([out_CNN, out_CNN_localization], dim = 1)

@@ -5,7 +5,14 @@ from deepfastet.model import Kenn, KennConfig, KennAttention, KennAttentionHead
 from .torch_layers import ResBlock
 
 class KennEmbedding(Kenn):
-    """Wrapper for the KENN embedding."""
+    """
+    Wrapper for the KENN embedding.
+
+    Args:
+        strain_shape  (list): Shape of the input strain tensor
+        fs            (int): Sampling frequency of the strain data
+        kwargs: Additional keyword arguments to initialize the KENN network
+    """
     
     def __init__(self, strain_shape, fs, **kwargs):
 
