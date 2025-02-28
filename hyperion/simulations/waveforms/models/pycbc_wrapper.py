@@ -12,9 +12,10 @@ class PyCBCWaveform:
 
     Args:
     -----
-        fs (float): sampling frequency
-        mode (str): 'TD' or 'FD'. (Default: 'TD')
-        **kwargs: Additional keyword arguments to pass to the waveform generator
+        fs   (float): sampling frequency
+        mode   (str): 'TD' or 'FD'. (Default: 'TD')
+        kwargs      : Additional keyword arguments to pass to the waveform generator
+    
     """
 
     def __init__(self, fs=2048, mode='TD', **kwargs):
