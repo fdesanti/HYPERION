@@ -22,17 +22,17 @@ jobs:
         run: |
           pip install sphinx sphinx_rtd_theme
 
-      - name: Generate API docs
-        run: |
-          sphinx-apidoc -f -o docs/api hyperion
+      # - name: Generate API docs
+      #   run: |
+      #     sphinx-apidoc -f -o docs/api hyperion
 
       - name: Build the documentation
         working-directory: docs
         run: |
-          make html
+          make docs
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/build/html
+          publish_dir: docs/_build/html
