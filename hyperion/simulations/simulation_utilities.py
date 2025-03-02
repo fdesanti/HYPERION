@@ -18,7 +18,6 @@ def luminosity_distance_from_redshift(z, cosmology=Planck18):
     Computes the luminosity distance from the redshift assuming a given cosmology.
     
     Args:
-    -----
         z         (float, torch.Tensor): Redshift
         cosmology   (astropy.cosmology): Cosmology object. (Default is Planck18).
     """
@@ -29,7 +28,6 @@ def redshift_from_luminosity_distance(dl, cosmology=Planck18):
     Computes the redshift from the luminosity distance assuming a given Cosmology.
     
     Args:
-    -----
         dl        (float, torch.Tensor): Luminosity distance in Mpc
         cosmology   (astropy.cosmology): Cosmology object. (Default is Planck18).
     """
@@ -45,15 +43,14 @@ def redshift_from_luminosity_distance(dl, cosmology=Planck18):
 #======================================
 
 def noise_weighted_inner_product(a, b, psd, duration):
-    """
+    r"""
     Computes the noise weighted inner product of two frequency domain signals a and b.
 
     .. math::
 
-        (a|b) =  \dfrac{4}{T} \int_{0}^{\infty} \dfrac{\tilde{a}^*(f) \tilde{b}(f)}{S_n(f)} df
+        \langle a|b \rangle =  \dfrac{4}{T} \int_{0}^{\infty} \dfrac{\tilde{a}^*(f) \tilde{b}(f)}{S_n(f)} df
 
     Args:
-    -----
         a   (torch.Tensor): Frequency domain signal
         b   (torch.Tensor): Frequency domain signal
         psd (torch.Tensor): Power spectral density
@@ -69,10 +66,9 @@ def optimal_snr(frequency_domain_template, psd, duration):
     
     .. math::
     
-        \rho_{opt} = \sqrt{(\tilde{h}|\tilde{h})}
+        \rho_{opt} = \sqrt{\langle \tilde{h}|\tilde{h}\rangle}
     
     Args:
-    -----
         frequency_domain_template (torch.Tensor): Frequency domain signal
         psd                       (torch.Tensor): Power spectral density
         duration                         (float): Duration of the signal
@@ -91,10 +87,9 @@ def matched_filter_snr(frequency_domain_template, frequency_domain_strain, psd, 
     
     .. math::
     
-        \rho^2 = \dfrac{(\tilde{h}|\tilde{s})}{\sqrt{(\tilde{h}|\tilde{h})}}
+        \rho^2 = \dfrac{\langle \tilde{h}|\tilde{s}\rangle}{\sqrt{\langle \tilde{h}|\tilde{h}\rangle}}
 
     Args:
-    -----
         frequency_domain_template (torch.Tensor): Frequency domain template signal
         frequency_domain_strain   (torch.Tensor): Frequency domain signal
         psd                       (torch.Tensor): Power spectral density
@@ -119,10 +114,9 @@ def network_optimal_snr(frequency_domain_strain, psd, duration):
     
     .. math::
 
-        \rho_{net} = \sqrt{\sum_{det} SNR_{det}^2}
+        \rho_{net} = \sqrt{\sum_{det} \rho_{det}^2}
 
     Args:
-    -----
         frequency_domain_strain (dict, TensorDict): Frequency domain signals
         psd                         (torch.Tensor): Power spectral density
         duration                           (float): Duration of the signal
@@ -142,14 +136,12 @@ def rescale_to_network_snr(h, new_snr, old_snr=None, **kwargs):
     Then the rescaling is done by multiplying the signal by the ratio between the new and old SNR.
     
     Args:
-    -----
         h          (dict, TensorDict): Time domain signals. 
         new_snr (float, torch.Tensor): New network SNR
         old_snr (float, torch.Tensor): Old network SNR. If None it will be computed.
         kwargs                       : Additional arguments to pass to the optimal_snr function (e.g. the sampling frequency to compute the fft)
     
     Returns:
-    --------
         hnew (dict, TensorDict): rescaled time domain signals
     """
 
