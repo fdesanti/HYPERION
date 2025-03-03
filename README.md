@@ -67,9 +67,7 @@ If you use `HYPERION`, please cite the
 
 > De Santi et al., Physical Review D **109**, 102004 (2024)
 
-**Bibtex**
-
-```
+```bibtex
 @article{DeSanti2024,
   title = {Deep learning to detect gravitational waves from binary close encounters: Fast parameter estimation using normalizing flows},
   author = {De Santi, Federico and Razzano, Massimiliano and Fidecaro, Francesco and Muccillo, Luca and Papalini, Lucia and Patricelli, Barbara},
