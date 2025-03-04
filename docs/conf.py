@@ -19,7 +19,13 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.mathjax']
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
+def skip_member(app, what, name, obj, skip, options):
+    if name == '__call__':
+        return False  # Do not skip __call__
+    return skip
 
+def setup(app):
+    app.connect('autodoc-skip-member', skip_member)
 
 
 # -- Options for HTML output -------------------------------------------------

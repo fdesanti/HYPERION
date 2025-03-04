@@ -8,6 +8,7 @@ Instructions for the TEOBResumS waveform model:
 >>> python setup.py build_ext --inplace
 
 Then export the path to the Python folder to your PYTHONPATH. 
+
 >>> echo PYTHONPATH="<path_to_Python_folder>:$PYTHONPATH" > ~/.bashrc
 >>> echo export PYTHONPATH > ~/.bashrc
 >>> source ~/.bashrc
