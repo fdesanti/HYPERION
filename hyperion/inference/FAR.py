@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 import pandas as pd
 
-from hyperion.importance_sampling import *
+from hyperion.inference.importance_sampling import *
 
 import matplotlib.pyplot as plt
 
@@ -460,5 +460,3 @@ class DetectionStat():
 
         
         return self.FAR, self.FAP, logB, log10B, sample_efficiency
-    
-

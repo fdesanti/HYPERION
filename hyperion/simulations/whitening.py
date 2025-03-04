@@ -19,14 +19,14 @@ def fir_from_transfer(transfer, ntaps, window='hann', ncorner=None):
 
     Args:
     -----
-        transfer (tensor)    : transfer function to start from, must have at least ten samples
-        ntaps (int)          : number of taps in the final filter, must be an even number
-        window (str, tensor) : (optional) window function to truncate with. (Default: 'hann')
-        ncorner (int)        : (optional) number of extra samples to zero off at low frequency. (Default: 'None')
+        transfer     (torch.Tensor): transfer function to start from, must have at least ten samples
+        ntaps                 (int): number of taps in the final filter, must be an even number
+        window  (str, torch.Tensor): (Optional) window function to truncate with. (Default: 'hann')
+        ncorner               (int): (Optional) number of extra samples to zero off at low frequency. (Default: 'None')
         
     Returns:
     --------
-        out (tensor) : A time domain FIR filter of length 'ntaps'
+        out (torch.Tensor): A time domain FIR filter of length 'ntaps'
 
     """
     # truncate and highpass the transfer function
@@ -43,12 +43,12 @@ def truncate_transfer(transfer, ncorner=None):
 
     Args:
     -----
-        transfer (tensor) :  transfer function to start from, must have at least ten samples
-        ncorner (int)     :  (optional) number of extra samples to zero off at low frequency. (Default: 'None')
+        transfer (torch.Tensor): Transfer function to start from, must have at least ten samples
+        ncorner           (int): (Optional) number of extra samples to zero off at low frequency. (Default: 'None')
         
     Returns:
     --------
-        out (tensor) :  the smoothly truncated transfer function
+        out (torch.Tensor): the smoothly truncated transfer function
     """
     #recall that transfer has shape [batch_size, nsamp]
     nsamp = transfer.size()[-1]
@@ -63,13 +63,13 @@ def truncate_impulse(impulse, ntaps, window='hann'):
 
     Args:
     -----
-    impulse (tensor):  the impulse response to start from
-    ntaps   (int)   :  number of taps in the final filter
-    window  (str)   : (optional) window function to truncate with. (Default: 'hann')
-        
+        impulse (torch.Tensor): impulse response to start from
+        ntaps           (int): number of taps in the final filter
+        window          (str): window function to apply to the FIR filter. (Default is 'hann')
+
     Returns:
     --------
-        out (tensor): the smoothly truncated impulse response
+        out (torch.Tensor): the smoothly truncated impulse response
     """
     
     out  = impulse.clone()
@@ -91,13 +91,13 @@ def convolve(signal, fir, window='hann'):
     
     Args:
     -----
-        signal (tensor) : input time series
-        fir    (tensor) : FIR filter
-        window (str)    : window function to apply to the FIR filter. (Default is 'hann')
+        signal (torch.Tensor): input signal to convolve
+        fir    (torch.Tensor): FIR filter to convolve with
+        window          (str): window function to apply to the FIR filter. (Default is 'hann')
 
     Returns:
     --------
-        conv (tensor)    : convolved time series
+        conv (torch.Tensor): the convolved signal
         
     Note:
     -----
@@ -137,35 +137,32 @@ def convolve(signal, fir, window='hann'):
         # handle last chunk separately
         conv[:,-nfft+pad:] = fftconvolve(in_[:,-nfft:], fir,
                                        mode='same')[:,-nfft+pad:]
-        
     return conv
 
 
 #=====================================================
-#============== WhitenNet Class  =====================
+#==============  WhitenNet Class  ====================
 #=====================================================                              
 class WhitenNet:
     """
     Class that performs whitening and adds Gaussian Noise to the data.
     It can exploit GPU acceleration.
 
-    Constructor Args:
-    -----------------
-        fs (float)           : sampling frequency.
-        duration (float)     : duration of the signal.
-        rng (torch.Generator): random number generator. (Default is None).
-        device (str)         : device to use for computations: either 'cpu' or 'cuda'. 
-                               (Default is 'cpu').
+    Args:
+    -----
+        fs              (int): Sampling frequency [Hz]
+        duration      (float): Duration of the data segment [s]
+        device          (str): Device to use for computation (Default: 'cpu')
+        rng (torch.Generator): Random number generator for adding noise
+        
     """
 
-    def __init__(self, fs, duration, rng=None, device='cpu'):
+    def __init__(self, fs, duration, device='cpu', rng=None):
 
         self.fs       = fs
         self.device   = device
         self.duration = duration
         self.rng      = rng
-
-        return
 
     @property
     def n(self):
@@ -211,50 +208,42 @@ class WhitenNet:
         
         Args:
         -----
-            h (dict of torch.Tensor): whitened signals
-            normalized (bool)       : whether to normalize the noise to have unit variance
+            h (dict, TensorDict): whitened signals
+            normalized     (bool): whether to normalize the noise to have unit variance
         """
-        
         for det in h.keys():
-            
+
             noise = torch.normal(mean=torch.ones_like(h[det])*self.noise_mean, 
                                  std =torch.ones_like(h[det])*self.noise_std, 
                                  generator=self.rng)
+            
             if normalize:
                 noise /= self.noise_std
-            
             h[det] += noise 
-            
-            #h[det] += torch.randn_like(h[det])
-            
+
         return h
     
-    
-    def whiten(self, h, asd, time_shift=None, noise=None, add_noise=True, 
+    def whiten(self, h, asd, time_shift=None, add_noise=True, noise=None,
                fduration=None, window='hann', ncorner=0, normalize=True, method='gwpy'):
         """
         Whiten the input signal and (optionally) add Gaussian noise.
         Whitening is performed by dividing the signal by its ASD in the frequency domain.
+        If method='gwpy', the whitening is performed using a FIR filter designed from the ASD as in the gwpy library. 
+        Otherwise, the whitening is performed by dividing the signal by the ASD in the frequency domain.
 
         Args:
         -----
-            h (TensorDict)         : input signal(s) from different detectors
-            asd (TensorDict)       : ASD of the noise for each detector
-            time_shift (TensorDict): time shift for each detector. (Default is None)
-            noise (TensorDict)     : Gaussian noise to add to the input template(s) - Mutually
-                                     exclusive with the 'add_noise' argument.
-            add_noise (bool): whether to add Gaussian noise to the whitened signal(s)
-            normalize (bool): whether to normalize the whitened signal(s) to have unit variance
-            method (str)    : method to use for whitening
-                              If "gwpy" constructs the FIR as in gwpy.
-                              Otherwise when "pycbc" just divide the frequency domain
-                              with the ASD. (Default is 'gwpy')
-
-        Returns:
-        --------
-            whitened (TensorDict)   : whitened signal(s) (with added noise).
+            h          (dict, TensorDict): Input signal(s) to whiten
+            asd        (dict, TensorDict): ASD of the noise
+            time_shift (dict, TensorDict): time shift for each detector to apply to the signal
+            add_noise              (bool): Whether to add Gaussian noise to the whitened signal. If True, white noise is added. (Default: True)
+            noise      (dict, TensorDict): Gaussian noise to add to the signal. Mutually exclusive with add_noise
+            fduration             (float): Duration of the filter to use for the whitening (only for method='gwpy')
+            window                  (str): Window function to use for the FIR filter (only for method='gwpy')
+            ncorner                 (int): Number of extra samples to zero off at low frequency (only for method='gwpy')
+            normalize              (bool): Whether to normalize the noise to have unit variance
+            method                  (str): Method to use for whitening ('gwpy' or 'pycbc'). (Default: 'gwpy')
         """
-        
         fft_norm = self.n if method == 'gwpy' else self.fs
 
         #define the output whitened strain tensordict
@@ -270,9 +259,6 @@ class WhitenNet:
             shift = time_shift[det] if time_shift is not None else 0
             hf = rfft(ht, n=self.n, norm=fft_norm) * torch.exp(-2j * torch.pi * self.freqs * shift) 
 
-            #if noise:
-            #    hf += rfft(noise[det], n=self.n, fs=self.fs)
-            
             #gwpy whitening method
             if method == 'gwpy':
                 if not fduration:
@@ -281,14 +267,7 @@ class WhitenNet:
                 ht    = irfft(hf*nout, n=nout)   #NOTE - for this ifft method see https://github.com/gwpy/gwpy/blob/main/gwpy/frequencyseries/frequencyseries.py
                 ntaps = int((fduration * self.fs))
                 fir   = fir_from_transfer(1/asd[det], ntaps=ntaps, window=window, ncorner=ncorner)
-                '''
-                import matplotlib.pyplot as plt
-                plt.plot(fir.cpu().numpy()[0])
-                plt.show()
 
-                plt.loglog(self.freqs.cpu().numpy(), asd[det].cpu().numpy()[0])
-                plt.show()
-                '''
                 whitened[det] = convolve(ht, fir, window=window)
             
             else:
@@ -302,14 +281,11 @@ class WhitenNet:
             if normalize:
                 whitened[det] /= self.noise_std
         
-        
         if add_noise and not noise:
             whitened = self.add_gaussian_noise(whitened, normalize)
         
         return whitened
     
-
     def __call__(self, **whiten_kwargs):
+        """Wrapper to the whiten method."""
         return self.whiten(**whiten_kwargs)
-        
-

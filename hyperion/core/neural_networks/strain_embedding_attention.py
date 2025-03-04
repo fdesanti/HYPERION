@@ -12,6 +12,22 @@ from  hyperion.core.neural_networks.torch_layers import (GlobalMaxPooling1D,
 
 
 class EmbeddingNetworkAttention(nn.Module):
+    """
+    Embedding Network implementation exploiting the Attention Mechanism
+
+    Args:
+        strain_shape  (list): Shape of the input strain tensor
+        fs            (int): Sampling frequency of the strain data
+        num_blocks    (int): Number of residual blocks
+        block_dims    (list): List of dimensions of the residual blocks
+        strain_out_dim (int): Output dimension of the embedding network
+        use_batch_norm (bool): Use batch normalization
+        activation (torch.nn.Module): Activation function. (Default: nn.ELU())
+        dropout_probability  (float): Dropout probability (Default: 0.0)
+        CNN_filters           (list): List of filters for the CNN layers
+        CNN_kernel_sizes       (list): List of kernel sizes for the CNN layers
+        kwargs: Additional keyword arguments
+    """
 
     def __init__(self, 
                  strain_shape: list,

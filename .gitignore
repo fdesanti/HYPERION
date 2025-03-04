@@ -18,5 +18,8 @@ __pycache__/
 #trained model directory
 scripts/training_results/
 
+#doc directory
+docs/
+
 # Jupyter Notebook
 .ipynb_checkpoints

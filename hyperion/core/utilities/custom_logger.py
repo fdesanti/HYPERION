@@ -1,8 +1,4 @@
 
-""" 
-This class contains a custom logger
-"""
-
 import os
 import sys
 import time
@@ -10,7 +6,7 @@ import logging
 
 class HYPERION_Logger(logging.Logger):
     """
-    This class contains a custom logger
+    This class implements a custom logger.
     """
 
     def __init__(self, name=None, m_loglevel="INFO",m_file_logging=False,m_log_dir=None):
@@ -52,32 +48,12 @@ class HYPERION_Logger(logging.Logger):
         if m_file_logging:
             self.info("Log file saved to "+file_handler_name)
 
-        #self.info('Logger started at ' + self.__start_time + " (LEVEL=" + str(self.getEffectiveLevel()) + ")")
-
-        #self.__stdout_logger = logging.getLogger('STDOUT')
-        #self.__sl = StreamToLogger(self.__stdout_logger, logging.INFO)
-        #sys.stdout =self.__sl
-
     def get_log_filename(self):
-        """
-
-        :return:
-        """
-
         return self.__log_filename
 
 
     def set_loglevel(self,m_loglevel):
-        """
-
-        :param m_loglevel:
-        :return:
-
-        """
-
         if m_loglevel=="DEBUG":
             self.setLevel(logging.DEBUG)
         if m_loglevel == "INFO":
             self.setLevel(logging.INFO)
-
-        #self.info("Logging level set to "+m_loglevel)

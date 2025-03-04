@@ -6,7 +6,12 @@ import torch.nn as nn
 
 
 class GlobalMaxPooling1D(nn.Module):
-     """Pytorch implementation of GlobalMaxPooling1D"""
+     """
+     Pytorch implementation of GlobalMaxPooling1D
+     
+     Args:
+        data_format (str): The data format. Can be 'channels_last' or 'channels_first
+     """
      def __init__(self, data_format='channels_last'):
           super(GlobalMaxPooling1D, self).__init__()
           self.data_format = data_format
@@ -16,8 +21,12 @@ class GlobalMaxPooling1D(nn.Module):
           return torch.max(input, axis=self.step_axis).values
      
 class GlobalAvgPooling1D(nn.Module):
-     """Pytorch implementation of GlobalAvgPooling1D"""
-
+     """
+     Pytorch implementation of GlobalAvgPooling1D
+     
+     Args:
+        data_format (str): The data format. Can be 'channels_last' or 'channels_first
+     """
      def __init__(self, data_format='channels_last'):
           super(GlobalAvgPooling1D, self).__init__()
           self.data_format = data_format
@@ -34,6 +43,14 @@ class SeparableConv1d(nn.Module):
     The initial datas must be of this form x = [Batch_size, N_detectors, len_strain]
 
     It should be faster than standard convolutions
+
+    Args:
+        in_channels  (int)   : The number of input channels
+        out_channels (int)   : The number of output channels
+        kernel_size  (int)   : The size of the kernel
+        bias         (bool)  : If True, adds a learnable bias to the output
+        stride       (int)   : The stride of the convolution
+        padding      (int)   : The padding of the convolution
     """
     def __init__(self, in_channels, out_channels, kernel_size, bias, stride, padding = 0):
         super(SeparableConv1d, self).__init__()
@@ -100,7 +117,6 @@ class Slicer(nn.Module):
     (possibly overlapping) windows of a fixed length
 
     Args:
-    -----
         input_len (int)    : The length of the input strain tensor
         fs (int)           : The sampling frequency of the input strain tensor
         segment_len (float): The length in seconds of the output segments

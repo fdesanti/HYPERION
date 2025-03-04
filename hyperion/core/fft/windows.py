@@ -8,9 +8,9 @@ def get_window(window, **kwargs):
     """Get a window function by name."""
     return globals()[window](**kwargs)
 
-########################
+#=======================
 # Helper functions 
-########################
+#=======================
 def _len_guards(M):
     """Handle small or incorrect window lengths"""
     if int(M) != M or M < 0:
@@ -31,15 +31,13 @@ def _truncate(w, needed):
     else:
         return w
 
-
-########################
+#========================
 # window functions
-########################
-class HANN():
+#========================
+class hann():
     """wrapper for torch.hann_window."""
     def __call__(self, **kwargs):
         return torch.hann_window(**kwargs)
-hann = HANN()
 
 
 def tukey(M=2048, alpha = 0.5, sym = True, device='cpu'):
@@ -47,28 +45,15 @@ def tukey(M=2048, alpha = 0.5, sym = True, device='cpu'):
     (adapted from the Scipy library).
     
     Args:
-    -----
-        M: int
-            Number of samples in the window. If zero or less, an empty
-            tensor is returned.
-        alpha: float
-            Shape parameter of the Tukey window, representing the fraction
-            of the window inside the cosine tapered region. If zero, the
-            Tukey window is equivalent to a rectangular window. If one, the
-            Tukey window is equivalent to a Hann window.
-        sym: bool
-            When True generates a symmetric window for filter design, while
-            False generates a periodic window for spectral analysis. 
-            (Default: True)
+        M       (int):Number of samples in the window. If zero or less, an empty tensor is returned.
+        alpha (float): Shape parameter of the Tukey window, representing the fraction of the window inside the cosine tapered region. If zero, the Tukey window is equivalent to a rectangular window. If one, the Tukey window is equivalent to a Hann window.
+        sym    (bool): When True generates a symmetric window for filter design, while False generates a periodic window for spectral analysis. (Default: True)
             
     Returns:
-    --------
         A tensor containing the Tukey window, with the same size as M.
         
     Note:
-    -----
-        See scipy.signal.windows.tukey for more details.
-        
+        See scipy.signal.windows.tukey for more details.  
     """
     
     if _len_guards(M):
@@ -100,17 +85,14 @@ def planck(N, nleft=0, nright=0, device='cpu'):
     Returns a Planck-taper window.
     
     Args:
-    -----
-        N (int)      : Number of samples in the window.
-        nleft (int)  : Number of samples to taper on the left side  (should be < N/2).
-        nright (int) : Number of samples to taper on the right side (should be < N/2).
-        device (str) : Device to store the window tensor. (Default: 'cpu')
+        N      (int): Number of samples in the window.
+        nleft  (int): Number of samples to taper on the left side  (should be < N/2).
+        nright (int): Number of samples to taper on the right side (should be < N/2).
+        device (str): Device to store the window tensor. (Default: 'cpu')
     
     Returns:
-    --------
         out (tensor) : A tensor containing the Planck window, with the same size as N.
     """
-    
     out = torch.ones(N, device=device)
     if nleft:
         out[0] *= 0

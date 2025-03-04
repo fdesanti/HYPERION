@@ -13,45 +13,18 @@ class ASD_Sampler():
     Class that samples a new ASD from a reference one by generating random amplitude and phase for each frequency bin.
 
     Args:
-    -----
-        ifo : str
-            Detector identifier (e.g. L1, H1 or V1). If given it will use the default O3 asd stored in the config dir.
-            Mutually exclusive with asd_file
-
-        asd_file : str 
-            Path to asd (.txt) file specifying the reference asd.
-        
-        fs : float
-            Sampling frequency of output generated ASD. (Default: 2048 Hz)
-
-        duration : float
-            Duration of strain timeseries (seconds). Used to compute the proper frequency array. (Default: 2)
-
-        device: str
-            Device on which perform the computation. Either 'cpu' or 'cuda:n' (Default: 'cpu')
-
-        random_seed : int
-            Random seed to set the random number generator for reproducibility. (Default: 123)
+        ifo           (str): Detector identifier (e.g. L1, H1 or V1). If given it will use the default O3 asd stored in the config dir. Mutually exclusive with asd_file.
+        reference_run (str): Reference run of the detector. Mutually exclusive with asd_file. (Default: 'O3')
+        asd_file      (str): Path to asd (.txt) file specifying the reference asd. Mutually exclusive with ifo and reference_run. (Default: None)
+        fs          (float): Sampling frequency of output generated ASD. (Default: 2048 Hz)
+        duration    (float): Duration of strain timeseries (seconds). Used to compute the proper frequency array. (Default: 2)
+        device        (str): Device on which perform the computation. Either 'cpu' or 'cuda' (Default: 'cpu')
+        random_seed   (int): Random seed to set the random number generator for reproducibility. (Default: None)
+        fmin        (float): Minimum frequency to consider in the generated ASD. (Default: None)
     
-    Methods:
-    --------
-        - sample:
-            Args:
-            -----
-                batch_size : int
-                    Batch size for output sampled ASDs
-
-            Returns:
-            --------
-                sampled_asd : torch.tensor
-                    sampled ASD of shape [batch_size, fs//2+1]
-        
-        - __call__:
-            wrapper to sample method
-
     """
 
-    def __init__(self, ifo, asd_file=None, reference_run='O3', fs=2048, duration=2, device = 'cpu', random_seed=None, fmin=None):
+    def __init__(self, ifo=None, reference_run='O3', asd_file=None, fs=2048, duration=2, device = 'cpu', random_seed=None, fmin=None):
 
         #read reference Asd
         if asd_file is not None:
@@ -61,8 +34,6 @@ class ASD_Sampler():
 
         asd_f, asd = np.loadtxt(file, unpack=True)
 
-      
-    
         #generate frequency array
         self.fs = fs
         self.noise_points = duration*fs
@@ -80,15 +51,6 @@ class ASD_Sampler():
         asd_interp = interp1d(asd_f, asd, kind='cubic', fill_value='extrapolate')
         self.asd_reference = torch.from_numpy(asd_interp(f.cpu().numpy())).to(device)
         
-        '''
-        import matplotlib.pyplot as plt
-        plt.title(f'{ifo} ASD')
-        plt.loglog(asd_f, asd, label='asd original')
-        plt.loglog(self.f.cpu(), self.asd_reference.cpu(), label='interp')
-        plt.legend()
-        plt.show()
-        '''
-
         #other attributes
         self.device = device
 
@@ -114,7 +76,6 @@ class ASD_Sampler():
     def fs(self, value):
         self._fs = value
 
-
     @property
     def asd_std(self):
         if not hasattr(self, '_asd_std'):
@@ -123,6 +84,19 @@ class ASD_Sampler():
 
 
     def sample(self, batch_size, noise=False, use_reference_asd=False):
+        """
+        Sample a new ASD from the reference one by generating random amplitude and phase for each frequency bin.
+
+        Args:
+            batch_size         (int): Batch size for output sampled ASDs
+            noise             (bool): If True, return the noise timeseries generated from the sampled ASD. (Default: False)
+            use_reference_asd (bool): If True, return the reference ASD. (Default: False)
+
+        Returns:
+            tuple: A tuple containing:
+                - **sampled_asd** (torch.Tensor): Sampled ASD of shape [batch_size, fs//2+1].
+                - **noise_from_asd** (torch.Tensor): Noise timeseries generated from the sampled ASD. (Only if noise=True)
+        """
 
         asd_shape = (batch_size, len(self.f))
 
@@ -131,9 +105,7 @@ class ASD_Sampler():
                 
             out_asd = (asd + 1j*asd) / np.sqrt(2)
 
-
         else:
-        
             # Generate scaled random power + phase
             mean = torch.zeros(asd_shape, device = self.device, dtype=torch.float64)
             asd_real = torch.normal(mean=mean, std=self.asd_std, generator=self.rng)
@@ -162,5 +134,8 @@ class ASD_Sampler():
         return torch.abs(out_asd)
 
     def __call__(self, batch_size = 1, noise=False, use_reference_asd=False):
+        """
+        Wrapper for the sample method.
+        """
         return self.sample(batch_size, noise, use_reference_asd)
      

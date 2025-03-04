@@ -13,10 +13,11 @@ def pc_to_Msun(dist):
     
     Args:
     -----
-        - dist (float): distance value in parsec
-    Return:
-    ------
-        - dist_m (float): distance in Solar Masses units
+        dist (float): distance value in parsec
+
+    Returns:
+    --------
+        dist_m (float): distance in Solar Masses units
     """
     dist_m = dist * pc_to_m_conversion
     return dist_m*(c**2)/(G*M_sun)
@@ -27,10 +28,11 @@ def Msun_to_sec(mass):
     
     Args:
     -----
-        - mass (float): mass value in Solar Masses units
-    Return:
-    -------
-        - sec (float): Solar masses converted into seconds
+        mass (float): mass value in Solar Masses units
+    
+    Returns:
+    --------
+        sec (float): Solar masses converted into seconds
     """
     return (mass*M_sun)*(G/c**3)
 

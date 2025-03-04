@@ -37,7 +37,7 @@ class  TEOBResumSDALI():
     Args:
     -----
         fs (float): Sampling frequency of the waveform.
-        **kwargs: Additional keyword arguments to pass to the EOBRun_module generator.
+        kwargs    : Additional keyword arguments to pass to the EOBRun_module generator.
     """
     
     def __init__(self, fs, **kwargs):

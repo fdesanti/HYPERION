@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 
 from scipy.stats import kstest
 from .likelihood import  GWLikelihood
-from ...core.utilities import latexify
-from ...core.distributions.prior_distributions import MultivariatePrior
+from ..core.utilities import latexify
+from ..core.distributions.prior_distributions import MultivariatePrior
 
 
 class IS_Priors(MultivariatePrior):
@@ -13,9 +13,8 @@ class IS_Priors(MultivariatePrior):
     Wrapper to the MultivariatePrior class.
     
     Args:
-    ----- 
-        flow (hyperion.core.Flow): Flow model. Its prior is used to initialized the various parameter priors
-        device              (str): either 'cpu' or 'cuda' to enable GPU. (Default 'cpu')       
+        flow   (Flow): Flow model. Its prior is used to initialized the various parameter priors
+        device  (str): either 'cpu' or 'cuda' to enable GPU. (Default 'cpu')       
     """
     def __init__(self, flow, device = 'cpu'):
         
@@ -28,27 +27,32 @@ class IS_Priors(MultivariatePrior):
         super(IS_Priors, self).__init__(priors, device=device)
     
 
-class ImportanceSampling():    
-    """
+class ImportanceSampling:    
+    r"""
     Class that performs Importance Sampling to estimate the Bayes Factor:
+
     .. math::
+
         \mathcal{B} = \frac{Z_{\text{model}}}{Z_{\text{noise}}}
+
     where
+
     .. math::
-        Z_{\text{model}} = \frac{1}{N} \sum \frac{p(\theta)\, p(s|\theta)}{q(\theta|s)}
+
+        Z_{\text{model}} = \frac{1}{N} \sum_{i=1}^N \frac{p(\theta_i)\, p(s|\theta_i)}{q_\phi(\theta_i|s)}
+
     and
+
     .. math::
+
         Z_{\text{noise}} = \text{noise likelihood}
     
     Args:
-    -----
-        flow                (hyperion.core.flow): Flow object
+        flow                              (Flow): Flow object
         waveform_generator   (WaveformGenerator): Waveform Generator object
         device                             (str): Either 'cpu' or 'cuda'. (Default 'cpu')
         num_posterior_samples              (int): Number of posterior samples to draw
-        reference_posterior_samples (TensorDict): (Optional) reference posterior samples to compare with. 
-                                                  They are used in the FAR computation to derive a 
-                                                  detection statistics based on Bayes Factor
+        reference_posterior_samples (TensorDict, optional): Reference posterior samples to compare with. They are used in the FAR computation to derive a detection statistics based on Bayes Factor
     """
     def __init__(self, 
                  flow, 
@@ -103,12 +107,10 @@ class ImportanceSampling():
         with a colormap given by the importance weights.
 
         Args:
-        -----
-            IS_results (dict): Dictionary produced by the compute_model_evidence method
-            savepath   (Path): (Optional) path to which save the plot
+            IS_results           (dict): Dictionary produced by the compute_model_evidence method
+            savepath   (Path, optional): Path to which save the plot
 
         Returns:
-        --------
             fig (plt.fig): plot figure object 
         """
         #extract what we need
@@ -136,37 +138,33 @@ class ImportanceSampling():
     
     @staticmethod
     def sample_efficiency( weights):
-        """
+        r"""
         Computes the sampling efficiency of the Importance Sampling method.
         It is defined as:
 
         .. math::
 
-            \text{eff} = \frac{1}{N} \left( \sum w_i \right)^2 \, / \, \sum w_i^2
+            \eta = \frac{1}{N} \frac{\left( \sum_i w_i \right)^2}{\sum_i w_i^2}
 
         Args:
-        -----
             weights (torch.tensor): Importance weights
 
         Returns:
-        --------
             eff (float): Sampling efficiency (in percentage)
         """
         N = len(weights)
         eff = (1/N)* (weights.sum())**2 / (weights**2).sum()
-        return eff*100
+        return eff.item()
     
     def _noise_log_evidence(self, strain, psd):
         """
         Computes  log \( Z \) assuming the null hypothesis of having noise only data \( Z = L(s | \theta) \)
         
         Args:
-        -----
             strain (dict, TensorDict): Raw strain time series tensor of shape [1, Num detectors, 1s * sampling_frequency]
             psd    (dict, TensorDict): Dictionary containing interferometer Power Spectral Densities
         
         Returns:
-        --------
             logL_noise (torch.Tensor): Log noise Likelihood
         """ 
         return self.likelihood.noise_log_Likelihood(strain, psd)
@@ -176,18 +174,14 @@ class ImportanceSampling():
         Samples the posterior for the given stretch of data
         
         Args:
-        -----
             whitened_strain (dict, TensorDict): Whitened strain time series tensor of shape [1, Num detectors, 1s * sampling_frequency]
             event_time                 (float): Strain (central) GPS time. It is used to correct the right ascension prediction
                 
         Returns:
-        --------
             theta        (TensorSamples): Posterior samples
             log_posterior (torch.Tensor): Log flow posterior defined as log \(q(\theta| s) = log N(f^{-1}(u)) + log J(f^{-1}(u))\)
             medians               (list): Medians of the posterior samples
-            ks_stat              (float): Kolmogorov-Smirnov statistic comparing posterior samples to reference samples. 
-                                          If no reference samples are provided, it returns 'None'
-        
+            ks_stat              (float): Kolmogorov-Smirnov statistic comparing posterior samples to reference samples. If no reference samples are provided, it returns 'None'
         """
         torch_strain = torch.stack([whitened_strain[det] for det in self.det_names]).unsqueeze(0)
         
@@ -212,7 +206,7 @@ class ImportanceSampling():
         return theta, log_posterior, medians, ks_stat
    
     def compute_Bayes_factor(self, strain, whitened_strain, psd, event_time):
-        """
+        r"""
         Method that computes the Bayes factor of signal vs noise hypotheses.
         The Bayes factor is defined as:
 
@@ -227,18 +221,16 @@ class ImportanceSampling():
             \log \mathcal{B} = \log Z_{\text{model}} - \log Z_{\text{noise}}
             
         Args:
-        -----
             strain          (dict, TensorDict): Raw strain time series tensor of shape [1, Num detectors, 1s * sampling_frequency]
             whitened_strain (dict, TensorDict): Whitened strain time series tensor of shape [1, Num detectors, 1s * sampling_frequency]
             psd             (dict, TensorDict): Dictionary containing interferometer Power Spectral Densities
             event_time                 (float): Strain (central) GPS time. It is used to correct the right ascension prediction
         
         Returns:
-        --------
-            logB      (float): Natural logarithm of the Bayes factor
-            log10B    (float): Logarithm (base 10) of the Bayes factor
-            IS_results (dict): Dictionary containing the results of the Importance Sampling method. 
-                               See compute_model_evidence() method for details.
+            tuple: A tuple containing:
+                - **logB** (float): Natural logarithm of the Bayes factor
+                - **log10B** (float): Logarithm (base 10) of the Bayes factor
+                - **IS_results** (dict): Dictionary containing the results of the Importance Sampling method. See compute_model_evidence() method for details.
         """
         #run the Importance Sampling method    
         IS_results = self.compute_model_evidence(strain, whitened_strain, psd, event_time)
@@ -255,12 +247,8 @@ class ImportanceSampling():
         
         return self._logB, self._log10B, IS_results
     
-    
-
-    
-    
     def compute_model_evidence(self, strain, whitened_strain, psd, event_time, normalize_weights=False):
-        """
+        r"""
         Computes the model evidence \( Z \) using Importance Sampling.
         The model evidence is defined as:
 
@@ -271,7 +259,6 @@ class ImportanceSampling():
         To mitigate numerical errors, the logarithm of the evidence is estimated instead.
         
         Args:
-        -----
             strain          (dict, TensorDict): Raw strain time series tensor of shape [1, Num detectors, 1s * sampling_frequency]
             whitened_strain (dict, TensorDict):  Whitened strain time series tensor of shape [1, Num detectors, 1s * sampling_frequency]
             psd             (dict, TensorDict):  Dictionary containing interferometer Power Spectral Densities
@@ -279,18 +266,17 @@ class ImportanceSampling():
             normalize_weights           (bool): If True, the importance weights are normalized. (Default False)
             
         Returns:
-        --------
             IS_results (dict): Dictionary with the following keys 
-                                - logZ         : Logarithm of the model evidence
-                                - log_prior    : Logarithm of the prior probabilities
-                                - logL         : Logarithm of the likelihoods
-                                - log_posterior: Logarithm of the posterior probabilities
-                                - log_weights  : Logarithm of the importance weights
-                                - weights      : Importance weights
-                                - eff          : Sampling efficiency
-                                - valid_samples: Boolean mask of valid samples
-                                - medians      : Medians of the posterior samples
-                                - ks_stat      : Kolmogorov-Smirnov statistic comparing posterior samples to reference samples
+                                - **logZ**         : Logarithm of the model evidence
+                                - **log_prior**    : Logarithm of the prior probabilities
+                                - **logL**         : Logarithm of the likelihoods
+                                - **log_posterior**: Logarithm of the posterior probabilities
+                                - **log_weights**  : Logarithm of the importance weights
+                                - **weights**      : Importance weights
+                                - **eff**          : Sampling efficiency
+                                - **valid_samples**: Boolean mask of valid samples
+                                - **medians**      : Medians of the posterior samples
+                                - **ks_stat**      : Kolmogorov-Smirnov statistic comparing posterior samples to reference samples
         """
         #sampling flow posterior
         theta, log_posterior, medians, ks_stat  = self._sample_flow_posterior(whitened_strain, event_time)
