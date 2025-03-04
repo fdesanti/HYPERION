@@ -16,21 +16,18 @@ class WaveformGenerator:
     """
     Waveform generator class that wraps the waveform models.
 
-    Constructor Args:
-    -----------------
-        waveform_model: str
-            Name of the waveform model to use. Available models are 'EffectiveFlyBy' and 'TEOBResumSDALI'.
-        
-        waveform_model_kwargs: dict
-            kwargs to pass to the waveform's model constructor.
-       
+    Args:
+        waveform_model                     (str): Waveform model to use. Available models are: ['EffectiveFlyBy', 'TEOBResumSDALI', 'PyCBC']
+        fs                                 (int): Sampling frequency of the waveform
+        duration                         (float): Duration of the waveform in seconds (Default: 4)
+        det_network (GWDetectorNetwork, optonal): Instance of the GWDetectorNetwork class. To provide only to generate projected waveforms. (Default: None)
+        waveform_model_kwargs                   : Additional keyword arguments to pass to the specific waveform model constructor
     """
-    
     def __init__(self, 
                  waveform_model, 
                  fs               = 2048,
                  duration         = 4,
-                 det_network:dict = None,
+                 det_network      = None,
                  **waveform_model_kwargs):
 
         assert waveform_model in models_dict.keys(), f"Waveform model {waveform_model} not found. \
@@ -93,16 +90,6 @@ class WaveformGenerator:
             t_wvf = torch.cat([t_l, t_wvf, t_r])
 
         tcoal = np.interp(0, t_wvf, times)
-        '''
-        import matplotlib.pyplot as plt
-        #plt.plot(t, hp)
-        #plt.axvline(len(t)//2, color='r')
-        print(tcoal)
-        plt.figure()
-        plt.plot(times, hp)
-        plt.axvline(tcoal, color='r')        
-        plt.savefig('waveform.png')
-        '''
         return hp, hc, tcoal
 
 
@@ -111,30 +98,23 @@ class WaveformGenerator:
         Computes the time domain waveform for a given set of parameters.
 
         Args:
-        -----
-            pars: dict or TensorDict instance
-                Parameters of the waveform
+            pars (TensorSamples): Parameters of the waveforms
         
         Returns:
-        --------
              The output of the self.waveform_model __class__ method
         """        
         return self.wvf_model(pars)
     
 
     def _get_td_waveform_mp(self, i):
-
         """
         Compute the time domain waveform for a given set of parameters.
         This function is intended to be used with multiprocessing.
 
         Args:
-        -----
-            i: int
-                Index of the parameters to use. (Assigned by the multiprocessing pool)
+            i (int): Index of the parameters to use. (Assigned by the multiprocessing pool)
         
         Returns:
-        --------
              The output of the self.waveform_model __class__ method
         """
         
@@ -145,6 +125,28 @@ class WaveformGenerator:
 
 
     def __call__(self, parameters, n_proc=None, project_onto_detectors=False):
+        """
+        Compute the time domain waveform for a given set of parameters.
+
+        Args:
+            parameters (TensorSamples): Parameters of the waveforms
+            n_proc               (int): Number of processes to use for multiprocessing. If None, all available CPUs are used. (Default: None)
+            project_onto_detectors (bool): If True, the waveform is projected onto the detectors. (Default: False)
+        
+        Returns
+        -------
+        tuple
+            If ``project_onto_detectors`` is False, returns a tuple containing:
+            
+            - **hps** (torch.Tensor): Plus polarization waveform.
+            - **hcs** (torch.Tensor): Cross polarization waveform.
+            - **tcoals** (torch.Tensor): Time of coalescence.
+            
+            If ``project_onto_detectors`` is True, returns a tuple containing:
+            
+            - **projected_template** (TensorDict): Projected waveforms.
+            - **tcoals** (torch.Tensor): Time of coalescence.
+        """
         
         # Check if the model is a torch model so that
         # it can handle batches of parameters and / or if parameters are batched

@@ -18,14 +18,12 @@ def fir_from_transfer(transfer, ntaps, window='hann', ncorner=None):
     """Design a Type II FIR filter given an arbitrary transfer function
 
     Args:
-    -----
         transfer     (torch.Tensor): transfer function to start from, must have at least ten samples
         ntaps                 (int): number of taps in the final filter, must be an even number
         window  (str, torch.Tensor): (Optional) window function to truncate with. (Default: 'hann')
         ncorner               (int): (Optional) number of extra samples to zero off at low frequency. (Default: 'None')
         
     Returns:
-    --------
         out (torch.Tensor): A time domain FIR filter of length 'ntaps'
 
     """
@@ -42,12 +40,10 @@ def truncate_transfer(transfer, ncorner=None):
     """Smoothly zero the edges of a frequency domain transfer function
 
     Args:
-    -----
         transfer (torch.Tensor): Transfer function to start from, must have at least ten samples
         ncorner           (int): (Optional) number of extra samples to zero off at low frequency. (Default: 'None')
         
     Returns:
-    --------
         out (torch.Tensor): the smoothly truncated transfer function
     """
     #recall that transfer has shape [batch_size, nsamp]
@@ -62,13 +58,11 @@ def truncate_impulse(impulse, ntaps, window='hann'):
     """Smoothly truncate a time domain impulse response
 
     Args:
-    -----
         impulse (torch.Tensor): impulse response to start from
         ntaps           (int): number of taps in the final filter
         window          (str): window function to apply to the FIR filter. (Default is 'hann')
 
     Returns:
-    --------
         out (torch.Tensor): the smoothly truncated impulse response
     """
     
@@ -90,17 +84,14 @@ def convolve(signal, fir, window='hann'):
     Convolves a time domain timeseries with a FIR filter.
     
     Args:
-    -----
         signal (torch.Tensor): input signal to convolve
         fir    (torch.Tensor): FIR filter to convolve with
         window          (str): window function to apply to the FIR filter. (Default is 'hann')
 
     Returns:
-    --------
         conv (torch.Tensor): the convolved signal
         
     Note:
-    -----
         Instead of scipy.signal.fftconvolve, we use torchaudio.functional.fftconvolve.
     """
     #get sizes
@@ -149,7 +140,6 @@ class WhitenNet:
     It can exploit GPU acceleration.
 
     Args:
-    -----
         fs              (int): Sampling frequency [Hz]
         duration      (float): Duration of the data segment [s]
         device          (str): Device to use for computation (Default: 'cpu')
@@ -207,7 +197,6 @@ class WhitenNet:
         given by 1/sqrt(2*delta_t) where delta_t is the sampling interval.
         
         Args:
-        -----
             h (dict, TensorDict): whitened signals
             normalized     (bool): whether to normalize the noise to have unit variance
         """
@@ -232,7 +221,6 @@ class WhitenNet:
         Otherwise, the whitening is performed by dividing the signal by the ASD in the frequency domain.
 
         Args:
-        -----
             h          (dict, TensorDict): Input signal(s) to whiten
             asd        (dict, TensorDict): ASD of the noise
             time_shift (dict, TensorDict): time shift for each detector to apply to the signal
