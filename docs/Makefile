@@ -30,6 +30,9 @@ indexes:
 html: clean apidoc indexes
 	$(SPHINXBUILD) -b html $(SOURCEDIR) $(BUILDDIR)/html
 
+html_only:
+	$(SPHINXBUILD) -b html $(SOURCEDIR) $(BUILDDIR)/html
+
 # One-shot target to build everything
 docs: html
 	@echo "Documentation build complete."

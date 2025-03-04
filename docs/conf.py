@@ -5,6 +5,7 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+import os 
 
 project = 'HYPERION'
 copyright = '2025, Federico De Santi'
@@ -17,7 +18,18 @@ release = '1.0'
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.mathjax']
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'api/config.rst', 'api/modules.rst']
+
+#exlude unnecessary files so that we don't see empty duplicates in the documentation
+api_dir = 'api'
+# Walk through the API directory recursively.
+for root, dirs, files in os.walk(api_dir):
+    for d in dirs:
+        # Construct the expected rst file path corresponding to this directory.
+        rst_path = os.path.join(root, f"{d}.rst")
+        if os.path.exists(rst_path):
+            exclude_patterns.append(rst_path)
 
 def skip_member(app, what, name, obj, skip, options):
     if name == '__call__':
