@@ -52,7 +52,6 @@ class GWLikelihood:
         \qquad \text{(signal-to-noise ratio, matched filter)}
     
     Args:
-    -----
         waveform_generator  : Hyperion's Waveform generator object which returns ifo injected strain
         device        (str) : Device to run the likelihood computation. (Default: 'cpu')
     """
@@ -115,17 +114,14 @@ class GWLikelihood:
             \langle a | b \rangle = 4 \, \Delta f \, \sum_{f} \frac{a^*(f) \, b(f)}{\mathcal{S}_n(f)}
         
         Args:
-        -----
             a   (torch.Tensor): Frequency series
             b   (torch.Tensor): Frequency series
             psd (torch.Tensor): Power Spectral Density. If None, the inner product is not weighted by the PSD
 
         Returns:
-        --------
             inner_product (torch.Tensor): Inner product between a and b
         
         Note:
-        -----
             If PSD is None, the inner product is not weighted by the PSD: i.e. we assume that a and b are already whitened
         """
 
@@ -142,11 +138,9 @@ class GWLikelihood:
         Computes the frequency domained templates using the waveform_generator object
         
         Args:
-        -----
             theta (dict): Dictionary with each key representing a gw parameter
                 
         Returns:
-        --------
             frequency_domain_template (TensorDict): Dictionary (with ifos as keys) containing the projected frequency domain template 
         
         """
@@ -179,12 +173,10 @@ class GWLikelihood:
         Computes the log Likelihood assuming strain contains only Gaussian noise
         
         Args:
-        -----
             strain (dict): Dictionary containing interferometer strain time series
             psd    (dict): Dictionary containing interferometer Power Spectral Densities
                 
         Returns:
-        --------
             logZn (float): Noise Log Likelihood 
         """
         
@@ -212,14 +204,12 @@ class GWLikelihood:
         Computes the log Likelihood assuming strain contains a GW signal. 
         (see Eq. 44 of arxiv.org/pdf/1809.02293)
         
-        Args:
-        -----            
+        Args:         
             strain (dict): Dictionary containing interferometer strain time series
             theta  (dict): Dictionary containing the GW parameters
             psd    (dict): Dictionary containing interferometer Power Spectral Densities
                 
         Returns:
-        --------
             logL (float): Log Likelihood 
         """
 
