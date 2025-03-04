@@ -103,7 +103,7 @@ class GWLikelihood:
         return self.frequencies[1] - self.frequencies[0]
     
     
-    def _inner_product(self, a, b, psd=None):
+    def inner_product(self, a, b, psd=None):
         """
         Computes the inner product between two frequency series. 
         Works with batched data.
@@ -188,7 +188,7 @@ class GWLikelihood:
             
             frequency_domain_strain =  rfft(strain[ifo], n=N, norm=self.fs) / self.duration
             
-            logZn -= 0.5 * self._inner_product(frequency_domain_strain[self.frequency_mask], 
+            logZn -= 0.5 * self.inner_product(frequency_domain_strain[self.frequency_mask], 
                                                frequency_domain_strain[self.frequency_mask], 
                                                psd[ifo][self.frequency_mask])
             #plt.loglog(self.frequencies[mask].cpu().numpy(), torch.abs(frequency_domain_strain[mask]).cpu().numpy(), label=ifo)
@@ -226,8 +226,8 @@ class GWLikelihood:
             
             frequency_domain_strain = rfft(strain[ifo], n=N, norm=self.fs) / self.duration
 
-            kappa    = self._inner_product(frequency_domain_strain, frequency_domain_template[ifo], psd[ifo])
-            rho_opt  = self._inner_product(frequency_domain_template[ifo], frequency_domain_template[ifo], psd[ifo])
+            kappa    = self.inner_product(frequency_domain_strain, frequency_domain_template[ifo], psd[ifo])
+            rho_opt  = self.inner_product(frequency_domain_template[ifo], frequency_domain_template[ifo], psd[ifo])
             logL_ifo = kappa - 0.5 * rho_opt
 
             logL += logL_ifo
