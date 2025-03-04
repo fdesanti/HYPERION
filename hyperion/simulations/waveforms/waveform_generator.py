@@ -60,9 +60,25 @@ class WaveformGenerator:
         self._duration = value
                 
 
-    def _resize_waveform(self, times, t_wvf, hp, hc):
+    def resize_waveform(self, times, t_wvf, hp, hc):
         """
         Resize the waveform to the desired duration.
+        If the waveform is longer than the desired duration, it is cropped.
+        If the waveform is shorter than the desired duration, it is symmetrically padded with zeros.
+
+        A tukey window is applied to the waveform to avoid discontinuities at the edges.
+
+        Args:
+            times (torch.Tensor): Time array of the output waveform
+            t_wvf (torch.Tensor): Time array of the unresized waveform
+            hp (torch.Tensor): Plus polarization waveform
+            hc (torch.Tensor): Cross polarization waveform
+
+        Returns:
+            tuple: 
+                - **hp** (torch.Tensor): Plus polarization waveform
+                - **hc** (torch.Tensor): Cross polarization waveform
+                - **tcoal** (float): Time of coalescence (reinterpolated)
         """
         N = int(self.duration * self.fs)
 
@@ -173,7 +189,7 @@ class WaveformGenerator:
                     hc = results['hc']
 
                     #resize the waveform to the desired duration and get the time of coalescence
-                    hp, hc, tcoal = self._resize_waveform(times, t, hp, hc)
+                    hp, hc, tcoal = self.resize_waveform(times, t, hp, hc)
                     
                     hps.append(hp)
                     hcs.append(hc)
