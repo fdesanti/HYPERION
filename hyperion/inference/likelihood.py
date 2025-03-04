@@ -13,10 +13,10 @@ class GWLikelihood:
 
     .. math::
 
-        \log L(d|\theta) = \sum_k \log L(d_k|\theta)
-                        = -\frac{1}{2} \sum_k \log(2\pi\,\mathrm{PSD}_k)
-                            - 2\,\Delta f \sum_k \frac{\left| d_k - h_k(\theta) \right|^2}{\mathrm{PSD}_k}
-                        = \psi - \frac{1}{2}\langle d - h(\theta) \,|\, d - h(\theta) \rangle
+       \begin{split}
+       \log L(d|\theta) = \sum_k \log L(d_k|\theta) &= -\frac{1}{2} \sum_k \log(2\pi\,\mathrm{PSD}_k) - 2\,\Delta f \sum_k \frac{\left| d_k - h_k(\theta) \right|^2}{\mathrm{PSD}_k} \\
+                         &= \psi - \frac{1}{2}\langle d - h(\theta) \,|\, d - h(\theta) \rangle.
+       \end{split}
 
     where
 
@@ -52,8 +52,8 @@ class GWLikelihood:
         \qquad \text{(signal-to-noise ratio, matched filter)}
     
     Args:
-        waveform_generator  : Hyperion's Waveform generator object which returns ifo injected strain
-        device        (str) : Device to run the likelihood computation. (Default: 'cpu')
+        waveform_generator (WaveformGenerator): Waveform generator object which returns ifo injected strain
+        device                           (str): Device to run the likelihood computation. (Default: 'cpu')
     """
     
     def __init__(self, waveform_generator, device='cpu', fmin=10, fmax=1000):
@@ -104,7 +104,7 @@ class GWLikelihood:
     
     
     def inner_product(self, a, b, psd=None):
-        """
+        r"""
         Computes the inner product between two frequency series. 
         Works with batched data.
 
