@@ -3,7 +3,7 @@ import os
 import shutil
 
 # The API directory where sphinx-apidoc generates the .rst files.
-API_DIR = os.path.join(os.path.dirname(__file__), "api")
+API_DIR = os.path.join(os.path.dirname(__file__), "hyperion")
 
 # Your package prefix to remove (ensure trailing dot)
 PACKAGE_PREFIX = "hyperion."

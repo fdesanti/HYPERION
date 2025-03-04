@@ -19,4 +19,4 @@ documentation for details.
    :maxdepth: 2
    :caption: API Documentation
 
-   api/index
+   hyperion/index

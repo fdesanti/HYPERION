@@ -5,7 +5,7 @@ SHELL := /bin/bash
 SPHINXBUILD   = sphinx-build
 SOURCEDIR     = .
 BUILDDIR      = _build
-APIDIR        = api
+APIDIR        = hyperion
 PACKAGE_DIR   = ../hyperion  # Adjust to point to your package
 
 .PHONY: clean clean_api apidoc indexes html docs

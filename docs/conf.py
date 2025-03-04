@@ -19,10 +19,11 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.mathjax']
 
 templates_path = ['_templates']
 
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'api/config.rst', 'api/modules.rst']
+api_dir = 'hyperion'
+
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', f'{api_dir}/config.rst', f'{api_dir}/modules.rst']
 
 #exlude unnecessary files so that we don't see empty duplicates in the documentation
-api_dir = 'api'
 # Walk through the API directory recursively.
 for root, dirs, files in os.walk(api_dir):
     for d in dirs:
