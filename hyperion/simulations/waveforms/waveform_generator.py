@@ -4,11 +4,12 @@ import multiprocess as mp
 
 from tqdm import tqdm
 from torch.nn.functional import pad
-from .models import EffectiveFlyByTemplate, TEOBResumSDALI
+from .models import EffectiveFlyByTemplate, TEOBResumSDALI, PyCBCWaveform
 from ...core.fft.windows import tukey
 
 models_dict = {'EffectiveFlyBy': EffectiveFlyByTemplate, 
-               'TEOBResumSDALI': TEOBResumSDALI}
+               'TEOBResumSDALI': TEOBResumSDALI, 
+               'PyCBC': PyCBCWaveform}
 
 
 class WaveformGenerator:
@@ -149,7 +150,7 @@ class WaveformGenerator:
         # it can handle batches of parameters and / or if parameters are batched
         N = parameters.numel()
         if self.has_torch or N<=1:
-            return self.wvf_model(parameters)
+            hps, hcs, tcoals = self.wvf_model(parameters)
         
         # Otherwise, we exploit multiprocessing
         else:
