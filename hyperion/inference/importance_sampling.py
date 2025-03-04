@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 
 from scipy.stats import kstest
 from .likelihood import  GWLikelihood
-from ...core.utilities import latexify
-from ...core.distributions.prior_distributions import MultivariatePrior
+from ..core.utilities import latexify
+from ..core.distributions.prior_distributions import MultivariatePrior
 
 
 class IS_Priors(MultivariatePrior):
@@ -27,7 +27,7 @@ class IS_Priors(MultivariatePrior):
         super(IS_Priors, self).__init__(priors, device=device)
     
 
-class ImportanceSampling():    
+class ImportanceSampling:    
     r"""
     Class that performs Importance Sampling to estimate the Bayes Factor:
 
