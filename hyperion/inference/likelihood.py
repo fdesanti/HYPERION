@@ -12,12 +12,10 @@ class GWLikelihood:
     We implement the Gaussian likelihood as follows:
 
     .. math::
-
-  
+    
        \log L(d|\theta) &= \sum_k \log L(d_k|\theta) = \\ 
        &= -\frac{1}{2} \sum_k \log(2\pi\,\mathrm{PSD}_k) - 2\,\Delta f \sum_k \frac{\left| d_k - h_k(\theta) \right|^2}{\mathrm{PSD}_k} = \\
                          &= \psi - \frac{1}{2}\langle d - h(\theta) \,|\, d - h(\theta) \rangle.
-
 
     where
 
