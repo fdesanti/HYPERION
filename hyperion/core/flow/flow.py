@@ -88,7 +88,7 @@ class Flow(nn.Module):
 
         Args:
         
-            inputs (torch.Tensor): Tensor of shape [N, D] where N is the number of samples and D is the number of parameters
+            inputs (torch.Tensor): Tensor of shape [N, P] where N is the number of samples and P is the number of parameters
             strain (torch.Tensor): (Optional) Tensor of shape [N, C, L] where N is the number of samples, C is the number of channels and L is the length of the strain data. (Default: None)
             asd    (torch.Tensor): (Optional) Tensor of shape [N, C, F] where N is the number of samples, C is the number of channels and F is the number of ASD frequency bins. (Default: None)
         """
@@ -129,7 +129,7 @@ class Flow(nn.Module):
         Returns:
             tuple: Tuple containing
                 - **samples** (TensorSamples): The posterior samples
-                - **log_posterior** (torch.Tensor): Log probability of the posterior samples. (Returned only if ```return_log_prob``` is True)
+                - **log_posterior** (torch.Tensor): Log probability of the posterior samples. (Returned only if ``return_log_prob`` is True)
         """
         #take the start time
         start = time()
