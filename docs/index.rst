@@ -16,8 +16,8 @@ prova
    :caption: Quickstart
    :maxdepth: 1
 
-   rst/installation
-
+   source/installation
+   source/normalizing_flows
 .. ```
 
 
