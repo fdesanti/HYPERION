@@ -13,15 +13,14 @@ class ASD_Sampler():
     Class that samples a new ASD from a reference one by generating random amplitude and phase for each frequency bin.
 
     Args:
-        ifo           (str): Detector identifier (e.g. L1, H1 or V1). If given it will use the default O3 asd stored in the config dir. Mutually exclusive with asd_file.
-        reference_run (str): Reference run of the detector. Mutually exclusive with asd_file. (Default: 'O3')
-        asd_file      (str): Path to asd (.txt) file specifying the reference asd. Mutually exclusive with ifo and reference_run. (Default: None)
+        ifo           (str): Detector identifier (e.g. L1, H1 or V1). If given it will use the default O3 asd stored in the config dir. Mutually exclusive with ``asd_file``.
+        reference_run (str): Reference run of the detector. Mutually exclusive with ``asd_file``. (Default: 'O3')
+        asd_file      (str): Path to asd (.txt) file specifying the reference asd. Mutually exclusive with ``ifo`` and ``reference_run``. (Default: None)
         fs          (float): Sampling frequency of output generated ASD. (Default: 2048 Hz)
         duration    (float): Duration of strain timeseries (seconds). Used to compute the proper frequency array. (Default: 2)
         device        (str): Device on which perform the computation. Either 'cpu' or 'cuda' (Default: 'cpu')
         random_seed   (int): Random seed to set the random number generator for reproducibility. (Default: None)
         fmin        (float): Minimum frequency to consider in the generated ASD. (Default: None)
-    
     """
 
     def __init__(self, ifo=None, reference_run='O3', asd_file=None, fs=2048, duration=2, device = 'cpu', random_seed=None, fmin=None):
@@ -95,7 +94,7 @@ class ASD_Sampler():
         Returns:
             tuple: A tuple containing:
                 - **sampled_asd** (torch.Tensor): Sampled ASD of shape [batch_size, fs//2+1].
-                - **noise_from_asd** (torch.Tensor): Noise timeseries generated from the sampled ASD. (Only if noise=True)
+                - **noise_from_asd** (torch.Tensor): Noise timeseries generated from the sampled ASD. (Only if ``noise``=True)
         """
 
         asd_shape = (batch_size, len(self.f))
