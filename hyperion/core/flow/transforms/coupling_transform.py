@@ -4,9 +4,9 @@ import torch
 import torch.nn as nn
 
 class CouplingLayer(nn.Module):
-    """
-    Base class for the CouplingLayer
-    
+    r"""
+    Base class for the CouplingLayer. The forward and inverse transformations must be implemented in the derived classes.
+        
     Args:
         num_features     (int): Number of features in the input tensor
         num_identity     (int): Number of features that are not transformed. If None then ``num_features - num_features//2`` (Default: None)
@@ -27,9 +27,23 @@ class CouplingLayer(nn.Module):
         raise NotImplementedError
 
     def forward(self, inputs, embedded_strain=None):
+        """
+        Computes the forward pass of the CouplingLayer
+
+        Args: 
+            inputs          (torch.Tensor): Tensor of shape [N, P] where N is the number of samples and P is the number of parameters
+            embedded_strain (torch.Tensor): (Optional) Embedded strain tensor of shape [N, E] where N is the number of samples and E is the dimension of the embedding.
+        """
         return self._coupling_transform(inputs, embedded_strain, inverse=False)
     
     def inverse(self, inputs, embedded_strain=None):
+        """
+        Computes the inverse pass of the CouplingLayer
+
+        Args:
+            inputs          (torch.Tensor): Tensor of shape [N, P] where N is the number of samples and P is the number of parameters
+            embedded_strain (torch.Tensor): (Optional) Embedded strain tensor of shape [N, E] where N is the number of samples and E is the dimension of the embedding.
+        """
         return self._coupling_transform(inputs, embedded_strain, inverse=True)
 
 class CouplingTransform(nn.Module):
