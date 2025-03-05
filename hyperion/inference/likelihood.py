@@ -13,10 +13,11 @@ class GWLikelihood:
 
     .. math::
 
-       \begin{split}
-       \log L(d|\theta) = \sum_k \log L(d_k|\theta) &= -\frac{1}{2} \sum_k \log(2\pi\,\mathrm{PSD}_k) - 2\,\Delta f \sum_k \frac{\left| d_k - h_k(\theta) \right|^2}{\mathrm{PSD}_k} \\
+  
+       \log L(d|\theta) &= \sum_k \log L(d_k|\theta) = \\ 
+       &= -\frac{1}{2} \sum_k \log(2\pi\,\mathrm{PSD}_k) - 2\,\Delta f \sum_k \frac{\left| d_k - h_k(\theta) \right|^2}{\mathrm{PSD}_k} = \\
                          &= \psi - \frac{1}{2}\langle d - h(\theta) \,|\, d - h(\theta) \rangle.
-       \end{split}
+
 
     where
 
@@ -24,32 +25,21 @@ class GWLikelihood:
 
         \psi = -\frac{1}{2} \sum_k \log(2\pi\,\mathrm{PSD}_k)
 
-    can be discarded as a constant.
+    can be discarded being constant.
 
     By expanding the inner product we get:
 
     .. math::
 
-        \log L(d|\theta) = \log Z_n + \kappa^2(\theta) - \frac{1}{2}\rho_{\rm opt}^2(\theta)
+        \log L(d|\theta) \propto \log Z_n + \kappa^2(\theta) - \frac{1}{2}\rho_{\rm opt}^2(\theta)
 
     where:
 
     .. math::
 
-        -2\log Z_n = \langle d|d \rangle 
-        \qquad \text{(noise log likelihood, with $Z_n$ being the noise evidence)}
-
-    .. math::
-
-        \rho_{\rm opt}^2(\theta) = \langle h(\theta)|h(\theta) \rangle 
-        \qquad \text{(optimal signal-to-noise ratio)}
-
-    and
-
-    .. math::
-
-        \kappa^2(\theta) = \langle d|h(\theta) \rangle 
-        \qquad \text{(signal-to-noise ratio, matched filter)}
+        -2\log Z_n &= \langle d|d \rangle \qquad \qquad \text{(noise log likelihood, with $Z_n$ being the noise evidence)} \\
+        \rho_{\rm opt}^2(\theta) &= \langle h(\theta)|h(\theta) \rangle \qquad \text{(optimal signal-to-noise ratio)} \\
+        \kappa^2(\theta) &= \langle d|h(\theta) \rangle \qquad \text{(signal-to-noise ratio, matched filter)}
     
     Args:
         waveform_generator (WaveformGenerator): Waveform generator object which returns ifo injected strain
