@@ -17,55 +17,38 @@ from ..core.utilities import HYPERION_Logger
 
 log = HYPERION_Logger()
 
-def get_detectors_configs(det_conf_path = None):
-    #get the detectors configuration parameters
-    #try:
+def get_detectors_configs(det_conf_path=None):
+    """
+    Load the detectors configuration file
+    """
     if not det_conf_path:
         det_conf_path = f"{CONF_DIR}/detectors.yml"
     with open(det_conf_path, 'r') as file:
         det_configs = yaml.safe_load(file)    
-    
-    # except (FileNotFoundError, OSError) as e:
-    #     log.error(e)
-    #     log.error(f"Detector configuration file not found at {det_conf_path}")
-    #     det_configs = dict()
-        
     return det_configs
 
 detectors_configs = get_detectors_configs()
 available_detectors = list(detectors_configs.keys())
 
 
-class GWDetector(object):
+class GWDetector:
     """
-    Class for a gravitational wave detector
+    Class for a ground based GW Detector
 
-    Arguments:
-    ----------
-        name : string
-            Name of the detector. Use list_available_detectors() to see a list of available names. Must be set to None to use a custom detector.
-            If None and config_file_path is provided, it is asserted directly from the configuration file
-            
-        reference_time (GPS): float
-            Reference GPS time at which the detector is initialized
-            
-        use_torch : bool
-            Whether to use torch or numpy. "use_torch = True" is useful to exploit code parallelization, optionally on GPU.
-            (Default: False)
-            
-        device : str ('cpu'/'gpu')
-            The device on which the class operates. It matters only when torch is used. (Default: 'cpu')
-            
-        config_file_path : str
-            Path to a custom detector configuration file. "name" must be set to None in order for that file to be used.
+    Args:
+        name             (str): Name of the detector. The list of available detectors is stored in the ``available_detectors`` variable.
+        reference_time (float): Reference GPS time. (Default is 1370692818)
+        use_torch       (bool): If True, the class will use torch tensors for computations. (Default is False)
+        device           (str): Device to use for computations. It can be either "cpu" or "cuda". Used only when ``use_torch`` is True. (Default is "cpu")
+        config_file_path (str): Path to a custom configuration file. If provided, the ``name`` argument will be ignored.
     """
 
-    def __init__(self, name = None, reference_time = 1370692818, use_torch=False, device = 'cpu', config_file_path = None):
-        """Constructor"""
-
-        if device == 'cuda':
+    def __init__(self, name=None, reference_time=1370692818, use_torch=False, device='cpu', config_file_path=None):
+        
+        #check device assertion
+        if device != 'cpu':
             try:
-                assert use_torch == True, "Cannot use GPU (cuda) without using torch"
+                assert use_torch == True, "Cannot use GPU without using torch"
             except AssertionError as e:
                 log.warning(e)
                 log.info('Setting use_torch to True')
@@ -82,7 +65,6 @@ class GWDetector(object):
             self.interp = self.xp.interp
         self.use_torch = use_torch
         
-
         #loading configuration parameters --------------------------------------------
         if name is not None:
             assert name in available_detectors, f"{name} detector not available. Available ones are {available_detectors}. \
@@ -106,7 +88,6 @@ class GWDetector(object):
         elif ('xarm_azimuth' in conf_params) and ('yarm_azimuth' in conf_params):
             self.arms_orientation_angle = 0.5*(conf_params['xarm_azimuth'] + conf_params['yarm_azimuth'])
     
-        
         self.reference_time = reference_time
         return
     
@@ -201,13 +182,10 @@ class GWDetector(object):
         relative rotation over the observation time.
 
         Args:
-        -----
-            param t_gps: float, int, list, numpy.ndarray or torch.tensor
-                time of arrival of the source signal.
-        Return:
-        -------
-            lst: float or numpy.ndarray or torch.tensor 
-                local sidereal time(s) in rad. 
+            param t_gps (float, int, list, numpy.ndarray or torch.Tensor): GPS Time of arrival of the source signal.
+        
+        Returns:
+            lst (float or numpy.ndarray or torch.Tensor): Local Sidereal Time(s) in rad. 
         """
         
         if self.use_torch:
@@ -231,24 +209,13 @@ class GWDetector(object):
         (See: Phys. Rev. D 58, 063001)
             
         Args:
-        -----
-            xangle: float
-                The orientation of the detector's arms with respect to local geographical direction, in
-                rad. It is measured counterclock-wise from East to the bisector of the interferometer arms
-
-            ra: float
-                Right ascension of the source in rad.
-                
-            dec: float
-                Declination of the source in rad.
-                
-            t_gps: float or ndarray or torch.tensor
-                GPS time at which compute the detector response function
+            xangle (float): The orientation of the detector's arms with respect to local geographical direction, in rad. It is measured counterclock-wise from East to the bisector of the interferometer arms
+            ra     (float): Right ascension of the source in rad.
+            dec    (float): Declination of the source in rad.
+            t_gps (float, numpy.ndarray or torch.Tensor): GPS time at which compute the detector response function
          
          Returns:
-         --------
-            a, b: tuple of float or numpy.ndarray or torch.tensors
-                relative amplitudes of hplus and hcross.
+            a, b (tuple of float or numpy.ndarray or torch.Tensors): relative amplitudes of hplus and hcross.
         """
         
         #get lst
@@ -269,26 +236,17 @@ class GWDetector(object):
 
     def antenna_pattern_functions(self, ra, dec, polarization, t_gps):
         '''
-        Evaluate the antenna pattern functions.
+        Computes the Antenna Pattern functions for the plus and cross polarizations of the wave.
+        (See: Phys. Rev. D 58, 063001)
 
         Args:
-        -----
-            ra: float
-                Right ascension of the source in rad.
-
-            dec: float
-                Declination of the source in rad.
-
-            polarization: float
-                polarizationarization angle of the wave in rad.
-
-            t_gps: float, int, list , numpy.ndarray or torch.tensor
-                time of arrival of the source signal.
+            ra (float): Right ascension of the source in rad.
+            dec (float): Declination of the source in rad.
+            polarization (float): Polarizationarization angle of the wave in rad.
+            t_gps (float, int, list , numpy.ndarray or torch.Tensor): GPS Time of arrival of the source signal.
 
         Returns:
-        --------
-            fplus, fcross: tuple of float or numpy.ndarray or torch.tensors
-                Antenna pattern response functions for the plus and cross polarizations respectively
+            fplus, fcross (tuple of float, numpy.ndarray or torch.Tensors): Antenna pattern response functions for the plus and cross polarizations respectively
         '''
         
         xangle = self.arms_orientation_angle    
@@ -301,30 +259,22 @@ class GWDetector(object):
         return fplus, fcross
 
     def project_wave(self, hp, hc, ra, dec, polarization, t_gps=None):
-        """
-        Project the plus and cross gw polarizations into the detector frame
+        r"""
+        Projects the plus and cross gw polarizations into the detector frame
+
+        .. math::
+            h = F_+ h_+ + F_{\times} h_{\times}
 
         Args:
-        -----
-            hp, hc: array, tensor or pycbc/gwpy TimeSeries
-                Plus and cross polarizations of the wave.
-
-            ra: float, array, tensor
-                Right ascension of the source in rad.
-
-            dec: float, array, tensor
-                Declination of the source in rad.
-
-            polarization: float, array, tensor
-                polarizationarization angle of the wave in rad.
-                
-            t_gps: float, array, tensor
-                GPS time of the event
+            hp           (numpy.ndarray, torch.Tensor or pycbc/gwpy TimeSeries): Plus polarizations of the wave.
+            hc           (numpy.ndarray, torch.Tensor or pycbc/gwpy TimeSeries): Cross polarizations of the wave.
+            ra           (float, numpy.ndarray or torch.Tensor): Right ascension of the source in rad.
+            dec          (float, numpy.ndarray or torch.Tensor): Declination of the source in rad.
+            polarization (float, numpy.ndarray or torch.Tensor): polarizationarization angle of the wave in rad.
+            t_gps        (float, numpy.ndarray or torch.Tensor): GPS time of the event. If None, the reference time of the detector is used. (Default: None)
                 
         Returns:
-        --------
-            h: either numpy.ndarray or torch.tensor or pycbc/gwpy TimeSeries
-                Final gravitational wave signal (detector stain).
+            h (numpy.ndarray, torch.Tensor or pycbc/gwpy TimeSeries): Projected gravitational wave signal (detector stain).
         """
         #assert(len(hp)==len(hc))
         #t_gpss = hp.get_sampled_time()
@@ -346,7 +296,16 @@ class GWDetector(object):
         return h_signal
     
     def time_delay_from_earth_center(self, ra, dec, t_gps=None):
-        """Returns the time delay from Earth Center"""
+        """
+        Returns the time delay from the Earth Center to the detector for
+        a signal from a certain sky location at a given GPS time.
+
+        Args:
+            ra    (float, numpy.ndarray or torch.Tensor): Right ascension of the source in rad.
+            dec   (float, numpy.ndarray or torch.Tensor): Declination of the source in rad.
+            t_gps (float, numpy.ndarray or torch.Tensor): GPS time of the event. If None, the reference time of the detector is used. (Default: None)
+        """
+
         #define earth center on right device (if torch is used)
         if self.use_torch:
             ra  = ra.to(self.device)
@@ -366,23 +325,13 @@ class GWDetector(object):
         Adapted from PyCBC and Lalsimulation.
         
         Args:
-        -----
-            other_location : list, array, tensor or GWDetector instance
-                Earth Geocenter coordinates or GWDetector instance
-                
-            ra : float, array, tensor
-                The right ascension (in rad) of the signal.
-                
-            declination : float, array, tensor
-                The declination (in rad) of the signal.
-                
-            t_gps : float, array, tensor
-                The GPS time (in s) of the signal. If None, the reference time of the detector is used.
+            other_location (list, numpy.ndarray, torch.Tensor, GWDetector): Earth Geocenter coordinates of the location.
+            ra            (float, array, tensor): Right ascension of the source in rad.
+            dec           (float, array, tensor): Declination of the source in rad.
+            t_gps         (float, array, tensor): GPS time of the event. If None, the reference time of the detector is used. (Default: None)
 
         Returns:
-        --------
-            dt : float, array, tensor
-                The arrival time difference between the detectors.
+            dt (float, numpy.ndarray, torch.Tensor): The arrival time difference between the detectors.
         """
 
         if t_gps is None:
@@ -408,36 +357,24 @@ class GWDetector(object):
         return dt
 
 
-###########################################
+#==========================================
 #---------- Detector Network --------------
-###########################################    
+#========================================== 
 class GWDetectorNetwork():
     """
     Class for a network of gravitational wave detectors.
     It accepts a list of detector names (or a list of GWDetector instances).
     The class allows for the gw projection on the detector network.
 
-
-    Arguments:
-    ----------
-        names : list of strings
-            List of detector names. Use list_available_detectors() to see a list of available names. 
-            Mutually exclusive with <detectors> argument.
-
-        detectors : dict of GWDetector instances
-            List of GWDetector instances. If it is provided, <names> will be ignored.
-
-        kwargs : dict
-           Optional initialization parameters for the detectors. If <detectors> is provided, this argument is ignored.
-           See the documentation of the GWDetector class for more details.
-
+    Args:
+        names (list): List of detector names. (Default is ['H1', 'L1', 'V1'])
+        detectors (dict): Dictionary of GWDetector instances. If provided, the ``names`` argument will be ignored.
+        kwargs: Additional keyword arguments to be passed to each GWDetector instance.
     """
 
     def __init__(self, names=['H1', 'L1', 'V1'], detectors=None, **kwargs):
         
-        """Constructor"""
-        
-
+        #create detectors
         if detectors:
             self.detectors = detectors
         else:
@@ -451,8 +388,6 @@ class GWDetectorNetwork():
             
             for name in names:
                 self.detectors[name] = GWDetector(name, **self.default_kwargs)
-                
-        return 
     
     @property
     def names(self):
@@ -463,8 +398,8 @@ class GWDetectorNetwork():
         return self.default_kwargs['device']
     
     def set_new_device(self, new_device):
+        """Set a new device for the detectors in the network"""
         self.default_kwargs['device'] = new_device
-        #update the device for each detector
         for ifo in self.names:
             self.detectors[ifo].device = new_device
         return
@@ -474,36 +409,21 @@ class GWDetectorNetwork():
         for ifo in self.names:
             self.detectors[ifo].reference_time = reference_time
         
-    
-
     def project_wave(self, hp, hc, ra, dec, polarization, t_gps=None):
         """
-        Project the plus and cross gw polarizations into the detectors frames
+        Project the plus and cross polarizations into the detectors frames
 
         Args:
-        -----
-            hp, hc: numpy.ndarrays or torch.tensors
-                Plus and cross polarizations of the wave.
-
-            ra: float
-                Right ascension of the source in rad.
-
-            dec: float
-                Declination of the source in rad.
-
-            polarization: float
-                polarizationarization angle of the wave in rad.
-                
-            t_gps: float
-                GPS time of the event
+            hp           (numpy.ndarray, torch.Tensor or pycbc/gwpy TimeSeries): Plus polarizations of the wave.
+            hc           (numpy.ndarray, torch.Tensor or pycbc/gwpy TimeSeries): Cross polarizations of the wave.
+            ra           (float, numpy.ndarray or torch.Tensor): Right ascension of the source in rad.
+            dec          (float, numpy.ndarray or torch.Tensor): Declination of the source in rad.
+            polarization (float, numpy.ndarray or torch.Tensor): Polarizationarization angle of the wave in rad.
+            t_gps        (float, numpy.ndarray or torch.Tensor): GPS time of the event. If None, the reference time of the detector is used. (Default: None)
                 
         Returns:
-        --------
-            h: dict of either numpy.ndarray or torch.tensor or pycbc/gwpy TimeSeries
-                Final gravitational wave signal (detector stain) 
-                for each of the detectors in the network.
+            h (dict of either numpy.ndarray, torch.Tensor or pycbc/gwpy TimeSeries): Final gravitational wave signal (detector stain) for each of the detectors in the network.
         """
-        
         h = dict()
         for name, detector in self.detectors.items():
             h[name] = detector.project_wave(hp, hc, ra, dec, polarization, t_gps)        
@@ -511,21 +431,14 @@ class GWDetectorNetwork():
     
     def time_delay_from_earth_center(self, ra, dec, t_gps=None):
         """ 
-        Returns the time delay(s) from Earth Center for each detector in the network
-
-        Args:
-        -----
-            ra: float or numpy.ndarray or torch.tensor 
-                Right ascension of the source in rad.
-
-            dec: float or numpy.ndarray or torch.tensor 
-                Declination of the source in rad.
-
-            t_gps: float or or numpy.ndarray or torch.tensor 
-                GPS time of the event
-        
+        Returns the time delay(s) from Earth Center for each detector in the network        
         """
         delays = dict()
         for name, detector in self.detectors.items():
             delays[name] = detector.time_delay_from_earth_center(ra, dec, t_gps)
         return delays
+    
+class EinsteinTelescope(GWDetectorNetwork):
+    """Wrapper class for the (triangular) Einstein Telescope detector"""
+    def __init__(self, **kwargs):
+        super().__init__(names=['E1', 'E2', 'E3'], detectors=None, **kwargs)
