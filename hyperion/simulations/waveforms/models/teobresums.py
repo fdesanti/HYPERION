@@ -24,9 +24,12 @@ log = HYPERION_Logger()
 
 
 def modes_to_k(modes):
-    """
-    Convert a list of modes to EOB conventions:
-    k = l*(l-1)/2 + m-2;
+    r"""
+    Convert a list of :math:`(l, m)` modes to EOB conventions:
+
+    .. math::
+
+        k = \frac{l(l-1)}{2} + m - 2
     """
     return [int(x[0]*(x[0]-1)/2 + x[1]-2) for x in modes]
 
