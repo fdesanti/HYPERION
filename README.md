@@ -21,13 +21,6 @@ By default (on Linux) PyTorch is shipped with the latest CUDA binaries.
 Refer to the page [PyTorch page](https://pytorch.org/get-started/locally/) for other CUDA versions and/or installation
 options.
 
-```
-pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-```
-
-It is therefore recommended to install pytorch before installing the requirements
-
-
 ## Usage
 
 Once the steps above have been completed hyperion can be imported and directly used. 
