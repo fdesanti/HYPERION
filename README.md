@@ -4,7 +4,7 @@
 
 # `HYPERION` - HYPer-fast close EncounteR Inference from Observations with Normalizing-flows 
 
-HYPERION is pipeline based on [Normalizing Flows](https://arxiv.org/abs/1912.02762) for the detection and Parameter Estimation of gravitational waves from [Close Encounters](https://arxiv.org/abs/1909.02143)
+HYPERION is a pipeline based on [Normalizing Flows](https://arxiv.org/abs/1912.02762) for the detection and Parameter Estimation of gravitational waves from [Close Encounters](https://arxiv.org/abs/1909.02143)
 
 ## Installation
 

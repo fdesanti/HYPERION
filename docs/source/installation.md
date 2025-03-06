@@ -2,17 +2,17 @@
 # Installation
 
 
-1. To install HYPERION follow these steps:
+To install HYPERION follow these steps:
 
-   ```bash
-   git clone https://github.com/fdesanti/HYPERION.git
-   cd HYPERION
-   python setup.py install
-   ```
+```bash
+git clone https://github.com/fdesanti/HYPERION.git
+cd HYPERION
+python setup.py install
+```
 
 ```{Note}
 
-At the moment, HYPERION does not come with a pip package. You need to install it from the source as shown above.
+At the moment, HYPERION does not have a PyPy release so it cannot be installed via *pip*. You need to install it from the source as shown above.
 ```
 
 ## Prerequisites 
