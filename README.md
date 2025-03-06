@@ -1,6 +1,6 @@
 ![Test Status](https://img.shields.io/badge/Tests-Passed-brightgreen)
 
-![Logo](docs/hyperion_logo.png)
+![Logo](docs/images/hyperion_logo.png)
 
 # `HYPERION` - HYPer-fast close EncounteR Inference from Observations with Normalizing-flows 
 
