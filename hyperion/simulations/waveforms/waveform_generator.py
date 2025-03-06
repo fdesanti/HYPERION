@@ -32,13 +32,13 @@ class WaveformGenerator:
 
         assert waveform_model in models_dict.keys(), f"Waveform model {waveform_model} not found. \
                                                        Available models are {models_dict.keys()}"
+        if waveform_model == 'EffectiveFlyBy': waveform_model_kwargs['duration']=duration
         
         self.fs = fs
         self.duration = duration
         self.det_network = det_network
         self.wvf_model   = models_dict[waveform_model](fs, **waveform_model_kwargs)
-    
-        return
+
 
     @property
     def name(self):

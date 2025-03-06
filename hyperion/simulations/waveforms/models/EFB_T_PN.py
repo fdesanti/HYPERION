@@ -10,7 +10,10 @@ torch.set_float32_matmul_precision('highest')
 torch.backends.cuda.matmul.allow_tf32 = False
 
 class PN_Expansion(nn.Module):
-    """Class that mana"""
+    """
+    Class that manages the PN Expansion of the EFB-T waveform model
+    (See  N. Loutrel 2019 for details - arXiv:1909.02143)
+    """
 
     def __init__(self, nmax, kmax):
         super(PN_Expansion, self).__init__()
@@ -20,8 +23,6 @@ class PN_Expansion(nn.Module):
         self.nmax = nmax
         self.kmax = kmax
         #self.eps_factor = eps_factor
-        
-        return
     
     @property
     def functions(self):
@@ -77,14 +78,15 @@ class PN_Expansion(nn.Module):
     def zeros(self, phase, incl, pol):
         return torch.zeros(phase.shape, device=phase.device)
     
-    """###########################################################################################"""
-    """##########################   POST NEWTONIAN EXPANSION     #################################"""
-    """###########################################################################################"""
-    ####################################################################################### 
+    #======================================================================================
+    #=========================   POST NEWTONIAN EXPANSION    ==============================
+    #======================================================================================
+
+    #======================================================================================
     #                                                                                     #
     #                         Cosin-like PLUS functions C_+^(n,k)                         #
     #                                                                                     #
-    #######################################################################################
+    #======================================================================================
     #@torch.compile(**torch_compile_kwargs)   
     def cos_plus_0_0(self, phase, incl, pol):
         first_ = 8*phase/(1 + torch.pow(phase, 2))
@@ -157,11 +159,11 @@ class PN_Expansion(nn.Module):
         first_ = 0.0429/(1 + torch.pow(phase, 2))
         return first_*self.cb_sb(pol)*self.th_ci_si(incl)
 
-    ####################################################################################### 
+    #======================================================================================
     #                                                                                     #
     #                         Sin-like PLUS functions S_+^(n,k)                           #
     #                                                                                     #
-    #######################################################################################
+    #======================================================================================
 
     #@torch.compile(**torch_compile_kwargs)   
     def sin_plus_1_0(self, phase, incl, pol):
@@ -227,11 +229,11 @@ class PN_Expansion(nn.Module):
         return first_*self.cos_pol*self.sin_pol*self.th_ci_si(incl)
 
 
-    ####################################################################################### 
+    #======================================================================================
     #                                                                                     #
     #                         Cosin-like CROSS functions C_x^(n,k)                        #
     #                                                                                     #
-    #######################################################################################
+    #======================================================================================
 
     #@torch.compile(**torch_compile_kwargs)   
     def cos_cross_0_0(self, phase, incl, pol):
@@ -290,11 +292,11 @@ class PN_Expansion(nn.Module):
         return first_*self.cos_pol*self.sin_pol*self.cos_incl
 
 
-    ####################################################################################### 
+    #======================================================================================
     #                                                                                     #
     #                         Sin-like CROSS functions S_x^(n,k)                          #
     #                                                                                     #
-    #######################################################################################
+    #======================================================================================
 
     #@torch.compile(**torch_compile_kwargs)   
     def sin_cross_1_0(self, phase, incl, pol):
@@ -359,12 +361,12 @@ class PN_Expansion(nn.Module):
         first_ = -37/(35*torch.pow(1 + torch.pow(phase, 2), 1.5))
         return first_*self.cos_incl*self.cb_sb(pol)
 
-    """###########################################################################################"""
-    ####################################################################################### 
+    
+    #======================================================================================
     #                                                                                     #
     #                         Hyperbolic Scale functions Ch and Sh                        #
     #                                                                                     #
-    #######################################################################################
+    #======================================================================================
 
     @property
     def arcsinh_phase(self):
@@ -373,7 +375,6 @@ class PN_Expansion(nn.Module):
     def arcsinh_phase(self, phase):
         self._arcsinh_phase = torch.arcsinh(phase)
         
-
     #@torch.compile(**torch_compile_kwargs)   
     def ch(self, k):
         """
@@ -388,7 +389,6 @@ class PN_Expansion(nn.Module):
         """
         return torch.sinh((k/3)*self.arcsinh_phase)
 
-
     def _compute_function(self, cos_or_sin, plus_or_cross, n, k, phase, incl, pol):
         
         fname = '{}_{}_{}_{}'.format(cos_or_sin, plus_or_cross, k, n) 
@@ -397,28 +397,26 @@ class PN_Expansion(nn.Module):
         hyp_scale = self.ch(k) if cos_or_sin == 'cos' else self.sh(k)
         return f(self, phase, incl, pol) * hyp_scale
     
-
     def _set_quantities(self, phase, incl, pol):
+        """
+        Set the cos and sin of the inclination and polarization angles and the arcsinh of the phase
+        """
         self.cos_incl = incl
         self.sin_incl = incl
         self.cos_pol  = pol
         self.sin_pol  = pol
         self.arcsinh_phase = phase
 
-        
-
     def forward(self, phase, incl, pol, eps_factor):
-
-        #print('PHASE, INCL, POL', phase.shape, incl.shape, pol.shape)
-        """forward method (equivalent to __call__) that returns the cos-like/sin-like functions for the plus and cross polarization respectively"""
-
+        """"
+        Computes the PN expansion of the EFB-T waveform model
+        """
         self._set_quantities(phase, incl, pol)
         #Cos-like plus functions
         
         hp = torch.stack([ 
             torch.stack([ (eps_factor**n)*(self._compute_function('cos', 'plus', n, k, phase, incl, pol) + self._compute_function('sin', 'plus', n, k, phase, incl, pol))   for n in range(self.nmax)])
              for k in range(self.kmax)])
-        
     
         hc = torch.stack([ 
             torch.stack([ (eps_factor**n)*(self._compute_function('cos', 'cross', n, k, phase, incl, pol) + self._compute_function('sin', 'cross', n, k, phase, incl, pol))   for n in range(self.nmax)])
@@ -429,8 +427,6 @@ class PN_Expansion(nn.Module):
 
 
 
-
-    
 
 if __name__=='__main__':
     from inspect import getmembers, isfunction  
