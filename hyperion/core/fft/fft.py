@@ -7,7 +7,7 @@ import torch
 
 __all__ = ['fft', 'rfft', 'fftfreq', 'rfftfreq', 'ifft', 'irfft']
 
-class fft():
+class FFT():
     """
     Wrapper to torch.fft.fft to reproduce same results as pycbc/gwpy
     (See e.g. the fft() method in gwpy.timeseries.TimeSeries class)
@@ -21,7 +21,7 @@ class fft():
         ft = torch.fft.fft(input, **kwargs) / norm
         return ft
 
-class rfft():
+class RFFT():
     """
     Wrapper to torch.fft.rfft to reproduce same results as pycbc/gwpy
     (See e.g. the fft() method in gwpy.timeseries.TimeSeries class)
@@ -36,7 +36,7 @@ class rfft():
         ft[..., 1:] *= 2.0
         return ft
     
-class fftfreq():
+class FFTFREQ():
     """
     Wrapper to torch.fft.fftfreq to reproduce same results as pycbc/gwpy
 
@@ -47,7 +47,7 @@ class fftfreq():
     def __call__(self, input, **kwargs):
         return torch.fft.fftfreq(input, **kwargs)
     
-class rfftfreq():
+class RFFTFREQ():
     """
     Wrapper to torch.fft.rfftfreq to reproduce same results as pycbc/gwpy
 
@@ -58,7 +58,7 @@ class rfftfreq():
     def __call__(self, input, **kwargs):
         return torch.fft.rfftfreq(input, **kwargs)
     
-class ifft():
+class IFFT():
     """
     Wrapper to torch.fft.ifft to reproduce same results as pycbc/gwpy
     (See e.g. the fft() method in gwpy.timeseries.TimeSeries class)
@@ -72,7 +72,7 @@ class ifft():
         ift = torch.fft.ifft(input*norm, **kwargs) 
         return ift
     
-class irfft():
+class IRFFT():
     """
     Wrapper to torch.fft.irfft to reproduce same results as pycbc/gwpy
     (See e.g. the fft() method in gwpy.timeseries.TimeSeries class)
@@ -87,3 +87,10 @@ class irfft():
         ft[..., 1:] /= 2.0
         ift = torch.fft.irfft(ft, **kwargs) 
         return ift
+    
+fft      = FFT()
+rfft     = RFFT()
+ifft     = IFFT()
+irfft    = IRFFT()
+fftfreq  = FFTFREQ()
+rfftfreq = RFFTFREQ()
