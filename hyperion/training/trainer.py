@@ -1,26 +1,42 @@
-"""This file contains the Trainer class which is used to handle the
-    training procedure of HYPERION
-"""
-
 import os
 import torch
 import numpy as np
-#import seaborn as sns
 import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 from ..core.flow import build_flow
-from ..core.utilities import HYPERION_Logger
+from ..core.utilities import HYPERION_Logger, latexify
+
+log = HYPERION_Logger()
 
 class Trainer: 
+    """
+    Class that handles the training of a flow model.
+    The training is performed over a number of epochs, where each epoch
+    is defined as when the model has been optimized on a number of batches
+    equal to the specified training steps.
+
+    Args:
+        flow                           (Flow): the flow model to be trained
+        training_dataset   (DatasetGenerator): Training dataset
+        validation_dataset (DatasetGenerator): Validation dataset
+        optimizer     (torch.optim.Optimizer): Optimizer to be used
+        scheduler  (torch.optim.lr_scheduler): Learning rate scheduler
+        device                          (srt): Device where the model is going to be trained ('cpu' or 'cuda'). (Default: 'cpu')
+        checkpoint_filepath             (str): Path to the file where the model's weights are going to be saved
+        steps_per_epoch                 (int): Number of batches to be used in each epoch. If None, it is set to ``len(training_dataset)/1000``
+        val_steps_per_epoch             (int): Number of batches to be used in each validation epoch. If None, it is set to ``len(validation_dataset)/1000``
+        verbose                        (bool): If True, prints training and validation losses. (Default: True)
+        add_noise                      (bool): If True, adds noise to the training dataset. (Default: True)
+    """
     def __init__(self,
-                flow               : torch.nn.Module,
-                training_dataset   : torch.utils.data.DataLoader,
-                validation_dataset : torch.utils.data.DataLoader,
+                flow,
+                training_dataset,
+                validation_dataset,
                 optimizer          : torch.optim.Optimizer,
                 scheduler          : torch.optim.lr_scheduler,
-                device             : str,
-                checkpoint_filepath: str,
+                device,
+                checkpoint_filepath,
                 steps_per_epoch     = None,
                 val_steps_per_epoch = None,
                 verbose             = True,
@@ -49,7 +65,7 @@ class Trainer:
             self.val_steps_per_epoch = len(self.val_ds) // 1000
              
         self.verbose = verbose
-        return
+  
 
     def _train_on_epoch(self, epoch):
         """
@@ -67,12 +83,11 @@ class Trainer:
             #getting the trainig batch
             parameters, strains, asd = self.train_ds.__getitem__(add_noise=self.add_noise)
             
-            
             #training step
             self.optimizer.zero_grad()
             
             #get the loss
-            log_p =  -self.flow.log_prob(parameters.to(self.device), strains.to(self.device), asd.to(self.device))
+            log_p = -self.flow.log_prob(parameters.to(self.device), strains.to(self.device), asd.to(self.device))
             loss  = torch.mean(log_p)
             
             if self.verbose:
@@ -140,54 +155,102 @@ class Trainer:
         avg_val_loss /= (self.val_steps_per_epoch-fail_counter)
         return avg_val_loss
   
-    
-    def _save_checkpoint(self, epoch):
+    @staticmethod
+    def save_checkpoint(flow, checkpoint_filepath):
+        """
+        Save the model's weights and optimizer's state to a file
+
+        Args:
+            flow               (Flow): the model to be saved
+            checkpoint_filepath (str): path to the file where the model's weights are going to be saved
+        """
         
         checkpoints = {
-            'configuration': self.flow.configuration,
-            'prior_metadata': self.flow.prior_metadata,
-            'model_state_dict': self.flow.state_dict(),
+            'configuration': flow.configuration,
+            'prior_metadata': flow.prior_metadata,
+            'model_state_dict': flow.state_dict(),
             #'optimizer_state_dict': self.optimizer.state_dict(),
             #'epoch': epoch,
         }
-            
-        torch.save(checkpoints, self.checkpoint_filepath)
+        torch.save(checkpoints, checkpoint_filepath)
         if self.verbose:
-            self.log.info(f"Training checkpoint saved at {self.checkpoint_filepath}")
+            log.info(f"Training checkpoint saved at {checkpoint_filepath}")
+
+    @staticmethod
+    def load_trained_flow(checkpoint_filepath, device):   
+        """
+        Load the trained flow from the checkpoint file
+
+        Args:
+            checkpoint_filepath (str): Path to the file where the model's weights are saved
+            device              (str): Device where the model is going to be loaded ('cpu' or 'cuda')
+
+        Returns:
+            trained_flow (Flow): The trained flow model
+        """
+
+        if os.path.exists(self.checkpoint_filepath):
+            trained_flow = build_flow(checkpoint_path=checkpoint_filepath).to(device)
+            log.info(f"Model loaded from checkpoint at {checkpoint_filepath}")
+        else:
+            log.error(f"Checkpoint not found at {checkpoint_filepath}")
+        return trained_flow
     
-    def _make_history_plots(self):
-        train_loss, val_loss, lr = np.loadtxt(self.checkpoint_dir+'/history.txt', delimiter=',',unpack = True)
+    @staticmethod
+    @latexify
+    def make_history_plots(history_filepath, savepath):
+        """
+        Make a plot of the training history
+
+        Args:
+            history_filepath (str): Path to the file where the history is saved
+            savepath         (str): Path to the file where the plot is going to be saved
+        """
+        
+        train_loss, val_loss, lr = np.loadtxt(history_filepath, delimiter=',',unpack = True)
         epochs = np.arange(len(train_loss))+1
 
-        plt.figure(figsize=(20, 8))
-        #history
-        plt.subplot(121)
-        plt.plot(epochs, train_loss, label ='train loss')
-        plt.plot(epochs, val_loss, label = 'val loss')
-        plt.legend()
-        plt.xlabel('epoch')
-        plt.ylabel('$KL[p || q]$')
-        ymin = min(np.min(train_loss), np.min(val_loss))-0.5
-        ymax = train_loss[0]+0.5
-        plt.ylim(ymin, ymax)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
         
-        #learning_rate
-        plt.subplot(122)
-        plt.plot(epochs, lr, label = 'learning rate')
-        plt.legend()
-        plt.xlabel('epoch')
-        plt.ylabel('$\eta$')
-        plt.savefig(self.checkpoint_dir+'/history_plot.jpg', dpi=200, bbox_inches='tight')
-        plt.close()
+        # history
+        ax1.plot(epochs, train_loss, label='train loss')
+        ax1.plot(epochs, val_loss, label='val loss')
+        ax1.legend()
+        ax1.set_xlabel('epoch')
+        ax1.set_ylabel('$KL[p || q]$')
+        ymin = min(np.min(train_loss), np.min(val_loss)) - 0.5
+        ymax = train_loss[0] + 0.5
+        ax1.set_ylim(ymin, ymax)
+        
+        # learning_rate
+        ax2.plot(epochs, lr, label='learning rate')
+        ax2.legend()
+        ax2.set_xlabel('epoch')
+        ax2.set_ylabel('$\eta$')
+        
+        fig.savefig(savepath, dpi=200, bbox_inches='tight')
+        plt.close(fig)
+
+        return fig
     
 	
     def train(self, num_epochs, overwrite_history=True):
-        self.log = HYPERION_Logger()
+        """
+        Main training loop over the epochs.
         
+        Args:
+            num_epochs           (int): Number of epochs to train the model
+            overwrite_history   (bool): If True, the history file is overwritten. (Default: True)
+
+        Returns:
+            trained_flow (Flow): The trained Flow model
+
+        Hint:
+            Set to ``overwrite_history = False`` when resuming a training.
+        """
         best_train_loss = np.inf
         best_val_loss   = np.inf
         
-
         self.history_fpath = os.path.join(self.checkpoint_dir, 'history.txt')
         
         if not overwrite_history:
@@ -198,7 +261,7 @@ class Trainer:
             f.flush()
         
         print('\n')
-        self.log.info('Starting Training...\n')
+        log.info('Starting Training...\n')
         
         #main training loop over the epochs
         for epoch in tqdm(range(1,num_epochs+1)):
@@ -206,7 +269,6 @@ class Trainer:
             #preload waveforms
             self.train_ds.preload_waveforms()
             self.val_ds.preload_waveforms()
-
             
             #on-epoch training
             self.flow.train(True) #train attribute comes from nn.Module and is used to set the weights in training mode
@@ -218,16 +280,16 @@ class Trainer:
                 val_loss = self._test_on_epoch(epoch)
             
             if np.isnan(train_loss) or np.isnan(val_loss):
-                self.log.error(f'Epoch {epoch} skipped due to nan loss')
-                self.log.info(f'Loading previously saved model\n')
+                log.error(f'Epoch {epoch} skipped due to nan loss')
+                log.info(f'Loading previously saved model\n')
                 self.flow = build_flow(checkpoint_path=self.checkpoint_filepath).to(self.device)
                 continue #we skip to next iteration
         
-            self.log.info(f'Epoch = {epoch}  |  avg train loss = {train_loss:.3f}  |  avg val loss = {val_loss:.3f}')
+            log.info(f'Epoch = {epoch}  |  avg train loss = {train_loss:.3f}  |  avg val loss = {val_loss:.3f}')
            
             #save updated model weights and update best values
             if (train_loss < best_train_loss) and (val_loss < best_val_loss):
-                self._save_checkpoint(epoch+1)
+                self.save_checkpoint(self.flow, self.checkpoint_filepath)
                 best_train_loss = train_loss
                 best_val_loss   = val_loss
                 print(f"best train loss = {best_train_loss:.3f} at epoch {epoch}")
@@ -246,24 +308,24 @@ class Trainer:
             
             #make history plot
             try:
-                self._make_history_plots()
+                self.make_history_plots(history_filepath=self.checkpoint_dir+'/history.txt', 
+                                        savepath=self.checkpoint_dir+'/history_plot.jpg')
             except:
                 pass
             
-        
             #perform learning rate schedule step
             if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                 self.scheduler.step(val_loss) #for ReduceLrOnPlateau
                 updated_lr = self.scheduler.get_last_lr()[0]
                 if updated_lr < current_lr:
-                    self.log.info(f"Reduced learning rate to {updated_lr}")
+                    log.info(f"Reduced learning rate to {updated_lr}")
             else:
                 self.scheduler.step() #for CosineAnnealingLr
-                
             
-
         f.close()
-        self.log.info('Training Completed!\n')
+        log.info('Training Completed!\n')
+
+        return self.load_trained_flow(self.checkpoint_filepath, self.device)
          
 
 
