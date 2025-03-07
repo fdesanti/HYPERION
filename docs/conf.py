@@ -33,7 +33,7 @@ for root, dirs, files in os.walk(api_dir):
             exclude_patterns.append(rst_path)
 
 def skip_member(app, what, name, obj, skip, options):
-    if name == '__call__':
+    if name in ['__call__', '__getitem__']:
         return False  # Do not skip __call__
     return skip
 
