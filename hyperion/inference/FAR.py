@@ -25,8 +25,6 @@ class DetectionStat():
     The False Alarm Rate (FAR) is computed following Usman et al. (2015) (arXiv:1508.02357)
     adopting Bayes factors as detection statistics. 
 
-
-
     Args:
         cenral_time     (float): GPS time of the event we want to analyze.
         observation_time (float): Duration of the whole observation in seconds. (Default is 3600)
