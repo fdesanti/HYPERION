@@ -246,7 +246,7 @@ class Trainer:
             trained_flow (Flow): The trained Flow model
 
         Hint:
-            Set to ``overwrite_history = False`` when resuming a training.
+            Set ``overwrite_history = False`` when resuming a training.
         """
         best_train_loss = np.inf
         best_val_loss   = np.inf
@@ -326,9 +326,3 @@ class Trainer:
         log.info('Training Completed!\n')
 
         return self.load_trained_flow(self.checkpoint_filepath, self.device)
-         
-
-
-    
-    
-    

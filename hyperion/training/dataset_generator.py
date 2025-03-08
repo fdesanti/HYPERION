@@ -1,52 +1,78 @@
-
-"""This module contains a class to generate and save a training dataset into hdf5 files"""
-
+import os
 import yaml
 import torch
-import torch.nn.functional as F
 
 from tensordict import TensorDict
 
 from ..core import HYPERION_Logger
 from ..core.fft import *
-from ..config import CONF_DIR
+from ..simulations import WhitenNet
 from ..core.distributions import MultivariatePrior, prior_dict_
 from ..core.distributions import q_uniform_in_components as q_prior
-
-from ..simulations import WhitenNet
-from ..simulations.simulation_utilities import (optimal_snr, 
-                                                matched_filter_snr, 
-                                                rescale_to_network_snr, 
-                                                network_optimal_snr)
 
 log = HYPERION_Logger()
 
 class DatasetGenerator:
-    """
+    r"""
     Class to generate training dataset. Can work either offline as well as an online (i.e. on training) generator.
+    The class is initialized with a waveform generator, a set of ASD generators, a detector network and a prior file.
     
-    Given a specified prior and a waveform generator it generates as output a tuple
-    (parameters, whitened_strain)
+    The dataset is simulated in the following steps:
 
+        1. Sample intrinsic parameters from the intrinsic prior 
+
+        2. Generate the corresponding waveforms
+
+        3. Sample extrinsic parameters from the extrinsic prior
+
+        4. Project the waveforms onto the detectors
+
+        5. Compute the relative time shifts
+
+        6. Sample the ASD and whiten the strain
+
+        7. Standardize the parameters
+
+        8. Return the standardized parameters and the whitened strain as a tuple
+
+    Args:
+        waveform_generator (WaveformGenerator): The WaveformGenerator object.
+        asd_generators   (dict of ASD_Sampler): A dictionary containing the ASD_Sampler generators for each detector.
+        det_network        (GWDetectorNetwork): The GWDetectorNetwork instance.
+        prior_filepath                  (Path): The path to the prior file.
+        batch_size                       (int): The batch size. (Default: 512)
+        device                           (str): The device to use ('cpu' or 'cuda'). (Default: 'cpu')
+        random_seed                      (int): The random seed to be passed to the MultivariatePrior instances for reproducibility. (Default: None)
+        num_preload                      (int): The number of waveforms to preload before each epoch. (Default: 1000)
+        n_proc                           (int): The number of parallel processes to use for the waveform generation. (Default: ``2 * os.cpu_count() // 3``)
+        use_reference_asd               (bool): Whether to use the reference ASD for whitening. (Default: False)
+        inference_parameters     (list of str): The list of parameters to infer. (Default: None)
+        whiten_kwargs                         : The kwargs to be passed to the WhitenNet instance. (Default: None)
+
+    Hint:
+        The ``inference_parameters`` list allows to specify the parameters to be inferred different to those in the prior. 
+        It might be just a subset or a combination of the prior parameters.
+        For instance if the prior contains the parameters :math:`(m_1, m_2)` then one can infer the total mass :math:`M = m_1 + m_2`, 
+        the chirp mass :math:`\mathcal{M} = \dfrac{(m_1m_2)^{3/5}}{M^{1/5}}` or the mass ratio :math:`q = m_2/m_1`.
+
+    Note: 
+        By default the class uses the GWPy's whitening method. See the WhitenNet class documentation for further details.
     """
-
     def __init__(self, 
                  waveform_generator, 
                  asd_generators, 
                  det_network,
-                 prior_filepath  = None, 
-                 batch_size      = 512,
-                 device          = 'cpu',
-                 random_seed     = None,
-                 num_preload     = 1000,
-                 n_proc          = 10,
-                 use_reference_asd = False,
-                 inference_parameters = None, 
-                 whiten_kwargs = None,
+                 prior_filepath       = None,
+                 batch_size           = 512,
+                 device               = 'cpu',
+                 random_seed          = None,
+                 num_preload          = 1000,
+                 n_proc               = 2 * os.cpu_count() // 3,
+                 use_reference_asd    = False,
+                 inference_parameters = None,
+                 **whiten_kwargs,
                  ):
-        """
-        Constructor.
-        """
+    
         
         self.waveform_generator   = waveform_generator
         self.asd_generator        = asd_generators
@@ -79,9 +105,8 @@ class DatasetGenerator:
                                    fs       = waveform_generator.fs,
                                    device   = device,
                                    rng      = self.rng)
-        return
-    
-    
+        
+
     @property
     def means(self):
         if not hasattr(self, '_means'):
@@ -109,9 +134,8 @@ class DatasetGenerator:
     def _load_prior(self, prior_filepath):
         """
         Load the prior distributions specified in the json prior_filepath:
-        if no filepath is given, the default one stored in the config dir will be used
         
-        This function first reads the json file, then store the prior as a hyperion's MultivariatePrior instance. 
+        This function first reads the yml file, then store the prior as a hyperion's MultivariatePrior instance. 
         Prior's metadata are stored as well. Metadata also contains the list of the inference parameters 
         The reference_time of the GWDetector instances is finally updated to the value set in the prior
 
@@ -167,8 +191,6 @@ class DatasetGenerator:
         #store means and stds
         self.prior_metadata['means'] = self.means
         self.prior_metadata['stds']  = self.stds
-        
-        return 
     
 
     def _compute_M_Mchirp_and_q(self, prior_samples):
@@ -221,7 +243,9 @@ class DatasetGenerator:
          
 
     def standardize_parameters(self, prior_samples):
-        """Standardize prior samples to zero mean and unit variance"""
+        """
+        Standardize prior samples to zero mean and unit variance
+        """
         
         out_prior_samples = []
         for parameter in self.inference_parameters:
@@ -233,6 +257,9 @@ class DatasetGenerator:
     
     
     def get_idxs(self):
+        """
+        Return a set of batch indices to sample the preloaded waveforms
+        """
         if not hasattr(self, 'preloaded_wvfs'):
             raise ValueError('There are no preloaded waveforms. Please run pre_load_waveforms() first.')
 
@@ -242,7 +269,7 @@ class DatasetGenerator:
 
     def preload_waveforms(self):
         """
-        Preload a set of waveforms to speed up the generation of the dataset.
+        Preload a set of waveforms. This function must be called at the beginning of each epoch.
         """
         
         log.info('Preloading a new set of waveforms...')
@@ -269,6 +296,15 @@ class DatasetGenerator:
 
 
     def __getitem__(self, add_noise=True):
+        """
+        Generate a batch of whitened strain and corresponding parameters.
+
+        Args:
+            add_noise (bool): Whether to add noise to the whitened strain. (Default: True)
+
+        Returns:
+            tuple: A tuple containing the standardized parameters, the whitened strain and the ASD.
+        """
 
         idxs = self.get_idxs()
 

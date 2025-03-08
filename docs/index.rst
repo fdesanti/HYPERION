@@ -16,6 +16,7 @@ for the detection and Parameter Estimation of gravitational waves from
    :maxdepth: 1
 
    source/installation
+   source/overview
    source/normalizing_flows
 .. ```
 
