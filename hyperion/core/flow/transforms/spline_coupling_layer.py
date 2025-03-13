@@ -9,25 +9,19 @@ from .coupling_transform import CouplingLayer
 
 class SplineCouplingLayer(CouplingLayer):
     """
-    Class that implements the single Coupling Layer with RationalQuadraticSplines
+    Class that implements the single Coupling Layer with RationalQuadraticSplines. 
+    (See arXiv:1906.04032)
     
     Args:
-        - input_dim (int):  dimensionality of the parameter space
-        - num_circular (int): number of angles in parameters (ie. number of elements to transform with circular splines)
-        - neural_network (nn.Module):  the neural network that produces the knots and is trained with the flow
-        - layer_index (int):  index of the layer in the whole coupling transform. Used to permute the masks accordingly   
-    
-    Methods:
-        - _create_transform_mask:  produces a 1D binary tensor mask with the first num_identity = False and the rest num_transformed = True
-        - _create_circular_mask:   produces a 1D binary tensor mask with the first num_non_circuar = False and the rest num_circular = True
-        - _permute_mask:           permutes cyclically the given mask 
-        
-        - _coupling_transform :    implements the coupling transform with splines 
-        - forward :                makes the forward pass (training)
-        - inverse :                makes the inverse pass (training)
-    
+        num_features          (int): Number of features in the input tensor
+        num_identity          (int): Number of features that are not transformed. If None then ``num_features - num_features//2`` (Default. None)
+        num_transformed       (int): Number of features that are transformed. If None then ``num_features//2`` (Default. None)
+        num_bins              (int): Number of bins in the spline (Default. 8)
+        tail_bound          (float): Tail bound of the spline (Default. 2.0)
+        linear_dim            (int): Dimension of the linear layers (Default. 512)
+        activation      (nn.Module): Activation function (Default. nn.ELU())
+        dropout_probability (float): Dropout probability (Default. 0.2)
     """
-    
     def __init__(self,
                  num_features,
                  num_identity        =  None,

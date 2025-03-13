@@ -459,7 +459,7 @@ class GammaPrior(BasePrior):
 #=======================================    
     
 class M_uniform_in_components(BasePrior):
-    """
+    r"""
     Class that manages total Mass M prior from uniform distributed masses
 
     .. math::
@@ -519,7 +519,7 @@ class M_uniform_in_components(BasePrior):
         
         
 class q_uniform_in_components(BasePrior):
-    """
+    r"""
     Class that manages total Mass M prior from uniform distributed masses
     
     .. math::

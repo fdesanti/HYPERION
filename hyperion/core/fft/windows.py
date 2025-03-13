@@ -34,10 +34,11 @@ def _truncate(w, needed):
 #========================
 # window functions
 #========================
-class hann():
+class HANN():
     """wrapper for torch.hann_window."""
     def __call__(self, **kwargs):
         return torch.hann_window(**kwargs)
+hann = HANN()
 
 
 def tukey(M=2048, alpha = 0.5, sym = True, device='cpu'):

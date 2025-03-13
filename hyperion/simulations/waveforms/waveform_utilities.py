@@ -12,11 +12,9 @@ def pc_to_Msun(dist):
     Converts distance to Solar Masses using geometrized G=c=1 units.
     
     Args:
-    -----
         dist (float): distance value in parsec
 
     Returns:
-    --------
         dist_m (float): distance in Solar Masses units
     """
     dist_m = dist * pc_to_m_conversion
@@ -27,11 +25,9 @@ def Msun_to_sec(mass):
     Converts Solar Masses to time [s].
     
     Args:
-    -----
         mass (float): mass value in Solar Masses units
     
     Returns:
-    --------
         sec (float): Solar masses converted into seconds
     """
     return (mass*M_sun)*(G/c**3)

@@ -11,13 +11,10 @@ class PyCBCWaveform:
     Wrapper class to the PyCBC waveform models.
 
     Args:
-    -----
         fs   (float): sampling frequency
         mode   (str): 'TD' or 'FD'. (Default: 'TD')
         kwargs      : Additional keyword arguments to pass to the waveform generator
-    
     """
-
     def __init__(self, fs=2048, mode='TD', **kwargs):
         #set mode
         self.mode = mode
@@ -78,6 +75,15 @@ class PyCBCWaveform:
     def __call__(self, waveform_parameters):
         """
         Compute the waveform.
+
+        Args:
+            waveform_parameters (dict): Dictionary containing the waveform parameters.
+
+        Returns:
+            dict: Dictionary containing the waveform data
+
+            - **hp** (torch.Tensor): Plus polarization waveform
+            - **hc** (torch.Tensor): Cross polarization waveform
         """
         # Update the parameters      
         pars = self.kwargs.copy()

@@ -5,7 +5,7 @@ SHELL := /bin/bash
 SPHINXBUILD   = sphinx-build
 SOURCEDIR     = .
 BUILDDIR      = _build
-APIDIR        = api
+APIDIR        = hyperion
 PACKAGE_DIR   = ../hyperion  # Adjust to point to your package
 
 .PHONY: clean clean_api apidoc indexes html docs
@@ -28,6 +28,9 @@ indexes:
 
 # Build HTML documentation (depends on clean, apidoc, and indexes)
 html: clean apidoc indexes
+	$(SPHINXBUILD) -b html $(SOURCEDIR) $(BUILDDIR)/html
+
+html_only:
 	$(SPHINXBUILD) -b html $(SOURCEDIR) $(BUILDDIR)/html
 
 # One-shot target to build everything

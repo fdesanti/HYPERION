@@ -5,35 +5,42 @@ import torch.nn as nn
 from .coupling_transform import CouplingLayer
 
 class AffineCouplingLayer(CouplingLayer):
-    """
-        Affine Coupling Layer implementation for the flow.
-        The forward transformation is defined as an exponential rescaling plus a translation:
-            y = exp(s(x)) * x + t(x)
+    r"""
+    Affine Coupling Layer implementation for the flow.
+    The forward transformation is defined as an exponential rescaling plus a translation:
+    
+    .. math::
         
-        The inverse transformation is defined as:
-            x = (y - t(x)) * exp(-s(x))
-
-        If volume_preserving is set to True then we constrain the Jacobian to be 1 by setting 
-            s -> s - s.mean()
-        This ensure that volume is preserved by the transformation (i.e. incompressible flow)
+         y_{1:d} &= x_{1:d} \\
+         y_{d+1:D} &= \exp(s(x_{1:d})) \odot x_{1:d} + t(x_{1:d})
+    
+    The inverse transformation is defined as:
+    
+    .. math::
         
-        Args:
-        -----
-            num_features              (int): Number of features in the input tensor
-            num_identity              (int): Number of features that are not transformed. 
-                                             If None then num_features - num_features//2 (Default. None)
-            num_transformed           (int): Number of features that are transformed. 
-                                             If None then num_features//2 (Default. None)
-            linear_dim                (int): Dimension of the linear layers
-            s_network           (nn.Module): Network that computes the scale factor. (Default. None)
-            t_network           (nn.Module): Network that computes the translation factor. (Default. None)
-            dropout_probability     (float): Dropout probability (Default. 0.2)
-            volume_preserving        (bool): If True, the Jacobian is constrained to be 1. (Default. False)
+        x_{1:d} &= y_{1:D} \\
+        x_{d+1:D} &= (y_{1:d} - t(x_{1:d})) \odot \exp(-s(x_{1:d}))
 
-        Note:
-        -----
-            The number of features must be equal to the sum of the number of identity and transformed features. 
-            If the networks are not provided, they are initialized as in (Phys. Rev. D 109, 102004)
+    If ``volume_preserving`` is set to True then we constrain the Jacobian to be 1 by setting 
+    
+    .. math::
+        
+        s \rightarrow s - \text{mean}(s)
+    
+    This ensures that volume is preserved by the transformation (i.e. incompressible flow)
+    
+    Args:
+        num_features              (int): Number of features in the input tensor
+        num_identity              (int): Number of features that are not transformed. If None then ``num_features - num_features//2`` (Default. None)
+        num_transformed           (int): Number of features that are transformed. If None then ``num_features//2`` (Default. None)
+        linear_dim                (int): Dimension of the linear layers
+        s_network           (nn.Module): Network that computes the scale factor. (Default. None)
+        t_network           (nn.Module): Network that computes the translation factor. (Default. None)
+        dropout_probability     (float): Dropout probability (Default. 0.2)
+        volume_preserving        (bool): If True, the Jacobian is constrained to be 1. (Default. False)
+
+    Note:
+        The number of features must be equal to the sum of the number of identity and transformed features. If the networks are not provided, they are initialized as in (Phys. Rev. D 109, 102004)
     """
     def __init__(self,
                  num_features,

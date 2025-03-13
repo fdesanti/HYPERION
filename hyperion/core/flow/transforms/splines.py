@@ -1,8 +1,9 @@
 """
 Implementation of the Rational Quadratic Spline function as in [arXiv:1906.04032]
-Code adapted from https://github.com/bayesiains/nflows
-with the addition of Circular Splines as in [arXiv:2002.02428]
 
+Code adapted from https://github.com/bayesiains/nflows
+
+with the addition of Circular Splines as in [arXiv:2002.02428]
 """
 
 import numpy as np

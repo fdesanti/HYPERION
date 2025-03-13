@@ -1,16 +1,18 @@
-import numpy as np
-from gwpy.timeseries import TimeSeries
-from gwpy.frequencyseries import FrequencySeries
 import os
 import datetime
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
 from tqdm import tqdm
+from gwpy.timeseries import TimeSeries
 
-import pandas as pd
 
-from hyperion.inference.importance_sampling import *
+from .importance_sampling import *
+from ..core.utilities import HYPERION_Logger
 
-import matplotlib.pyplot as plt
+log = HYPERION_Logger()
+
 
 class DetectionStat():
     """
@@ -20,47 +22,49 @@ class DetectionStat():
     applies shifts to simulate false triggers, and computes false alarm rates using
     matched filter techniques.
 
-    Attributes:
-        cenral_time (float): GPS time of the event we want to analyze.
-        n_tot_shift (int): Number of shifts for simulating false triggers (X3). Default is 100.
-        shift_length (float): Length of each shift in seconds.
-        sample_duration (float): Duration of the data sample in seconds.
-        FAR (float): Calculated false alarm rate.
-        distrib_has_been_done (bool): Indicates if the distribution has been calculated.
+    The False Alarm Rate (FAR) is computed following Usman et al. (2015) (arXiv:1508.02357)
+    adopting Bayes factors as detection statistics. 
+
+    Args:
+        cenral_time     (float): GPS time of the event we want to analyze.
+        observation_time (float): Duration of the whole observation in seconds. (Default is 3600)
+        shift_length    (float): Length of the shifts in seconds. (Default is 0.1)
+        sample_duration (float): Duration of the sample in seconds. (Default is 1)
+        importance_sampler (ImportanceSampling): Importance sampler to use for the calculations.
+        fs              (float): Sampling frequency of the data.
+        device          (str)  : Device to use for the calculations.
     """
     def __init__(self,
                 central_time,
-                observation_time=3600,  # s
-                shift_length=0.1,  # s
-                sample_duration=1,  # s
+                observation_time   = 3600,  # s
+                shift_length       = 0.1,   # s
+                sample_duration    = 1,     # s
                 importance_sampler = None,
-                fs = 2048, 
-		device = 'cpu', 
+                fs                 = 2048,
+                device             = 'cpu',
                 ):
         self.central_time = central_time  # GPS time of the event we want to analyze
         self.observation_time = observation_time  # duration of the whole observation in seconds
         # TODO: could also ask for event name instead of the central time
         self.shift_length = shift_length  # length of the shifts in seconds
         self.n_tot_shift = self.observation_time/self.shift_length  # number of shifts for realizing false triggers
-        print("_________________________________________________________________________________________________________________________")
-        print("_________________________________________________________________________________________________________________________")
-        print(f"[INFO]: Going to calculate FAR on {self.observation_time}s of data.")
-        print(f"[INFO]: Going to have {self.n_tot_shift} shifts of {self.shift_length}s each.")
-        print("_________________________________________________________________________________________________________________________")
-        print("_________________________________________________________________________________________________________________________")
+        
+        log.info(f"Going to calculate FAR on {self.observation_time}s of data.")
+        log.info(f"[INFO]: Going to have {self.n_tot_shift} shifts of {self.shift_length}s each.")
 
         self.sample_duration = sample_duration
         self.distrib_has_been_done = False  # boolean to check if the distribution has been calculated
         
         self.IS = importance_sampler
         self.device = device
-        self.fs = 2048
+        self.fs = fs
         self.central_idx = 0.5 * self.fs * self.observation_time
 
         # set global constants
         self.flight_time = {'L1_H1':0.008, 'L1_V1':0.014,
                             'H1_L1':0.008, 'H1_V1':0.014,
                             'V1_L1':0.014, 'V1_H1':0.014}
+        
         # TODO: could generalize the time range opened to different ifos, for now let's take Virgo one since it's the longest
         self.time_range = [self.central_time - self.flight_time['V1_H1'] - self.n_tot_shift*self.shift_length - self.sample_duration/2
                            , self.central_time + self.flight_time['V1_H1'] + self.n_tot_shift*self.shift_length + self.sample_duration/2]
@@ -79,9 +83,6 @@ class DetectionStat():
         now = datetime.datetime.now()
         self.data_id = 'gps' + str(int(self.central_time)) + '_' + 'obstime' + str(int(self.observation_time))
 
-        
-
-
     @property
     def FAR(self):
         """Getter for the false alarm rate."""
@@ -97,7 +98,10 @@ class DetectionStat():
         self._FAR = value
 
     def download_data(self):
-        """Opens the data from the time range and returns the data."""
+        """
+        Downloads the data from the time range and saves it in a directory called 'data' in csv format.
+        """
+        # create a directory to save the data
         os.mkdir('data_' + self.data_id)
         os.chdir('data_' + self.data_id)
         
@@ -116,28 +120,30 @@ class DetectionStat():
             self.data_white[ifo].write(ifo + '_' + self.data_id + '_white.csv', format='csv')
 
     def open_data(self):
-        """Opens the data from the time range and returns the data."""
+        """
+        Opens the data from the time range and returns the data.
+        """
         os.chdir('data_' + self.data_id)
         for ifo in self.ifos:
             print(f"[INFO]: reading data from {ifo}")
             if ifo == 'V1':
                 self.data[ifo] = TimeSeries.read(ifo + '_' + self.data_id + '.csv', format='csv')
-                '''
-                self.data[ifo] = np.nan_to_num(self.data[ifo])
-                #asd = self.data[ifo].crop(self.central_time-32, self.central_time).asd(4,2)
+                
+                # self.data[ifo] = np.nan_to_num(self.data[ifo])
+                # #asd = self.data[ifo].crop(self.central_time-32, self.central_time).asd(4,2)
             
-                whiten = self.data[ifo].whiten(4, 2).write(ifo + '_' + self.data_id + '_white.csv', format='csv')
+                # whiten = self.data[ifo].whiten(4, 2).write(ifo + '_' + self.data_id + '_white.csv', format='csv')
                 
-                from hyperion.fft import rfft, irfft
-                #print(len(asd))
+                # from hyperion.fft import rfft, irfft
+                # #print(len(asd))
                 
-                import matplotlib.pyplot as plt
-                #plt.loglog(asd)
-                #plt.show()
-                plt.plot(whiten)
-                plt.show()
-                print(whiten)
-            '''
+                # import matplotlib.pyplot as plt
+                # #plt.loglog(asd)
+                # #plt.show()
+                # plt.plot(whiten)
+                # plt.show()
+                # print(whiten)
+            
             self.data_white[ifo] = torch.from_numpy(TimeSeries.read(ifo + '_' + self.data_id + '_white.csv', format='csv')).float().to(self.device)
             print('len data', len(self.data_white[ifo]))
 
@@ -225,19 +231,12 @@ class DetectionStat():
                     out_str+='\n'
                     f.write(out_str)
                     f.flush()
-
-                
-                    
-
             # Flush the buffer
             #f.flush()
-        
-        
+    
         # set the boolean to True
         #self.distrib_has_been_done = True
-        print("_________________________________________________________________________________________________________________________")
-        print(f"[INFO] File of false triggers statistics saved at {fname}")
-        print("_________________________________________________________________________________________________________________________")
+        log.info(f"[INFO] File of false triggers statistics saved at {fname}")
 
     def shift_data(self, data, ifos_to_shift, shift_p, shift_n, shift_index):
         #print('I am here in shift data')
@@ -443,20 +442,11 @@ class DetectionStat():
         plt.show()
         
         
-        
-        
-        
-
-        
         FAR_hz = (1+bg_count) / Tbg
         
-        
-
         # convert to FAR per year
         self.FAR = FAR_hz * ( 60 * 60 * 24 * 365)
         
         self.FAP = self.false_alarm_probability(bg_count, obs_time, Tbg)
-        
-
         
         return self.FAR, self.FAP, logB, log10B, sample_efficiency

@@ -3,12 +3,22 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-HYPERION documentation
+Welcome to HYPERION's documentation
 ======================
+HYPERION is a pipeline based on `Normalizing Flows <https://arxiv.org/abs/1912.02762>`_
+for the detection and Parameter Estimation of gravitational waves from 
+`Close Encounters <https://arxiv.org/abs/1909.02143>`_.
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
+
+.. ```{eval-rst}
+.. toctree::
+   :caption: Quickstart
+   :maxdepth: 1
+
+   source/installation
+   source/overview
+   source/normalizing_flows
+.. ```
 
 
 .. toctree::
@@ -17,6 +27,7 @@ documentation for details.
 
 .. toctree::
    :maxdepth: 2
-   :caption: API Documentation
+   :caption: API
 
-   api/index
+   hyperion/index
+
