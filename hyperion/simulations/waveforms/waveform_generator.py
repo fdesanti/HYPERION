@@ -4,12 +4,13 @@ import multiprocess as mp
 
 from tqdm import tqdm
 from torch.nn.functional import pad
-from .models import EffectiveFlyByTemplate, TEOBResumSDALI, PyCBCWaveform
+from .models import EffectiveFlyByTemplate, TEOBResumSDALI, PySEOBNR, PyCBCWaveform
 from ...core.fft.windows import tukey
 
 models_dict = {'EffectiveFlyBy': EffectiveFlyByTemplate, 
-               'TEOBResumSDALI': TEOBResumSDALI, 
-               'PyCBC': PyCBCWaveform}
+               'TEOBResumSDALI': TEOBResumSDALI,
+               'PySEOBNR'      : PySEOBNR,
+               'PyCBC'         : PyCBCWaveform}
 
 
 class WaveformGenerator:
