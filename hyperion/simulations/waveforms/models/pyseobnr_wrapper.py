@@ -1,5 +1,5 @@
 """
-Instructions for the TEOBResumS waveform model:
+Instructions for the PySEOBNR waveform model:
 
 >>> git clone https://git.ligo.org/waveforms/software/pyseobnr.git
 >>> cd pyseobnr
@@ -19,7 +19,7 @@ log = HYPERION_Logger()
 
 
 class PySEOBNR:
-    """"
+    """
     Wrapper class for the PySEOBNR waveform model.
   
     Args:
