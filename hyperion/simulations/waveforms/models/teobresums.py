@@ -119,7 +119,7 @@ class  TEOBResumSDALI():
         return self.kwargs['srate_interp']
     
     @staticmethod
-    def _check_parameters(parameters):
+    def _validate_parameters(parameters):
         """
         If the parameters contains single masses and convert them to
         total mass M and mass ratio q.
@@ -160,7 +160,7 @@ class  TEOBResumSDALI():
         pars = self.kwargs.copy()
 
         #check parameter consistency
-        waveform_parameters = self._check_parameters(waveform_parameters)
+        waveform_parameters = self._validate_parameters(waveform_parameters)
         pars.update(waveform_parameters)
        
         # Run the model
