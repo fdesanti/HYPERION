@@ -18,6 +18,9 @@ __pycache__/
 #trained model directory
 scripts/training_results/
 
+#config directory
+hyperion/config/
+
 #doc directory
 docs/
 
