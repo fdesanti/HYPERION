@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from optparse import OptionParser
 from tensordict import TensorDict
 from hyperion.training import DatasetGenerator
-from hyperion.simulations import (ASD_Sampler, 
+from hyperion.simulation import (ASD_Sampler, 
                                   GWDetectorNetwork, 
                                   WaveformGenerator)
 

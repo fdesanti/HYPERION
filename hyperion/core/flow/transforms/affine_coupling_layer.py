@@ -21,7 +21,7 @@ class AffineCouplingLayer(CouplingLayer):
         x_{1:d} &= y_{1:D} \\
         x_{d+1:D} &= (y_{1:d} - t(x_{1:d})) \odot \exp(-s(x_{1:d}))
 
-    If ``volume_preserving`` is set to True then we constrain the Jacobian to be 1 by setting 
+    If ``volume_preserving`` is set to True then we constrain the Jacobian determinant to be 1:
     
     .. math::
         
@@ -39,8 +39,11 @@ class AffineCouplingLayer(CouplingLayer):
         dropout_probability     (float): Dropout probability (Default. 0.2)
         volume_preserving        (bool): If True, the Jacobian is constrained to be 1. (Default. False)
 
+    Caution:
+        ``num_features`` must be equal to ``num_identity`` + ``num_transformed``
+        
     Note:
-        The number of features must be equal to the sum of the number of identity and transformed features. If the networks are not provided, they are initialized as in (Phys. Rev. D 109, 102004)
+        If the networks are not provided, they are initialized as in (Phys. Rev. D 109, 102004)
     """
     def __init__(self,
                  num_features,
