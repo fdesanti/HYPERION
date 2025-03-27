@@ -52,9 +52,9 @@ class  TEOBResumSDALI():
         - **use_mode_lm**        : [(2,1),(2,2),(3,3),(4,2)]  List of modes to use/output through EOBRunPy.
         - **ode_tmax**           : 20e4
         - **ode_tstep_opt**      : "adaptive" Fixing uniform or adaptive
-        - **nqc**                : 'manual' options are ["none", "manual", "auto"]
+        - **nqc**                : 'auto' options are ["none", "manual", "auto"]
         - **nqc_coefs_flx**      : 'nrfit_spin202002' options are ["none", "nrfit_spin202002", "nrfit_nospin201602"]
-        - **nqc_coefs_hlm**      : 'nrfit_spin202002' options are ["none", "nrfit_spin202002", "nrfit_nospin201602", "compute"]
+        - **nqc_coefs_hlm**      : 'compute' options are ["none", "nrfit_spin202002", "nrfit_nospin201602", "compute"]
         - **arg_out**            : "no",      Output hlm/hflm
         - **output_hpc**         : "no",      Output waveform
     """
