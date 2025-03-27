@@ -36,7 +36,7 @@ setup(
                       "pycbc",
                       "bilby", 
                       #other
-                      "scipy<=1.12.0"], #this is to solve a conflict with bilby
+                      "scipy>=1.15.0"],
 
     scripts = ['scripts/run_train.py', 
                'scripts/test_train.py', 
