@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from pathlib import Path
+from astropy.cosmology import Planck18
 
 from .core.flow import build_flow
 from .core.types import TensorSamples
@@ -244,7 +245,7 @@ class PosteriorSampler():
             self.posterior = self.flow.sample(**sampling_kwargs)
         return self.posterior
     
-    def compute_source_frame_mass_parameters(self, posterior=None, cosmology=None):
+    def compute_source_frame_mass_parameters(self, posterior=None, cosmology=Planck18):
         r"""
         Computes mass-source frame parameters from the posterior samples.
         We estimate the redshift :math:`z` using the luminosity distance and the given cosmology.
