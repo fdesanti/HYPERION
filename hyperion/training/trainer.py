@@ -156,7 +156,7 @@ class Trainer:
         return avg_val_loss
   
     @staticmethod
-    def save_checkpoint(flow, checkpoint_filepath):
+    def save_checkpoint(flow, checkpoint_filepath, verbose=True):
         """
         Save the model's weights and optimizer's state to a file
 
@@ -173,7 +173,7 @@ class Trainer:
             #'epoch': epoch,
         }
         torch.save(checkpoints, checkpoint_filepath)
-        if self.verbose:
+        if verbose:
             log.info(f"Training checkpoint saved at {checkpoint_filepath}")
 
     @staticmethod
@@ -289,7 +289,7 @@ class Trainer:
            
             #save updated model weights and update best values
             if (train_loss < best_train_loss) and (val_loss < best_val_loss):
-                self.save_checkpoint(self.flow, self.checkpoint_filepath)
+                self.save_checkpoint(self.flow, self.checkpoint_filepath, self.verbose)
                 best_train_loss = train_loss
                 best_val_loss   = val_loss
                 print(f"best train loss = {best_train_loss:.3f} at epoch {epoch}")

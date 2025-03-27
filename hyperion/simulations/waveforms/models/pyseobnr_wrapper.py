@@ -14,10 +14,6 @@ from hyperion.core.utilities import HYPERION_Logger
 
 log = HYPERION_Logger()
 
-
-#from pyseobnr.generate_waveform import GenerateWaveform
-
-
 class PySEOBNR:
     """
     Wrapper class for the PySEOBNR waveform model.
