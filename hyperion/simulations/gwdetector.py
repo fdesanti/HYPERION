@@ -1,19 +1,14 @@
 import yaml
-
-from tensordict import TensorDict
-
-from importlib import import_module
-
 from astropy import units as u
 from astropy.time import Time
 from astropy.constants import R_earth, c
 from astropy.coordinates import EarthLocation
 
-R_earth = R_earth.value #earth radius value [m]
-c = c.value #speed of light value [m/s]
-
 from ..config import CONF_DIR
 from ..core.utilities import HYPERION_Logger
+
+c = c.value #speed of light value [m/s]
+R_earth = R_earth.value #earth radius value [m]
 
 log = HYPERION_Logger()
 
@@ -56,13 +51,13 @@ class GWDetector:
         
         self.device    = device
         
+        global xp, interp
         if use_torch:
-            self.xp = import_module('torch')
-            from ..core.utilities import interp1d
-            self.interp = interp1d     
+            import torch as xp
+            from ..core.utilities import interp1d as interp   
         else:
-            self.xp = import_module('numpy')
-            self.interp = self.xp.interp
+            import numpy as xp
+            interp = xp.interp
         self.use_torch = use_torch
         
         #loading configuration parameters --------------------------------------------
@@ -105,8 +100,8 @@ class GWDetector:
     @latitude.setter
     def latitude(self, value):
         if self.use_torch:
-            value = self.xp.tensor(value)
-        self._latitude = self.xp.deg2rad(value)
+            value = xp.tensor(value)
+        self._latitude = xp.deg2rad(value)
         
     #LONGITUDE ----------------------------------------
     @property
@@ -115,8 +110,8 @@ class GWDetector:
     @longitude.setter
     def longitude(self, value):
         if self.use_torch:
-            value = self.xp.tensor(value)
-        self._longitude = self.xp.deg2rad(value)
+            value = xp.tensor(value)
+        self._longitude = xp.deg2rad(value)
         
     #ELEVATION ---------------------------------------
     @property
@@ -125,8 +120,8 @@ class GWDetector:
     @elevation.setter
     def elevation(self, value):
         if self.use_torch:
-            value = self.xp.tensor(value)
-        self._elevation = self.xp.deg2rad(value)
+            value = xp.tensor(value)
+        self._elevation = xp.deg2rad(value)
         
     #ARMS ORIENTATION ---------------------------------
     @property
@@ -135,8 +130,8 @@ class GWDetector:
     @arms_orientation_angle.setter
     def arms_orientation_angle(self, value):
         if self.use_torch:
-            value = self.xp.tensor(value)
-        self._arms_orientation_angle = self.xp.deg2rad(value)
+            value = xp.tensor(value)
+        self._arms_orientation_angle = xp.deg2rad(value)
         
     #ANGLE BETWEEN ARMS--------------------------------
     @property
@@ -145,8 +140,8 @@ class GWDetector:
     @angle_between_arms.setter
     def angle_between_arms(self, value):
         if self.use_torch:
-            value = self.xp.tensor(value)
-        self._angle_between_arms = self.xp.deg2rad(value)
+            value = xp.tensor(value)
+        self._angle_between_arms = xp.deg2rad(value)
         
         
     #GEOCENTRIC LOCATION ------------------------------
@@ -161,9 +156,9 @@ class GWDetector:
             x, y, z = earthloc.x.value, earthloc.y.value, earthloc.z.value
             loc = [x, y, z]
             if self.use_torch:
-                self._location = self.xp.tensor(loc).to(self.device)
+                self._location = xp.tensor(loc).to(self.device)
             else:
-                self._location = self.xp.array(loc)
+                self._location = xp.array(loc)
             return self._location
     
     
@@ -189,16 +184,16 @@ class GWDetector:
         """
         
         if self.use_torch:
-            if  self.xp.is_tensor(t_gps):
+            if  xp.is_tensor(t_gps):
                 t_gps = t_gps.cpu().numpy() #convert to numpy array since astropy cannot accept tensors. The cpu() options is a
                                                       #precautionary measure in case "t_gps" lies on a gpu
         
         lst = Time(t_gps, format='gps', scale='utc',
-                         location=('{}d'.format(self.xp.rad2deg(self.longitude)), 
-                                   '{}d'.format(self.xp.rad2deg(self.latitude)))).sidereal_time(**sidereal_time_kwargs).rad
+                         location=('{}d'.format(xp.rad2deg(self.longitude)), 
+                                   '{}d'.format(xp.rad2deg(self.latitude)))).sidereal_time(**sidereal_time_kwargs).rad
         
         if self.use_torch:
-            lst = self.xp.tensor(lst).to(self.device) #convert back to tensor and move on its original device (either cpu or gpu)
+            lst = xp.tensor(lst).to(self.device) #convert back to tensor and move on its original device (either cpu or gpu)
         return lst
     
     
@@ -221,16 +216,16 @@ class GWDetector:
         #get lst
         lst = self.lst(t_gps)
         
-        a = (1/16)*self.xp.sin(2*xangle)*(3-self.xp.cos(2*self.latitude))*(3-self.xp.cos(2*dec))*self.xp.cos(2*(ra - lst))-\
-             (1/4)*self.xp.cos(2*xangle)*self.xp.sin(self.latitude)*(3-self.xp.cos(2*dec))*self.xp.sin(2*(ra - lst))+\
-             (1/4)*self.xp.sin(2*xangle)*self.xp.sin(2*self.latitude)*self.xp.sin(2*dec)*self.xp.cos(ra - lst)-\
-             (1/2)*self.xp.cos(2*xangle)*self.xp.cos(self.latitude)*self.xp.sin(2*dec)*self.xp.sin(ra - lst)+\
-             (3/4)*self.xp.sin(2*xangle)*(self.xp.cos(self.latitude)**2)*(self.xp.cos(dec)**2)
+        a = (1/16)*xp.sin(2*xangle)*(3-xp.cos(2*self.latitude))*(3-xp.cos(2*dec))*xp.cos(2*(ra - lst))-\
+             (1/4)*xp.cos(2*xangle)*xp.sin(self.latitude)*(3-xp.cos(2*dec))*xp.sin(2*(ra - lst))+\
+             (1/4)*xp.sin(2*xangle)*xp.sin(2*self.latitude)*xp.sin(2*dec)*xp.cos(ra - lst)-\
+             (1/2)*xp.cos(2*xangle)*xp.cos(self.latitude)*xp.sin(2*dec)*xp.sin(ra - lst)+\
+             (3/4)*xp.sin(2*xangle)*(xp.cos(self.latitude)**2)*(xp.cos(dec)**2)
 
-        b = self.xp.cos(2*xangle)*self.xp.sin(self.latitude)*self.xp.sin(dec)*self.xp.cos(2*(ra - lst))+\
-             (1/4)*self.xp.sin(2*xangle)*(3-self.xp.cos(2*self.latitude))*self.xp.sin(dec)*self.xp.sin(2*(ra - lst))+\
-             self.xp.cos(2*xangle)*self.xp.cos(self.latitude)*self.xp.cos(dec)*self.xp.cos(ra - lst)+\
-             (1/2)*self.xp.sin(2*xangle)*self.xp.sin(2*self.latitude)*self.xp.cos(dec)*self.xp.sin(ra - lst)
+        b = xp.cos(2*xangle)*xp.sin(self.latitude)*xp.sin(dec)*xp.cos(2*(ra - lst))+\
+             (1/4)*xp.sin(2*xangle)*(3-xp.cos(2*self.latitude))*xp.sin(dec)*xp.sin(2*(ra - lst))+\
+             xp.cos(2*xangle)*xp.cos(self.latitude)*xp.cos(dec)*xp.cos(ra - lst)+\
+             (1/2)*xp.sin(2*xangle)*xp.sin(2*self.latitude)*xp.cos(dec)*xp.sin(ra - lst)
 
         return a, b
 
@@ -253,8 +248,8 @@ class GWDetector:
         
         ampl11, ampl12 = self._ab_factors(xangle, ra, dec, t_gps)
         
-        fplus  = self.xp.sin(self.angle_between_arms)*(ampl11*self.xp.cos(2*polarization) + ampl12*self.xp.sin(2*polarization))
-        fcross = self.xp.sin(self.angle_between_arms)*(ampl12*self.xp.cos(2*polarization) - ampl11*self.xp.sin(2*polarization))
+        fplus  = xp.sin(self.angle_between_arms)*(ampl11*xp.cos(2*polarization) + ampl12*xp.sin(2*polarization))
+        fcross = xp.sin(self.angle_between_arms)*(ampl12*xp.cos(2*polarization) - ampl11*xp.sin(2*polarization))
 
         return fplus, fcross
 
@@ -313,7 +308,7 @@ class GWDetector:
             kw  = {'device':self.device}
         else: 
             kw = {}
-        earth_center = self.xp.zeros(3, **kw)
+        earth_center = xp.zeros(3, **kw)
         return self.time_delay_from_location(earth_center, ra, dec, t_gps)
     
     
@@ -347,9 +342,9 @@ class GWDetector:
         gha = self.gmst(t_gps) - ra 
     
         #compute the components of unit vector pointing from the geocenter to the surce
-        e0 = self.xp.cos(dec) * self.xp.cos(gha)
-        e1 = self.xp.cos(dec) * -self.xp.sin(gha)
-        e2 = self.xp.sin(dec)
+        e0 = xp.cos(dec) * xp.cos(gha)
+        e1 = xp.cos(dec) * -xp.sin(gha)
+        e2 = xp.sin(dec)
         
         #compute the dot product 
         #we do it manually to enable batched computation / multi gps times
