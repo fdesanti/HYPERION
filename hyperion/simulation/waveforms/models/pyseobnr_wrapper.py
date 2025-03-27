@@ -35,8 +35,7 @@ class PySEOBNR:
         global GenerateWaveform
         try:
             from pyseobnr.generate_waveform import GenerateWaveform
-            
-        except ModuleNotFoundError as e: 
+        except Exception as e: 
             log.error(e)
             log.warning("Unable to import pyseobnr. Please refer to the documentation to install it. PySEOBNR waveform model won't work otherwise")
 
