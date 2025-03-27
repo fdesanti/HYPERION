@@ -15,7 +15,7 @@ from hyperion.training import (DatasetGenerator,
 from hyperion.config import CONF_DIR
 from hyperion.core.flow import build_flow
 from hyperion.core import HYPERION_Logger
-from hyperion.simulations import (ASD_Sampler, 
+from hyperion.simulation import (ASD_Sampler, 
                                   GWDetectorNetwork, 
                                   WaveformGenerator)
 log = HYPERION_Logger()

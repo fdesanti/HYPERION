@@ -6,7 +6,7 @@ from tensordict import TensorDict
 
 from ..core import HYPERION_Logger
 from ..core.fft import *
-from ..simulations import WhitenNet
+from ..simulation import WhitenNet
 from ..core.distributions import MultivariatePrior, prior_dict_
 from ..core.distributions import q_uniform_in_components as q_prior
 

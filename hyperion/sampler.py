@@ -12,7 +12,7 @@ from .core.types import TensorSamples
 from .core.utilities import HYPERION_Logger, latexify
 
 from .inference import ImportanceSampling
-from .simulations import WhitenNet, redshift_from_luminosity_distance
+from .simulation import WhitenNet, redshift_from_luminosity_distance
 
 log = HYPERION_Logger()
 
