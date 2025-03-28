@@ -115,7 +115,7 @@ if __name__ == '__main__':
         posterior = sampler.sample_posterior(strain = whitened_strain, asd = asd, restrict_to_bounds = True)
         
         #compare sampled parameters to true parameters
-        true_parameters = sampler.flow._post_process_samples(parameters, restrict_to_bounds=False)
+        true_parameters = sampler.flow.post_process_samples(parameters, restrict_to_bounds=False)
         true_parameters = TensorDict.from_dict(true_parameters)
         true_parameters = {key: true_parameters[key].cpu().item() for key in true_parameters.keys()}
 

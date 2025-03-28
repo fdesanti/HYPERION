@@ -9,6 +9,7 @@ Instructions for the PySEOBNR waveform model:
 """
 
 import torch 
+from importlib import import_module
 from ....core.utilities import HYPERION_Logger
 
 log = HYPERION_Logger()
@@ -32,10 +33,10 @@ class PySEOBNR:
     """
 
     def __init__(self, fs, **kwargs):
-        global GenerateWaveform
         try:
-            from pyseobnr.generate_waveform import GenerateWaveform
-        except Exception as e: 
+            pyseobnr = import_module('pyseobnr')
+            self.GenerateWaveform = pyseobnr.generate_waveform.GenerateWaveform
+        except ModuleNotFoundError as e: 
             log.error(e)
             log.warning("Unable to import pyseobnr. Please refer to the documentation to install it. PySEOBNR waveform model won't work otherwise")
 

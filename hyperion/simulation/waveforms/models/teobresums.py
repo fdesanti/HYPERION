@@ -17,6 +17,7 @@ Substitute ~/.bashrc with ~/.zprofile if you're on MacOS
 """
 
 import torch 
+from importlib import import_module
 from ....core.utilities import HYPERION_Logger
 
 log = HYPERION_Logger()
@@ -58,9 +59,9 @@ class  TEOBResumSDALI():
         - **output_hpc**         : "no",      Output waveform
     """
     def __init__(self, fs, **kwargs):
-        global EOBRunPy
         try:
-            from EOBRun_module import EOBRunPy
+            eob_module = import_module('EOBRun_module')
+            self.EOBRunPy = eob_module.EOBRunPy
         except ModuleNotFoundError as e: 
             log.error(e)
             log.warning("Unable to import EOBRun_module. Please refer to the documentation to install it. TEOBResumSDALI waveform model won't work otherwise")
@@ -163,7 +164,7 @@ class  TEOBResumSDALI():
         pars.update(waveform_parameters)
        
         # Run the model
-        eob_output = EOBRunPy(pars)
+        eob_output = self.EOBRunPy(pars)
         
         #set the output
         output = {}
