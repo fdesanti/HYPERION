@@ -108,7 +108,7 @@ if __name__ == '__main__':
         checkpoint_path = f'training_results/{MODEL_NAME}/{MODEL_NAME}_flow_model.pt'
         
         sampler = PosteriorSampler(flow_checkpoint_path  = checkpoint_path, 
-                                   waveform_generator    = waveform_generator,
+                                   #waveform_generator    = waveform_generator,
                                    num_posterior_samples = NUM_SAMPLES,
                                    device                = DEVICE)
 

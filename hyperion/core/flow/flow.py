@@ -161,13 +161,12 @@ class Flow(nn.Module):
 
         #post-processing
         if post_process:
-            processed_samples_dict = self.post_process_samples(samples, restrict_to_bounds, event_time) 
+            processed_samples = self.post_process_samples(samples, restrict_to_bounds, event_time) 
         else:
             processed_samples_dict = dict()
             for i, name in enumerate(self.inference_parameters):
                 processed_samples_dict[name] = samples[:,i]
-
-        processed_samples_dict = TensorSamples.from_dict(processed_samples_dict)
+                processed_samples = TensorSamples.from_dict(processed_samples)
 
         end=time()
 
@@ -180,12 +179,12 @@ class Flow(nn.Module):
             
             log_std = torch.sum(torch.log(torch.tensor([self.stds[p] for p in self.inference_parameters])))
             log_posterior -= log_std
-            return processed_samples_dict, log_posterior
+            return processed_samples, log_posterior
         
         else:
-            return processed_samples_dict
+            return processed_samples
     
-    def post_process_samples(self, flow_samples, restrict_to_bounds, event_time=None):
+    def post_process_samples(self, flow_samples, restrict_to_bounds=False, event_time=None):
         """
         Post-process the samples by de-standardizing them and correcting the right ascension if needed.
         If restrict_to_bounds is True, the samples are restricted to the prior bounds.
@@ -211,8 +210,8 @@ class Flow(nn.Module):
         if restrict_to_bounds:
             num_samples = flow_samples.shape[1]
             processed_samples_dict = self.restrict_samples_to_bounds(processed_samples_dict, num_samples)
-            
-        return processed_samples_dict
+        
+        return TensorSamples.from_dict(processed_samples_dict)
 
 
     def restrict_samples_to_bounds(self, processed_samples_dict, num_samples):

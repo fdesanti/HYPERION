@@ -104,7 +104,7 @@ class ConditionalMultivariateNormalBase(nn.Module):
     """
     def __init__(self, 
                  dim        :int  =  10,
-                 neural_network_kwargs={},
+                 **neural_network_kwargs,
                  ):
         super(ConditionalMultivariateNormalBase, self).__init__()
         self.dim = dim      
@@ -210,7 +210,7 @@ class ResampledMultivariateNormalBase(nn.Module):
                  eps           :float = 0.05,
                  bs_factor     :int   = 1,
                  trainable     :bool  = False,
-                 acc_network_kwargs = {},
+                 **acc_network_kwargs,
                  ):
         super(ResampledMultivariateNormalBase, self).__init__()
         
@@ -351,7 +351,7 @@ class ResampledConditionalMultivariateNormalBase(ResampledMultivariateNormalBase
                  eps           :float = 0.05,
                  bs_factor     :int   = 1,
                  acc_network_kwargs   = {},
-                 neural_network_kwargs= {},             
+                 **neural_network_kwargs,             
                  ):
         super().__init__(dim, T, eps, bs_factor, acc_network_kwargs)
         
