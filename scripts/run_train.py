@@ -36,7 +36,7 @@ if __name__ == '__main__':
         os.mkdir('training_results')
 
     conf_dir = f'training_results/{MODEL_NAME}' if PRELOAD else CONF_DIR
-    conf_yaml = conf_dir + '/hyperion_config.yml'
+    conf_yaml = conf_dir + '/default_hyperion_config.yml'
     
     with open(conf_yaml, 'r') as yaml_file:
         conf = yaml.safe_load(yaml_file)
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     INITIAL_LEARNING_RATE = float(train_conf['initial_learning_rate']) if not PRELOAD else preload_lr/2
 
     WAVEFORM_MODEL = conf['waveform_model']
-    PRIOR_PATH     = os.path.join(conf_dir, 'prior.yml') if PRELOAD else os.path.join(conf_dir, 'priors/'+conf['prior']+'.yml')
+    PRIOR_PATH     = os.path.join(conf_dir, 'default_EFB-T_prior.yml') if PRELOAD else os.path.join(conf_dir, 'priors/'+conf['prior']+'.yml')
     DURATION       = conf['duration']
     
     if DEVICE is None:
