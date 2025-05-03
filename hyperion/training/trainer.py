@@ -81,13 +81,13 @@ class Trainer:
         for step in range(self.steps_per_epoch):
         #for parameters, strains in self.train_ds:
             #getting the trainig batch
-            parameters, strains, asd = self.train_ds.__getitem__(add_noise=self.add_noise)
+            parameters, strains = self.train_ds.__getitem__(add_noise=self.add_noise)
             
             #training step
             self.optimizer.zero_grad()
             
             #get the loss
-            log_p = -self.flow.log_prob(parameters.to(self.device), strains.to(self.device), asd.to(self.device))
+            log_p = -self.flow.log_prob(parameters.to(self.device), strains.to(self.device))#, asd.to(self.device))
             loss  = torch.mean(log_p)
             
             if self.verbose:
@@ -133,10 +133,10 @@ class Trainer:
         #for parameters, strains in self.val_ds:
             
             #getting batch
-            parameters, strains, asd = self.val_ds.__getitem__(add_noise=self.add_noise)
+            parameters, strains = self.val_ds.__getitem__(add_noise=self.add_noise)
             
             #computing loss
-            log_p = -self.flow.log_prob(parameters.to(self.device), strains.to(self.device), asd.to(self.device))
+            log_p = -self.flow.log_prob(parameters.to(self.device), strains.to(self.device))#, asd.to(self.device))
             loss  = torch.mean(log_p)
            
             if self.verbose:
@@ -189,7 +189,7 @@ class Trainer:
             trained_flow (Flow): The trained flow model
         """
 
-        if os.path.exists(self.checkpoint_filepath):
+        if os.path.exists(checkpoint_filepath):
             trained_flow = build_flow(checkpoint_path=checkpoint_filepath).to(device)
             log.info(f"Model loaded from checkpoint at {checkpoint_filepath}")
         else:
