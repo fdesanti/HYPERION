@@ -177,24 +177,28 @@ class Trainer:
             log.info(f"Training checkpoint saved at {checkpoint_filepath}")
 
     @staticmethod
-    def load_trained_flow(checkpoint_filepath, device):   
+    def load_trained_flow(checkpoint_filepath, device, flow):   
         """
-        Load the trained flow from the checkpoint file
+        Load the trained flow from the checkpoint file. If the checkpoint file does not exist,
+        it returns the flow model at the last epoch.
 
         Args:
             checkpoint_filepath (str): Path to the file where the model's weights are saved
             device              (str): Device where the model is going to be loaded ('cpu' or 'cuda')
+            flow               (Flow): The flow model at last epoch.
 
         Returns:
             trained_flow (Flow): The trained flow model
         """
 
         if os.path.exists(checkpoint_filepath):
-            trained_flow = build_flow(checkpoint_path=checkpoint_filepath).to(device)
+            best_trained_flow = build_flow(checkpoint_path=checkpoint_filepath).to(device)
             log.info(f"Model loaded from checkpoint at {checkpoint_filepath}")
         else:
             log.error(f"Checkpoint not found at {checkpoint_filepath}")
-        return trained_flow
+            log.info("Returning model at last epoch")
+            best_trained_flow = flow
+        return best_trained_flow
     
     @staticmethod
     @latexify
@@ -325,4 +329,4 @@ class Trainer:
         f.close()
         log.info('Training Completed!\n')
 
-        return self.load_trained_flow(self.checkpoint_filepath, self.device)
+        return self.load_trained_flow(self.checkpoint_filepath, self.device, self.flow)
