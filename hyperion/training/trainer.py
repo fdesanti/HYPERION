@@ -192,8 +192,14 @@ class Trainer:
         """
 
         if os.path.exists(checkpoint_filepath):
-            best_trained_flow = build_flow(checkpoint_path=checkpoint_filepath).to(device)
-            log.info(f"Model loaded from checkpoint at {checkpoint_filepath}")
+            try:
+                best_trained_flow = build_flow(checkpoint_path=checkpoint_filepath).to(device)
+                log.info(f"Model loaded from checkpoint at {checkpoint_filepath}")
+            except Exception as e:
+                #loading manually weights
+                weights = torch.load(checkpoint_filepath, map_location=torch.device('cpu'), weights_only=False)
+                flow.load_state_dict(weights['model_state_dict'])
+                best_trained_flow = flow
         else:
             log.error(f"Checkpoint not found at {checkpoint_filepath}")
             log.info("Returning model at last epoch")
@@ -271,8 +277,9 @@ class Trainer:
         for epoch in tqdm(range(1,num_epochs+1)):
 
             #preload waveforms
-            self.train_ds.preload_waveforms()
-            self.val_ds.preload_waveforms()
+            if hasattr(self.train_ds, 'preload_waveforms'):
+                self.train_ds.preload_waveforms()
+                self.val_ds.preload_waveforms()
             
             #on-epoch training
             self.flow.train(True) #train attribute comes from nn.Module and is used to set the weights in training mode
