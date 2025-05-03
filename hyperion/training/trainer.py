@@ -57,12 +57,12 @@ class Trainer:
         if steps_per_epoch is not None:
             self.steps_per_epoch = steps_per_epoch
         else:
-            self.steps_per_epoch = len(self.train_ds) // 1000
+            self.steps_per_epoch = len(self.train_ds) // self.train_ds.batch_size
         
         if val_steps_per_epoch is not None:
             self.val_steps_per_epoch = val_steps_per_epoch
         else:
-            self.val_steps_per_epoch = len(self.val_ds) // 1000
+            self.val_steps_per_epoch = len(self.val_ds) // self.val_ds.batch_size
              
         self.verbose = verbose
   
