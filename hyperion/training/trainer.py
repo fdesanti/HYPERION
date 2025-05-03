@@ -295,8 +295,9 @@ class Trainer:
                 log.info(f'Loading previously saved model\n')
                 self.flow = build_flow(checkpoint_path=self.checkpoint_filepath).to(self.device)
                 continue #we skip to next iteration
-        
-            log.info(f'Epoch = {epoch}  |  avg train loss = {train_loss:.3f}  |  avg val loss = {val_loss:.3f}')
+            
+            if self.verbose:
+                log.info(f'Epoch = {epoch}  |  avg train loss = {train_loss:.3f}  |  avg val loss = {val_loss:.3f}')
            
             #save updated model weights and update best values
             if (train_loss < best_train_loss) and (val_loss < best_val_loss):
