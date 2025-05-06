@@ -304,8 +304,9 @@ class Trainer:
                 self.save_checkpoint(self.flow, self.checkpoint_filepath, self.verbose)
                 best_train_loss = train_loss
                 best_val_loss   = val_loss
-                print(f"best train loss = {best_train_loss:.3f} at epoch {epoch}")
-                print(f"best val   loss = {best_val_loss:.3f} at epoch {epoch}\n")
+                if self.verbose:
+                    log.info(f"best train loss = {best_train_loss:.3f} at epoch {epoch}")
+                    log.info(f"best val   loss = {best_val_loss:.3f} at epoch {epoch}\n")
            
             
             #get current learning rate

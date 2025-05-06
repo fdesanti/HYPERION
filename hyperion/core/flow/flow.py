@@ -218,7 +218,8 @@ class Flow(nn.Module):
         """Restrict the samples to the prior bounds by masking out the samples that are outside the bounds"""
 
         restricted_samples_dict = dict()
-        total_mask = torch.ones(num_samples, dtype=torch.bool)
+        device = processed_samples_dict[self.inference_parameters[0]].device 
+        total_mask = torch.ones(num_samples, dtype=torch.bool, device=device)
 
         for name in self.inference_parameters:
             try: #TODO: UGLY fix this
@@ -229,7 +230,8 @@ class Flow(nn.Module):
                     min_b = eval(bounds['minimum']) if isinstance(bounds['minimum'], str) else bounds['minimum']
                     max_b = eval(bounds['maximum']) if isinstance(bounds['maximum'], str) else bounds['maximum']
                 total_mask *= ((processed_samples_dict[name]<=max_b) * (processed_samples_dict[name]>=min_b))
-            except:
+            except Exception as e:
+                log.error(f"Error restricting samples for {name} to bounds: {e}")
                 log.warning(f"Could not restrict samples for {name} to bounds")
                 continue
 
