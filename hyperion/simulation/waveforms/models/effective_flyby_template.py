@@ -74,7 +74,7 @@ class EffectiveFlyByTemplate():
         nblock_1 = 1/self.M
         nblock_2 = (self.eps0/self.p_0)**(3/2)
         return 1/Msun_to_sec(1/(nblock_1*nblock_2))
-        
+    
     def _Frr(self):
         """returns the Frr parameter entering the EFB-t expansion"""
         fblock_1 = 96/(10*torch.pi) 
@@ -82,7 +82,7 @@ class EffectiveFlyByTemplate():
         fblock_3 = torch.sqrt(1-self.e0**2)
         fblock_4 = 1 + (73/24)*(self.e0**2) + (37/96)*(self.e0**4)
         return 1/Msun_to_sec(1/(fblock_1*fblock_2*fblock_3*fblock_4))
-        
+    
     def _phase(self, times_array):
         """
         Phase of the first body at each time.
@@ -91,7 +91,6 @@ class EffectiveFlyByTemplate():
         #print('ecc_anomlay', (self.ecc(times_array))[0])
         return self.ecc_anomaly(times_array)/(torch.log((1+sqrt_epst)/self.ecc(times_array))-sqrt_epst)
         
-    
     def t_edge(self, l_=torch.pi):
         """
         Considering a single periastron passage, returns epoch referred to a certain eccentric anomaly value.
@@ -108,7 +107,6 @@ class EffectiveFlyByTemplate():
                 return self.t0_p + 30             
         lblock_2 = 2*torch.pi*self.Frr
         return (lblock_1/lblock_2) + self.t0_p
-    
     
     def ecc_anomaly(self, times_array):
         """
@@ -133,6 +131,7 @@ class EffectiveFlyByTemplate():
         
         #print((block1*block2)[0])
         return self.e0 - block1*block2*self.ecc_anomaly(times_array)
+
 
     def eps(self, times_array):
         """
@@ -194,7 +193,6 @@ class EffectiveFlyByTemplate():
         
         return parameters
     
-    
     def __call__(self, waveform_parameters):
         """
         Generate the waveform of the EFB-T model.
@@ -220,6 +218,8 @@ class EffectiveFlyByTemplate():
 
                 - **polarization** : Polarization of the source (in rad).   
 
+                - **inclination**  : Inclination of the source (in rad).
+
         Returns:
             tuple: A tuple containing:
 
@@ -243,22 +243,20 @@ class EffectiveFlyByTemplate():
         waveform_parameters = self._check_parameters(waveform_parameters)
 
         #extract parameters
-        self.M    = waveform_parameters['M']
-        self.eta  = waveform_parameters['eta']
-        distance  = waveform_parameters['distance']
-        self.e0   = waveform_parameters['e0']
-        self.p_0  = waveform_parameters['p_0']
-        self.t0_p = waveform_parameters['t0_p']
-        self.ra   = waveform_parameters['ra']
-        self.dec  = waveform_parameters['dec']
-        self.pol  = waveform_parameters['polarization']
-        self.incl = waveform_parameters['inclination']
+        self.M    = waveform_parameters['M'].view(-1, 1)
+        self.eta  = waveform_parameters['eta'].view(-1, 1)
+        distance  = waveform_parameters['distance'].view(-1, 1)
+        self.e0   = waveform_parameters['e0'].view(-1, 1)
+        self.p_0  = waveform_parameters['p_0'].view(-1, 1)
+        self.t0_p = waveform_parameters['t0_p'].view(-1, 1)
+        self.pol  = waveform_parameters['polarization'].view(-1, 1)
+        self.incl = waveform_parameters['inclination'].view(-1, 1)
         
         #convert distance to Msun
         self.distance = pc_to_Msun(distance.double()*1e6) #has to be in parsec
         
         # some useful quantities -------------
-        self.eps0 = 1 - (e0**2) #high eccentricity parameter
+        self.eps0 = 1 - (self.e0**2) #high eccentricity parameter
         self.n0   = self._n0()
         self.Frr  = self._Frr()
         
@@ -269,5 +267,5 @@ class EffectiveFlyByTemplate():
         hp, hc = self.get_hp_and_hc(times_array)
         
         #set output      
-        return hp, hc, t0_p
+        return hp, hc, self.t0_p
     
