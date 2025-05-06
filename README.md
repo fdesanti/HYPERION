@@ -74,4 +74,7 @@ If you use `HYPERION`, please cite the
   publisher = {American Physical Society},
   doi = {10.1103/PhysRevD.109.102004},
   url = {https://link.aps.org/doi/10.1103/PhysRevD.109.102004}
-} 
+}
+```
+`HYPERION` has also been used in:
+- [arXiv:2505.02773](https://arxiv.org/abs/2505.02773)
