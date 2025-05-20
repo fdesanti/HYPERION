@@ -24,6 +24,7 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-d", "--device", default=None, help="Device to run the training on. (Default is 'cuda')")
     parser.add_option("-m", "--model_name",  default='BHBH', help="Name of the model to train (preload). (Default: BHBH)")
+    parser.add_option("-c", "--config", default=f'{CONF_DIR}/default_hyperion_config.yml', help="Path to the configuration file. (Default: {CONF_DIR}/default_hyperion_config.yml)")
     parser.add_option("-p", "--preload_trained", default=False, action="store_true", help="Load a pretrained model in training_results/<MODEL_NAME> directory.")
     (options, args) = parser.parse_args()
     
@@ -35,9 +36,9 @@ if __name__ == '__main__':
     if not os.path.exists('training_results'):
         os.mkdir('training_results')
 
-    conf_dir = f'training_results/{MODEL_NAME}' if PRELOAD else CONF_DIR
-    conf_yaml = conf_dir + '/default_hyperion_config.yml'
-    
+    conf_dir = os.path.dirname(options.config) if not PRELOAD else f'training_results/{MODEL_NAME}'
+    conf_yaml = options.config if not PRELOAD else os.path.join(conf_dir, 'default_hyperion_config.yml')
+
     with open(conf_yaml, 'r') as yaml_file:
         conf = yaml.safe_load(yaml_file)
         train_conf = conf['training_options']
@@ -55,7 +56,7 @@ if __name__ == '__main__':
     BATCH_SIZE            = int(train_conf['batch_size'])
     INITIAL_LEARNING_RATE = float(train_conf['initial_learning_rate']) if not PRELOAD else preload_lr/2
 
-    WAVEFORM_MODEL = conf['waveform_model']
+    WAVEFORM_MODEL = conf['waveform']
     PRIOR_PATH     = os.path.join(conf_dir, 'default_EFB-T_prior.yml') if PRELOAD else os.path.join(conf_dir, 'priors/'+conf['prior']+'.yml')
     DURATION       = conf['duration']
     
@@ -87,7 +88,7 @@ if __name__ == '__main__':
         """
         with open(PRIOR_PATH, 'r') as f:
             prior_conf = yaml.safe_load(f)
-            wvf_kwargs = prior_conf['waveform_kwargs']
+            wvf_kwargs = prior_conf['waveform_kwargs'] if 'waveform_kwargs' in prior_conf else dict()
         
         waveform_generator = WaveformGenerator(WAVEFORM_MODEL, fs=conf['fs'], duration=DURATION, **wvf_kwargs)
         
@@ -139,7 +140,7 @@ if __name__ == '__main__':
         #set up Flow model
         if not PRELOAD:
             prior_metadata = train_ds.prior_metadata
-            flow = build_flow(prior_metadata).to(DEVICE)
+            flow = build_flow(prior_metadata, config_file=conf_yaml).to(DEVICE)
         else:
             flow = build_flow(checkpoint_path=checkpoint_filepath).to(DEVICE)            
             '''
