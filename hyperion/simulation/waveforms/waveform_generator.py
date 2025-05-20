@@ -7,10 +7,10 @@ from torch.nn.functional import pad
 from .models import EffectiveFlyByTemplate, TEOBResumSDALI, PySEOBNR, PyCBCWaveform
 from ...core.fft.windows import tukey
 
-models_dict = {'EffectiveFlyBy': EffectiveFlyByTemplate, 
-               'TEOBResumSDALI': TEOBResumSDALI,
-               'PySEOBNR'      : PySEOBNR,
-               'PyCBC'         : PyCBCWaveform}
+models_dict = {'EffectiveFlyByTemplate': EffectiveFlyByTemplate, 
+               'TEOBResumSDALI'        : TEOBResumSDALI,
+               'PySEOBNR'              : PySEOBNR,
+               'PyCBC'                 : PyCBCWaveform}
 
 
 class WaveformGenerator:
