@@ -173,7 +173,8 @@ class EffectiveFlyByTemplate():
         #check masses 
         if all(p in parameters.keys() for p in ['m1', 'm2']):
             m2, m1 = [parameters['m1'], parameters['m2']]
-            parameters['M']   = m1 + m2
+            M = m1 + m2
+            parameters['M']   = M
             parameters['eta'] = (m1*m2)/(M**2)
 
         elif all(p in parameters.keys() for p in ['M', 'q']):
@@ -245,10 +246,10 @@ class EffectiveFlyByTemplate():
         #extract parameters
         self.M    = waveform_parameters['M'].view(-1, 1)
         self.eta  = waveform_parameters['eta'].view(-1, 1)
-        distance  = waveform_parameters['distance'].view(-1, 1)
+        distance  = waveform_parameters['distance'].view(-1, 1) if 'distance' in waveform_parameters else torch.ones_like(self.M)
         self.e0   = waveform_parameters['e0'].view(-1, 1)
         self.p_0  = waveform_parameters['p_0'].view(-1, 1)
-        self.t0_p = waveform_parameters['t0_p'].view(-1, 1)
+        self.t0_p = waveform_parameters['t0_p'].view(-1, 1) if 't0_p' in waveform_parameters else torch.zeros_like(self.M)
         self.pol  = waveform_parameters['polarization'].view(-1, 1)
         self.incl = waveform_parameters['inclination'].view(-1, 1)
         
