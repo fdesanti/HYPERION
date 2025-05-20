@@ -46,9 +46,9 @@ class ASD_Sampler():
         self.df = torch.abs(self.f[1] - self.f[2])
         
         #reference ASD from interpolation
-        #self.asd_reference = torch.from_numpy(np.interp(self.f.cpu().numpy(), asd_f, asd)).to(device)
+        #self.reference_asd = torch.from_numpy(np.interp(self.f.cpu().numpy(), asd_f, asd)).to(device)
         asd_interp = interp1d(asd_f, asd, kind='cubic', fill_value='extrapolate')
-        self.asd_reference = torch.from_numpy(asd_interp(f.cpu().numpy())).to(device)
+        self.reference_asd = torch.from_numpy(asd_interp(f.cpu().numpy())).to(device)
         
         #other attributes
         self.device = device
@@ -78,7 +78,7 @@ class ASD_Sampler():
     @property
     def asd_std(self):
         if not hasattr(self, '_asd_std'):
-            self._asd_std = self.asd_reference * self.df ** 0.5
+            self._asd_std = self.reference_asd * self.df ** 0.5
         return self._asd_std
 
 
@@ -100,7 +100,7 @@ class ASD_Sampler():
         asd_shape = (batch_size, len(self.f))
 
         if use_reference_asd:
-            asd = self.asd_reference * torch.ones((batch_size, 1), device = self.device)
+            asd = self.reference_asd * torch.ones((batch_size, 1), device = self.device)
                 
             out_asd = (asd + 1j*asd) / np.sqrt(2)
 
@@ -120,7 +120,7 @@ class ASD_Sampler():
             # Combine power + corrected phase to Fourier components
             out_asd = asd_real + 1J * asd_imag 
         
-        #out_asd = torch.stack([self.asd_reference for _ in range(batch_size)])
+        #out_asd = torch.stack([self.reference_asd for _ in range(batch_size)])
         #out_asd = torch.mean(out_asd, axis = 0)
         if noise:
             noise_from_asd = irfft(out_asd, n=self.noise_points)

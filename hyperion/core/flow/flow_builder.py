@@ -46,7 +46,7 @@ def build_flow( prior_metadata           :dict = None,
     else:
         assert prior_metadata is not None, 'Unable to build Flow since no hyperparams are passed'
         # First, read the JSON
-        config_file = CONF_DIR + '/hyperion_config.yml' if config_file is None else config_file
+        config_file = CONF_DIR + '/default_hyperion_config.yml' if config_file is None else config_file
         with open(config_file, 'r') as yaml_file:
             kwargs = yaml.safe_load(yaml_file)
 

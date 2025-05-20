@@ -9,17 +9,17 @@ parameters:
   
   intrinsic:
 
-    m1:
+    M:
       distribution: "uniform"
       kwargs:
-        minimum: 10.0
-        maximum: 100.0
+        minimum: 20.0
+        maximum: 200.0
       
-    m2:
+    q:
       distribution: "uniform"
       kwargs:
-        minimum: 10.0
-        maximum: 100.0
+        minimum: 0.125
+        maximum: 1.0
     
     e0:
       distribution: "uniform"
@@ -57,7 +57,7 @@ parameters:
         minimum: -0.25
         maximum: 0.25
 
-    distance:
+    luminosity_distance:
       distribution: "uniform"
       kwargs:
         minimum: 10

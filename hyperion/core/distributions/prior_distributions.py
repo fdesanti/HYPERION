@@ -472,7 +472,7 @@ class M_uniform_in_components(BasePrior):
         m2 (UniformPrior): Prior distribution of mass m2
     """
     
-    def __init__(self, m1, m2):
+    def __init__(self, m1, m2, **kwargs):
         assert isinstance(m1, UniformPrior), "m1 is not an instance of UniformPrior"
         assert isinstance(m2, UniformPrior), "m2 is not an instance of UniformPrior"
         
@@ -532,7 +532,7 @@ class q_uniform_in_components(BasePrior):
         m1 (UniformPrior): Prior distribution of mass m1
         m2 (UniformPrior): Prior distribution of mass m2
     """
-    def __init__(self, m1, m2):
+    def __init__(self, m1, m2, minimum=None, maximum=None, **kwargs):
         assert isinstance(m1, UniformPrior), "m1 is not an instance of UniformPrior"
         assert isinstance(m2, UniformPrior), "m2 is not an instance of UniformPrior"
         
@@ -617,7 +617,7 @@ class Mchirp_uniform_in_components(BasePrior):
         given that we sample Mchirp from uniformly distributed masses m1, m2.
     """
     
-    def __init__(self, m1=None, m2=None, M=None, q=None):
+    def __init__(self, m1=None, m2=None, M=None, q=None, **kwargs):
         if m1 is not None and m2 is not None:
             assert isinstance(m1, UniformPrior), "m1 is not an instance of UniformPrior"
             assert isinstance(m2, UniformPrior), "m2 is not an instance of UniformPrior"

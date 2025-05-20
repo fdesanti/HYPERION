@@ -185,7 +185,7 @@ class DatasetGenerator:
                 self.full_prior[p] = prior_dict_[p](**kwargs)
                 min, max = float(self.full_prior[p].minimum), float(self.full_prior[p].maximum)
                 
-                metadata = {'distribution':f'{p}_uniform_in_components', 'kwargs':{'minimum': min, 'maximum': max}}
+                metadata = {'distribution':f'{p}', 'kwargs':{'minimum': min, 'maximum': max}}
                 self.prior_metadata['parameters'][p] = metadata
 
         #store means and stds

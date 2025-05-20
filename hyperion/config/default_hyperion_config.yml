@@ -11,13 +11,13 @@ reference_gps_time: 1370692818
 
 fs: 2048 #sampling frequency Hz for simulations & inference 
 
-ASD_reference_run: O3 #reference run for the ASDs
+ASD_reference_run: O3a #reference run for the ASDs
 
 use_reference_asd: False #use the reference run for the ASDs
 
 fmin: 10 #low frequency cutoff for ASD
 
-inference_parameters: ["M", "q", "e0", "p_0", "distance", "polarization", "inclination", "time_shift", "ra", "dec"]
+inference_parameters: ["M", "q", "e0", "p_0", "luminosity_distance", "polarization", "inclination", "time_shift", "ra", "dec"]
 
 waveform: "EffectiveFlyByTemplate"
 
@@ -71,7 +71,7 @@ training_options:
 
   initial_learning_rate: 0.0001
 
-  steps_per_epoch: 1000
+  steps_per_epoch: 100
   val_steps_per_epoch: 150
 
   num_preload_train: 5000
