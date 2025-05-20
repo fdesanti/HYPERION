@@ -31,7 +31,7 @@ if __name__ == '__main__':
     DEVICE         = options.device
     
     #Setup & load model --------------------------------------------------
-    conf_yaml = f'training_results/{MODEL_NAME}/hyperion_config.yml'
+    conf_yaml = f'{MODEL_PATH}/hyperion_config.yml'
     
     with open(conf_yaml, 'r') as yaml_file:
         conf = yaml.safe_load(yaml_file)

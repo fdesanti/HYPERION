@@ -21,22 +21,23 @@ if __name__ == '__main__':
     parser.add_option("-p", "--num_posteriors", default=128, help="Number of posteriors to sample for the pp plot")
     parser.add_option("-s", "--num_posterior_samples", default=50_000, help="Number of posterior samples to draw")
     parser.add_option("-v", "--verbosity", default=False, action="store_true", help="Verbosity of the flow sampler. (Default: False)")
-    parser.add_option("-m", "--model_name", default='BHBH', help="Name of the model to sample from")
+    parser.add_option("-m", "--model_path", default='training_results/BHBH', help="Path to the model to test. (Default: training_results/BHBH)")
     
     (options, args) = parser.parse_args()
     
     NUM_POSTERIORS = int(options.num_posteriors)
     NUM_SAMPLES    = int(options.num_posterior_samples)
     VERBOSITY      = options.verbosity
-    MODEL_NAME      = options.model_name
+    MODEL_PATH     = options.model_path
+    MODEL_NAME     = os.path.basename(MODEL_PATH)
     
     #Setup & load model --------------------------------------------------
-    conf_yaml = f'training_results/{MODEL_NAME}/hyperion_config.yml'
+    conf_yaml = f'{MODEL_PATH}/hyperion_config.yml'
     
     with open(conf_yaml, 'r') as yaml_file:
         conf = yaml.safe_load(yaml_file)
 
-    WAVEFORM_MODEL = conf['waveform_model']
+    WAVEFORM_MODEL = conf['waveform']
     PRIOR_PATH = f'training_results/{MODEL_NAME}/prior.yml'
     DURATION  = conf['duration']
 
@@ -65,7 +66,7 @@ if __name__ == '__main__':
         
         with open(PRIOR_PATH, 'r') as f:
             prior_conf = yaml.safe_load(f)
-            wvf_kwargs = prior_conf['waveform_kwargs']
+            wvf_kwargs = prior_conf['waveform_kwargs'] if 'waveform_kwargs' in prior_conf else dict()
         
         waveform_generator = WaveformGenerator(WAVEFORM_MODEL, fs=conf['fs'], duration=DURATION, **wvf_kwargs)
 
