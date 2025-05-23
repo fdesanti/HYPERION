@@ -223,9 +223,9 @@ class Flow(nn.Module):
         for name in self.inference_parameters:
             try: #TODO: UGLY fix this
                 if "bounds" in self.metadata:
-                    min_b, max_b = self.metadata['bounds'][name]
+                    min_b, max_b = self.metadata['prior_metadata']['bounds'][name]
                 else:
-                    bounds = self.metadata['parameters'][name]['kwargs']
+                    bounds = self.metadata['prior_metadata']['parameters'][name]['kwargs']
                     min_b = eval(bounds['minimum']) if isinstance(bounds['minimum'], str) else bounds['minimum']
                     max_b = eval(bounds['maximum']) if isinstance(bounds['maximum'], str) else bounds['maximum']
                 total_mask *= ((processed_samples_dict[name]<=max_b) * (processed_samples_dict[name]>=min_b))

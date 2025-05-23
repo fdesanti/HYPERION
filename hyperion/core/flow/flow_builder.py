@@ -40,11 +40,13 @@ def build_flow( metadata                 :dict = None,
     if checkpoint_path is not None:
         checkpoint = torch.load(checkpoint_path, map_location=torch.device('cpu'), weights_only=False)
         metadata = checkpoint['metadata']
-        kwargs = checkpoint['configuration']
+        kwargs = metadata
 
     #building model from scratch
     else:
-        assert metadata is not None, 'Unable to build Flow since no hyperparams are passed'
+        assert metadata is not None, 'Unable to build Flow since no prior metadata was provided.'
+        assert isinstance(metadata, dict), 'Please provide a dictionary with the prior metadata.'
+        assert 'prior_metadata' in metadata, 'Please provide a dictionary with the prior_metadata key.'
         # First, read the JSON
         config_file_path = CONF_DIR + '/default_hyperion_config.yml' if config_file_path is None else config_file_path
         with open(config_file_path, 'r') as yaml_file:
