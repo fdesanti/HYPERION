@@ -139,17 +139,12 @@ if __name__ == '__main__':
 
         #set up Flow model
         if not PRELOAD:
-            prior_metadata = train_ds.prior_metadata
-            flow = build_flow(prior_metadata, config_file=conf_yaml).to(DEVICE)
+            metadata = dict(prior_metadata=train_ds.prior_metadata)
+            metadata.update(conf)
+            flow = build_flow(metadata, config_file_path=conf_yaml).to(DEVICE)
         else:
             flow = build_flow(checkpoint_path=checkpoint_filepath).to(DEVICE)            
-            '''
-            print(flow.prior_metadata)
-            flow.prior_metadata['inference_parameters'] = conf['inference_parameters']
-            flow.prior_metadata['parameters']['luminosity_distance'] = flow.prior_metadata['parameters'].pop('distance')
-            flow.prior_metadata['means']['luminosity_distance'] = flow.prior_metadata['means'].pop('distance')
-            flow.prior_metadata['stds']['luminosity_distance'] = flow.prior_metadata['stds'].pop('distance')
-            '''
+            
         #set up Optimizer and Learning rate schedulers
         optim_kwargs = {'params': [p for p in flow.parameters() if p.requires_grad], 
                         'lr': INITIAL_LEARNING_RATE}

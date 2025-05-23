@@ -166,8 +166,8 @@ class Trainer:
         """
         
         checkpoints = {
-            'configuration': flow.configuration,
-            'prior_metadata': flow.prior_metadata,
+            #'configuration': flow.configuration,
+            'metadata': flow.metadata,
             'model_state_dict': flow.state_dict(),
             #'optimizer_state_dict': self.optimizer.state_dict(),
             #'epoch': epoch,

@@ -21,7 +21,7 @@ class Flow(nn.Module):
     Args:
         base_distribution (BaseDistribution) : Instance of one of the hyperion.core.distributions.flow_base subclasses
         transformation    (CouplingTransform): The (coupling) transformation of the model
-        prior_metadata    (dict): Metadata of the prior distribution
+        metadata    (dict): Metadata of the prior distribution
         embedding_network (nn.Module): (optional) Embedding network for the strain data. (Default: None)
         configuration     (dict): Dict containing configuration of the model. (Default: None)
     """
@@ -29,16 +29,15 @@ class Flow(nn.Module):
     def __init__(self,
                  base_distribution,
                  transformation,
-                 prior_metadata    : dict = None,
-                 embedding_network : nn.Module = None, 
-                 configuration     : dict = None):
+                 embedding_network : nn.Module = None,
+                 metadata          : dict = None
+                 ):
         
         super(Flow, self).__init__()
         
         self.base_distribution = base_distribution
         self.transformation    = transformation
-        self.prior_metadata    = prior_metadata
-        self.configuration     = configuration
+        self.metadata          = metadata
 
         if embedding_network is not None:
             self.embedding_network = embedding_network
@@ -47,35 +46,35 @@ class Flow(nn.Module):
     def inference_parameters(self):
         """List of parameters to be inferred"""
         if not hasattr(self, '_inference_parameters'):
-            self._inference_parameters = self.prior_metadata['inference_parameters']
+            self._inference_parameters = self.metadata['prior_metadata']['inference_parameters']
         return self._inference_parameters
     
     @property
     def priors(self):
         """Priors of the simulation"""
         if not hasattr(self, '_priors'):
-            self._priors = self.prior_metadata['priors']
+            self._priors = self.metadata['prior_metadata']['priors']
         return self._priors
 
     @property
     def means(self):
         """Mean of each parameter prior"""
         if not hasattr(self, '_means'):
-            self._means = self.prior_metadata['means']
+            self._means = self.metadata['prior_metadata']['means']
         return self._means
  
     @property
     def stds(self):
         """Standard deviation of each parameter prior"""
         if not hasattr(self, '_stds'):
-            self._stds = self.prior_metadata['stds']
+            self._stds = self.metadata['prior_metadata']['stds']
         return self._stds
 
     @property
     def reference_time(self):
         """Reference GPS time for the simulation"""
         if not hasattr(self, '_reference_time'):
-            self._reference_time = self.configuration['reference_gps_time']
+            self._reference_time = self.metadata['reference_gps_time']
         return self._reference_time
     
     
@@ -223,10 +222,10 @@ class Flow(nn.Module):
 
         for name in self.inference_parameters:
             try: #TODO: UGLY fix this
-                if "bounds" in self.prior_metadata:
-                    min_b, max_b = self.prior_metadata['bounds'][name]
+                if "bounds" in self.metadata:
+                    min_b, max_b = self.metadata['bounds'][name]
                 else:
-                    bounds = self.prior_metadata['parameters'][name]['kwargs']
+                    bounds = self.metadata['parameters'][name]['kwargs']
                     min_b = eval(bounds['minimum']) if isinstance(bounds['minimum'], str) else bounds['minimum']
                     max_b = eval(bounds['maximum']) if isinstance(bounds['maximum'], str) else bounds['maximum']
                 total_mask *= ((processed_samples_dict[name]<=max_b) * (processed_samples_dict[name]>=min_b))
