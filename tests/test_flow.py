@@ -21,7 +21,7 @@ def _test_flow(coupling):
 
     flow = Flow(base_distribution = base_dist, 
                 transformation    = CouplingTransform(coupling_layers),
-                prior_metadata    = prior.metadata)
+                metadata          = dict(prior_metadata=prior.metadata))
     
     #train the flow
     optimizer = Adam(flow.parameters(), lr=1e-3)

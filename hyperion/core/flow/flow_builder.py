@@ -2,7 +2,7 @@ import yaml
 import numpy as np
 import torch
 
-from . import Flow
+from . import GWFlow
 from . import CouplingTransform, RandomPermutation, coupling_layer_dict
 from ..utilities import HYPERION_Logger
 from ..distributions import MultivariateNormalBase, base_distributions_dict
@@ -100,11 +100,11 @@ def build_flow( metadata                 :dict = None,
     coupling_transform = CouplingTransform(coupling_layers)
 
     #FLOW --------------------------------------------------------------------------------------
-    flow = Flow(base_distribution = base, 
-                transformation    = coupling_transform, 
-                embedding_network = embedding_network, 
-                metadata          = metadata
-                ).float()
+    flow = GWFlow(base_distribution = base, 
+                  transformation    = coupling_transform, 
+                  embedding_network = embedding_network, 
+                  metadata          = metadata
+                 ).float()
     
     """loading (eventual) weights"""
     if checkpoint_path is not None:
