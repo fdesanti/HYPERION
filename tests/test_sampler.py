@@ -29,10 +29,10 @@ def test_sampler():
         coupling_layers.append(AffineCouplingLayer(num_features=2))
         coupling_layers.append(RandomPermutation(num_features=2))
 
-    flow = Flow(base_distribution = base_dist, 
-                embedding_network = embedding_net,
-                transformation    = CouplingTransform(coupling_layers),
-                metadata          = dict(prior_metadata=prior.metadata))
+    flow = GWFlow(base_distribution = base_dist, 
+                  embedding_network = embedding_net,
+                  transformation    = CouplingTransform(coupling_layers),
+                  metadata          = dict(prior_metadata=prior.metadata))
     
     sampler = PosteriorSampler(flow=flow)
 
