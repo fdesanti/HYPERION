@@ -32,7 +32,7 @@ def test_sampler():
     flow = Flow(base_distribution = base_dist, 
                 embedding_network = embedding_net,
                 transformation    = CouplingTransform(coupling_layers),
-                prior_metadata    = prior.metadata)
+                metadata          = dict(prior_metadata=prior.metadata))
     
     sampler = PosteriorSampler(flow=flow)
 

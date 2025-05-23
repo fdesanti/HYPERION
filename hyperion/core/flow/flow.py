@@ -21,9 +21,8 @@ class Flow(nn.Module):
     Args:
         base_distribution (BaseDistribution) : Instance of one of the hyperion.core.distributions.flow_base subclasses
         transformation    (CouplingTransform): The (coupling) transformation of the model
-        metadata    (dict): Metadata of the prior distribution
-        embedding_network (nn.Module): (optional) Embedding network for the strain data. (Default: None)
-        configuration     (dict): Dict containing configuration of the model. (Default: None)
+        metadata                       (dict): Metadata of the prior distribution
+        embedding_network         (nn.Module): (optional) Embedding network for the strain data. (Default: None)
     """
 
     def __init__(self,
@@ -38,6 +37,8 @@ class Flow(nn.Module):
         self.base_distribution = base_distribution
         self.transformation    = transformation
         self.metadata          = metadata
+        assert isinstance(metadata, dict), 'Please provide a dictionary with the prior metadata.'
+        assert 'prior_metadata' in metadata, 'Please provide a dictionary with the prior_metadata key.'
 
         if embedding_network is not None:
             self.embedding_network = embedding_network
@@ -69,13 +70,6 @@ class Flow(nn.Module):
         if not hasattr(self, '_stds'):
             self._stds = self.metadata['prior_metadata']['stds']
         return self._stds
-
-    @property
-    def reference_time(self):
-        """Reference GPS time for the simulation"""
-        if not hasattr(self, '_reference_time'):
-            self._reference_time = self.metadata['reference_gps_time']
-        return self._reference_time
     
     
     def log_prob(self, inputs, strain=None, asd=None):
@@ -268,11 +262,33 @@ class Flow(nn.Module):
 
         
         
+class GWFlow(Flow):
+    """
+    Class that manages the Normalizing Flow model for gravitational wave signals.
+    
+    Args:
+        base_distribution (BaseDistribution) : Instance of one of the hyperion.core.distributions.flow_base subclasses
+        transformation    (CouplingTransform): The (coupling) transformation of the model
+        metadata                       (dict): Metadata of the prior distribution
+        embedding_network         (nn.Module): (optional) Embedding network for the strain data. (Default: None)
+    """
+    
+    def __init__(self,
+                 base_distribution,
+                 transformation,
+                 embedding_network : nn.Module = None,
+                 metadata          : dict = None
+                 ):
+        
+        super(GWFlow, self).__init__(base_distribution, transformation, embedding_network, metadata)
         
         
-        
-        
-        
+    @property
+    def reference_time(self):
+        """Reference GPS time for the simulation"""
+        if not hasattr(self, '_reference_time'):
+            self._reference_time = self.metadata['reference_gps_time']
+        return self._reference_time
         
         
     
