@@ -19,7 +19,7 @@ class IS_Priors(MultivariatePrior):
     def __init__(self, flow, device = 'cpu'):
         
         self.flow = flow        
-        priors = flow.prior_metadata['parameters'].copy()
+        priors = flow.metadata['prior_metadata']['parameters'].copy()
         
         if 'M' in priors and 'Mchirp' in priors:
             priors.pop('Mchirp')

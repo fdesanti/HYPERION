@@ -42,7 +42,7 @@ class PosteriorSampler():
         else:
             self.flow = build_flow(checkpoint_path=flow_checkpoint_path).to(device).eval()
 
-        self.prior_metadata = self.flow.prior_metadata
+        self.prior_metadata = self.flow.metadata['prior_metadata']
         self.num_posterior_samples = num_posterior_samples
         
         #set up importance sampler
