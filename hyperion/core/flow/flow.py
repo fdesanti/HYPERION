@@ -21,15 +21,17 @@ class Flow(nn.Module):
     Args:
         base_distribution (BaseDistribution) : Instance of one of the hyperion.core.distributions.flow_base subclasses
         transformation    (CouplingTransform): The (coupling) transformation of the model
-        metadata                       (dict): Metadata of the prior distribution
         embedding_network         (nn.Module): (optional) Embedding network for the strain data. (Default: None)
+        metadata                       (dict): Metadata of the prior distribution.
+        prior_metadata                 (dict): (optional) Prior metadata. If provided will be used to update the metadata
     """
 
     def __init__(self,
                  base_distribution,
                  transformation,
-                 embedding_network : nn.Module = None,
-                 metadata          : dict = None
+                 embedding_network: nn.Module = None,
+                 metadata         : dict = {}, 
+                 prior_metadata   : dict = None
                  ):
         
         super(Flow, self).__init__()
@@ -37,17 +39,31 @@ class Flow(nn.Module):
         self.base_distribution = base_distribution
         self.transformation    = transformation
         self.metadata          = metadata
-        assert isinstance(metadata, dict), 'Please provide a dictionary with the prior metadata.'
-        assert 'prior_metadata' in metadata, 'Please provide a dictionary with the prior_metadata key.'
+
+        if prior_metadata is not None:
+            assert isinstance(prior_metadata, dict), 'Please provide a dictionary with the prior metadata.'
+            self.metadata['prior_metadata'] = prior_metadata
+
+        else:
+            assert isinstance(metadata, dict), "Please provide 'metadata' as a dictionary."
+            assert 'prior_metadata' in metadata, "Please make sure metadata contains a 'prior_metadata' key."
 
         if embedding_network is not None:
             self.embedding_network = embedding_network
 
     @property
+    def prior_metadata(self):
+        return self.metadata['prior_metadata']
+    
+    @property
     def inference_parameters(self):
         """List of parameters to be inferred"""
         if not hasattr(self, '_inference_parameters'):
-            self._inference_parameters = self.metadata['prior_metadata']['inference_parameters']
+            if 'inference_parameters' in self.metadata:
+                self._inference_parameters = self.metadata['inference_parameters']
+            else:
+                self._inference_parameters = self.prior_metadata['inference_parameters']
+        
         return self._inference_parameters
     
     @property
@@ -207,16 +223,17 @@ class Flow(nn.Module):
 
         for name in self.inference_parameters:
             try: 
-                if "bounds" in self.metadata:
-                    min_b, max_b = self.metadata['prior_metadata']['bounds'][name]
+                if "bounds" in self.prior_metadata:
+                    min_b, max_b = self.prior_metadata['bounds'][name]
                 else:
-                    bounds = self.metadata['prior_metadata']['parameters'][name]['kwargs']
+                    bounds = self.prior_metadata['parameters'][name]['kwargs']
                     min_b = eval(bounds['minimum']) if isinstance(bounds['minimum'], str) else bounds['minimum']
                     max_b = eval(bounds['maximum']) if isinstance(bounds['maximum'], str) else bounds['maximum']
+                
                 total_mask *= ((processed_samples_dict[name]<=max_b) * (processed_samples_dict[name]>=min_b))
+            
             except Exception as e:
-                log.error(f"Error restricting samples for {name} to bounds: {e}")
-                log.warning(f"Could not restrict samples for {name} to bounds")
+                log.error(f"Could not restrict samples for {name} to bounds: due to {e}")
                 continue
 
         for name in self.inference_parameters:
@@ -233,18 +250,20 @@ class GWFlow(Flow):
     Args:
         base_distribution (BaseDistribution) : Instance of one of the hyperion.core.distributions.flow_base subclasses
         transformation    (CouplingTransform): The (coupling) transformation of the model
-        metadata                       (dict): Metadata of the prior distribution
         embedding_network         (nn.Module): (optional) Embedding network for the strain data. (Default: None)
+        metadata                       (dict): Metadata of the prior distribution.
+        prior_metadata                 (dict): (optional) Prior metadata. If provided will be used to update the metadata
     """
     
     def __init__(self,
                  base_distribution,
                  transformation,
-                 embedding_network : nn.Module = None,
-                 metadata          : dict = None
+                 embedding_network: nn.Module = None,
+                 metadata         : dict = {}, 
+                 prior_metadata   : dict = None
                  ):
         
-        super(GWFlow, self).__init__(base_distribution, transformation, embedding_network, metadata)
+        super(GWFlow, self).__init__(base_distribution, transformation, embedding_network, metadata, prior_metadata)
         
     @property
     def reference_time(self):
