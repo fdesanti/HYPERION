@@ -150,3 +150,24 @@ class Slicer(nn.Module):
         segments = torch.stack(segments, dim = -2).unsqueeze(-1)
 
         return segments.view(x.shape[0], x.shape[1], self.num_segments, self.segment_len) # (batch_size, num_channels, num_segments, segment_len)
+
+    def unslice(self, segments):
+        """
+        segments: (batch, channels, num_segments, segment_len)
+        returns: reconstructed (batch, channels, input_len)
+        """
+        B, C, N, L = segments.shape
+        device = segments.device
+
+        # Prepare output buffers
+        output = torch.zeros(B, C, self.input_len, device=device)
+        count  = torch.zeros_like(output)
+
+        for i in range(N):
+            start = i * self.step
+            output[..., start:start+L] += segments[..., i, :]
+            count[...,  start:start+L] += 1
+
+        # avoid division by zero (shouldn't happen if parameters are consistent)
+        count = torch.where(count == 0, torch.ones_like(count), count)
+        return output / count
