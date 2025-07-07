@@ -1,33 +1,19 @@
 import os
-import torch 
-import numpy as np
-import pandas as pd 
-import matplotlib.pyplot as plt
+import torch
+import pandas as pd
 
 from pathlib import Path
-from astropy.cosmology import Planck18
+from tensordict import TensorDict
+from bilby.gw.result import CBCResult
 
 from .core.flow import build_flow
-from .core.types import TensorSamples
-from .core.utilities import HYPERION_Logger, latexify
+from .core.utilities import HYPERION_Logger as GWLogger
+from hyperion.inference import ImportanceSampling
+from hyperion.simulation import redshift_from_luminosity_distance
 
-from .inference import ImportanceSampling
-from .simulation import WhitenNet, redshift_from_luminosity_distance
-
-log = HYPERION_Logger()
-
+log = GWLogger()
 class PosteriorSampler():
-    """
-    Class that manages the sampling of the posterior distribution from a Flow model.
-
-    Args:
-        flow                          (Flow): A Flow model object. If None, a ``flow_checkpoint_path`` must be provided.
-        flow_checkpoint_path (str, optional): Path to a checkpoint file containing a Flow model to load.
-        waveform_generator (WaveformGenerator, optional): A WaveformGenerator object to generate corresponding GW waveforms.
-        num_posterior_samples          (int): Number of samples to draw from the posterior distribution. (Default: 10000)
-        output_dir           (str, optional): Directory to save the output files. If None, the current directory is used.
-        device                         (str): Device to run the model on. (Default: 'cpu')
-    """
+    
     def __init__(self, 
                  flow                  = None,
                  flow_checkpoint_path  = None,
@@ -42,7 +28,7 @@ class PosteriorSampler():
         else:
             self.flow = build_flow(checkpoint_path=flow_checkpoint_path).to(device).eval()
 
-        self.prior_metadata = self.flow.metadata['prior_metadata']
+        self.prior_metadata = self.flow.prior_metadata
         self.num_posterior_samples = num_posterior_samples
         
         #set up importance sampler
@@ -55,20 +41,14 @@ class PosteriorSampler():
         #other attributes
         if output_dir:
             self.output_dir = output_dir  
-        elif flow_checkpoint_path:
-            self.output_dir = Path(flow_checkpoint_path).parent.absolute()
         else:
-            self.output_dir = os.getcwd()
-            log.warning("No directory provided, using the current one")
+            self.output_dir = Path(flow_checkpoint_path).parent.absolute()
 
         self.device = device
-        
+        return
     
     #@property 
     def latex_labels(self, parameters=None): 
-        """
-        Converts parameter names to LaTex format.
-        """
         converter = {'m1'                 : '$m_1$ $[M_{\odot}]$', 
                      'm2'                 : '$m_2$ $[M_{\odot}]$',
                      'M'                  : '$M$ $[M_{\odot}]$',
@@ -124,10 +104,12 @@ class PosteriorSampler():
         if not hasattr(self, '_posterior'):
             raise ValueError('Posterior has not been sampled yet. Run the "sample_posterior" method.')
         return self._posterior
+    
     @posterior.setter
     def posterior(self, posterior):
         self._posterior = posterior
         
+    
     @property
     def importance_weights(self):
         if not hasattr(self, '_importance_weights'):
@@ -151,22 +133,12 @@ class PosteriorSampler():
         return self._BayesFactor
     
     def to_bilby(self, posterior=None, **kwargs):
-        """
-        Export sampler results to CBCResult object.
-
-        Args:
-            posterior (dict, TensorSamples): A dictionary containing the posterior samples. If None, the currently sampled posterior is used.
-            kwargs: Additional arguments to pass to the CBCResult object.
-
-        Returns:
-            bilby_result (bilby.result.CBCResult): A CBCResult object containing the posterior samples.
-        """
-        from bilby.gw.result import CBCResult 
-
+        """Export sampler results to a bilby CBC result object."""
+        
         if posterior is None:
             posterior = self.posterior
        
-        if isinstance(posterior, TensorSamples):
+        if isinstance(posterior, TensorDict):
             posterior= dict(posterior.cpu())
         
         parameter_keys = list(posterior.keys())
@@ -181,17 +153,14 @@ class PosteriorSampler():
         
         return CBCResult(**bilby_kwargs)
     
-    @latexify
+    def plot_skymap(self, posterior=None, **skymap_kwargs):
+        """Wrapper to Bilby plot skymap method."""
+        
+        bilby_result = self.to_bilby(posterior=posterior)
+        return bilby_result.plot_skymap(**skymap_kwargs)
+    
     def plot_corner(self, posterior=None, injection_parameters=None, figname=None, **corner_kwargs):
-        """
-        Wrapper to Bilby plot corner method.
-
-        Args:
-            posterior  (dict, TensorSamples): A dictionary containing the posterior samples. If None, the currently sampled posterior is used.
-            injection_parameters      (dict): A dictionary containing the injected parameters.
-            figname                    (str): Name/path of the output figure. If None, the figure is saved in the output directory.
-            corner_kwargs                   : Additional arguments to pass to the corner plot.
-        """
+        """Wrapper to Bilby plot corner method."""
         
         log.info('Generating corner plot...')
         
@@ -212,30 +181,19 @@ class PosteriorSampler():
         figname = str(self.output_dir) + '/corner_plot.png' if figname is None else figname
         return bilby_result.plot_corner(filename=figname, truth=injection_parameters, **default_corner_kwargs)
     
-    def plot_skymap(self, posterior=None, **skymap_kwargs):
-        """
-        Wrapper to Bilby plot skymap method.
-        
-        Args:
-            posterior (dict, TensorSamples): A dictionary containing the posterior samples. If None, the currently sampled posterior is used.
-            skymap_kwargs: Additional arguments to pass to the skymap plot.
-        """
-        bilby_result = self.to_bilby(posterior=posterior)
-        return bilby_result.plot_skymap(**skymap_kwargs)
-    
 
     def sample_posterior(self, **sampling_kwargs):
         """
         Samples posterior from the flow model.
-
-        Args:
-            sampling_kwargs: Sampling arguments to pass to the Flow.sample method.
+        
+        Note:
+        -----
+            For a list of the input arguments see the documentation of the Flow.sample method.
             
         Returns:
-            posterior (TensorSamples): A dictionary containing the samples from the posterior distribution.
-
-        Note:
-            For a list of the input arguments see the documentation of the Flow.sample method.
+        --------
+            posterior: (dict)
+                A dictionary containing the samples from the posterior distribution.
         """
         
         num_samples = sampling_kwargs.get('num_samples', self.num_posterior_samples)
@@ -245,17 +203,19 @@ class PosteriorSampler():
             self.posterior = self.flow.sample(**sampling_kwargs)
         return self.posterior
     
-    def compute_source_frame_mass_parameters(self, posterior=None, cosmology=Planck18):
-        r"""
+    def compute_source_frame_mass_parameters(self, posterior=None, cosmology=None):
+        """
         Computes mass-source frame parameters from the posterior samples.
-        We estimate the redshift :math:`z` using the luminosity distance and the given cosmology.
-        Then the parameters are rescaled with :math:`1/(1+z)`
+        We estimate the redshift z using the luminosity distance and the given cosmology.
+        Then the parameters are rescaled with 1/(1+z)
         
         Args:
-            posterior  (dict, TensorSamples): posterior samples. (Default: uses the previously sampled posterior)
+        -----
+            posterior (dict or TensorDict): posterior samples. (Default: uses the previously sampled posterior)
             cosmology (astropy.cosmology): cosmology object to compute redshift from luminosity distance. (Default: Planck18)
         
         Returns:
+        --------
             posterior (dict or TensorDict): posterior samples updated with mass-source frame parameters.
         """
         
@@ -291,34 +251,37 @@ class PosteriorSampler():
     def sample_importance_weights(self, **importance_sampling_kwargs):
         """
         Sample importance weights using the importance sampler.
-
-        Args:
-            importance_sampling_kwargs: Importance sampling arguments to pass to the ImportanceSampling.compute_model_evidence method.
         
         Returns:
-            importance_weights (torch.Tensor): A tensor containing the importance weights.
+        --------
+            importance_weights: (torch.Tensor)
+                A tensor containing the importance weights.
                 
         Note:
+        -----
             For a list of the input arguments see the documentation of the ImportanceSampling.compute_model_evidence method.
+
+        
         """
         self.IS_results = self.IS.compute_model_evidence(**importance_sampling_kwargs)
         
-        return self.IS_results['weights'], self.IS_results['valid_samples']
+        return self.IS_results['stats']['weights'], self.IS_results['stats']['valid_samples']
     
-    def reweight_posterior(self, posterior=None, num_samples=None, importance_weights=None, **importance_sampling_kwargs):
+    def reweight_posterior(self, posterior=None, num_samples=None, importance_weights=None, importance_sampling_kwargs=None):
         """
         Sample from the importance reweighted posterior.
         
         Args:
-            posterior         (TensorSamples): A dictionary containing the posterior samples.
-            num_samples                 (int): Number of samples to draw from the reweighted posterior.
-            importance_weights (torch.Tensor): A tensor containing the importance weights.
-            importance_sampling_kwargs (dict): A dictionary containing the importance sampling arguments.
+        -----
+            importance_weights: (torch.Tensor)
+                A tensor containing the importance weights.
         
         Returns:
-            reweighted_posterior (TensorSamples): A dictionary containing the reweighted samples from the posterior distribution.
+        --------
+            reweighted_posterior: (dict)
+                A dictionary containing the reweighted samples from the posterior distribution.
         """
-
+        
         log.info('Peforming Importance Sampling...')
         
         if posterior is None:
@@ -328,12 +291,12 @@ class PosteriorSampler():
         if importance_weights is None:
             if importance_sampling_kwargs is None:
                 raise ValueError('Either importance_weights or importance_sampling_kwargs must be provided.')
-            log.info('Computing importance weights...')
             importance_weights, valid_samples = self.sample_importance_weights(**importance_sampling_kwargs)
         
         #discard invalid samples in regular posterior
         self.posterior = posterior[valid_samples]
-        if not num_samples: num_samples = len(self.posterior)
+        if not num_samples:
+            num_samples = len(self.posterior)
         
         reweighted_indexes = torch.multinomial(importance_weights, num_samples, replacement=True)
         self.reweighted_posterior = self.posterior[reweighted_indexes]
@@ -342,21 +305,10 @@ class PosteriorSampler():
     
     
     def plot_reconstructed_waveform(self, whitened_strain, asd, num_wvf=None, posterior=None, CL=90, **kwargs):
-        """
-        Plots the reconstructed waveforms from the posterior samples.
-
-        Args:
-            whitened_strain (dict, TensorDict): Whitenend strain data.
-            asd             (dict, TensorDict): Amplitude spectral density data.
-            num_wvf                      (int): Number of waveforms to plot. If None, all waveforms are plotted.
-            posterior    (dict, TensorSamples): A dictionary containing the posterior samples. If None, the currently sampled posterior is used.
-            CL                         (float): Confidence level to plot. (Default: 90)
-            kwargs                            : Additional arguments to pass to the WhitenNet method.
-        """
         
         log.info('Plotting reconstructed waveforms...')
         
-   
+        from ..simulations import WhitenNet
         
         if posterior is None:
             posterior = self.posterior
@@ -382,7 +334,7 @@ class PosteriorSampler():
             high = posterior[key].quantile(upper_quantile)
             mask = mask & (posterior[key] >= low) & (posterior[key] <= high)
         
-        #posterior = posterior[mask]
+        posterior = posterior[mask]
         
         if num_wvf is None:
             num_wvf = len(posterior)
@@ -401,10 +353,9 @@ class PosteriorSampler():
             
         #get waveform samples
         projected_template, tcoal = self.waveform_generator(posterior, project_onto_detectors=True)
-        print(projected_template['L1'][0].max())
         projected_template = TensorDict.from_dict(projected_template).to(self.device)
-        #for det in projected_template.keys():
-        #    projected_template[det] /= posterior['luminosity_distance'].unsqueeze(-1)
+        for det in projected_template.keys():
+            projected_template[det] /= posterior['luminosity_distance'].unsqueeze(-1)
         
         #compute time_shifts
         time_shift = self.waveform_generator.det_network.time_delay_from_earth_center(posterior['ra'], 
@@ -423,6 +374,7 @@ class PosteriorSampler():
                              device   = self.device)
         
         #whiten_kwargs
+        whiten_kwargs = kwargs.get('whiten_kwargs', {})
         whitened_waveform = whitener(h          = projected_template, 
                                      asd        = asd,
                                      time_shift = time_shift, 
@@ -435,7 +387,11 @@ class PosteriorSampler():
                               int(self.waveform_generator.duration*self.waveform_generator.fs)
                              ).cpu().numpy()
         
-    
+        
+        
+        import matplotlib.pyplot as plt
+        import numpy as np
+        import pandas as pd
         reconstructed_wvf_output_dir = f'{self.output_dir}/reconstructed_waveform'
         if not os.path.exists(reconstructed_wvf_output_dir):
             os.makedirs(reconstructed_wvf_output_dir)
@@ -452,8 +408,8 @@ class PosteriorSampler():
             percentiles = [(100-CL)/2, 100-(100-CL)/2]
             
             median = np.percentile(whitened_waveform[det].cpu().numpy(), 50, axis=0)
-            low    = np.percentile(whitened_waveform[det].cpu().numpy(), percentiles[0], axis=0)
-            high   = np.percentile(whitened_waveform[det].cpu().numpy(), percentiles[1], axis=0)
+            low  = np.percentile(whitened_waveform[det].cpu().numpy(), percentiles[0], axis=0)
+            high = np.percentile(whitened_waveform[det].cpu().numpy(), percentiles[1], axis=0)
             plt.fill_between(time, low, high, color='r', alpha=0.3)
             
             plt.plot(time, median, linestyle = '--', linewidth=2, color='k', alpha=0.8)
@@ -473,8 +429,7 @@ class PosteriorSampler():
         plt.savefig(f'{reconstructed_wvf_output_dir}/reconstructed_waveform_{CL}CL.png', dpi=200)
         plt.show()
         
+        
         for det in saving:
             saving[det].to_csv(f'{reconstructed_wvf_output_dir}/reconstructed_waveform_{CL}CL_{det}.csv', index=False, header=True)
-        
-        log.info(f'Reconstructed waveforms saved in {reconstructed_wvf_output_dir}')
         return

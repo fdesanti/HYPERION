@@ -2,54 +2,36 @@ import yaml
 import numpy as np
 import torch
 
-from . import GWFlow
+from . import Flow
 from . import CouplingTransform, RandomPermutation, coupling_layer_dict
-from ..utilities import HYPERION_Logger
+from ..utilities import HYPERION_Logger as GWLogger
 from ..distributions import MultivariateNormalBase, base_distributions_dict
 from ..neural_networks import EmbeddingNetwork, EmbeddingNetworkAttention, embedding_network_dict
 from ...config import CONF_DIR
 
-log = HYPERION_Logger()
+log = GWLogger()
 
-def build_flow( metadata                 :dict = None,
+def build_flow( prior_metadata           :dict = None,
                 flow_kwargs              :dict = None,
                 coupling_layers_kwargs   :dict = None,
                 base_distribution_kwargs :dict = None,
                 embedding_network_kwargs :dict = None,
                 checkpoint_path                = None,
-                config_file_path               = None,
+                config_file                    = None,
                ):
-    
-    """
-    Build a Flow object from scratch or from a saved model.
 
-    Args:
-        metadata           (dict): Metadata of the prior distribution
-        flow_kwargs              (dict): Hyperparameters of the flow
-        coupling_layers_kwargs   (dict): Hyperparameters of the coupling layers
-        base_distribution_kwargs (dict): Hyperparameters of the base distribution
-        embedding_network_kwargs (dict): Hyperparameters of the embedding network
-        checkpoint_path           (str): Path to a saved model
-        config_file_path               (str): Path to a configuration file
-    
-    Returns:
-        Flow: a Flow object
-    """
-    
     #loading a saved model
     if checkpoint_path is not None:
-        checkpoint = torch.load(checkpoint_path, map_location=torch.device('cpu'), weights_only=False)
-        metadata = checkpoint['metadata']
-        kwargs = metadata
+        checkpoint = torch.load(checkpoint_path, map_location=torch.device('cpu'))
+        prior_metadata = checkpoint['prior_metadata']
+        kwargs = checkpoint['configuration']
 
     #building model from scratch
     else:
-        assert metadata is not None, 'Unable to build Flow since no prior metadata was provided.'
-        assert isinstance(metadata, dict), 'Please provide a dictionary with the prior metadata.'
-        assert 'prior_metadata' in metadata, 'Please provide a dictionary with the prior_metadata key.'
+        assert prior_metadata is not None, 'Unable to build Flow since no hyperparams are passed'
         # First, read the JSON
-        config_file_path = CONF_DIR + '/default_hyperion_config.yml' if config_file_path is None else config_file_path
-        with open(config_file_path, 'r') as yaml_file:
+        config_file = CONF_DIR + '/hyperion_config.yml' if config_file is None else config_file
+        with open(config_file, 'r') as yaml_file:
             kwargs = yaml.safe_load(yaml_file)
 
         if flow_kwargs is not None:
@@ -68,7 +50,6 @@ def build_flow( metadata                 :dict = None,
     embedding_network_model  =  kwargs['embedding_network']['model']
 
     configuration = kwargs
-    metadata.update(configuration)
     
     #NEURAL NETWORK ---------------------------------------    
     #compute the shape of the strain tensor
@@ -79,6 +60,7 @@ def build_flow( metadata                 :dict = None,
     embedding_network = embedding_network_dict[embedding_network_model](strain_shape=strain_shape, fs=fs, **embedding_network_kwargs).float()
        
     #BASE DIST ----------------------------------------------------------------------------
+    #FIXME - add in deepfaset 
     try:
         dist_name = base_distribution_kwargs['dist_name']
         kw        = base_distribution_kwargs['kwargs']
@@ -88,8 +70,7 @@ def build_flow( metadata                 :dict = None,
     
 
     #COUPLING TRANSFORM ----------------------------------------------------------------
-    coupling_kind = flow_kwargs.get('coupling', 'affine')
-    CouplingLayer = coupling_layer_dict[coupling_kind]
+    CouplingLayer = coupling_layer_dict[flow_kwargs['coupling']]
     
     coupling_layers = []
     for _ in range(flow_kwargs['num_coupling_layers']):
@@ -100,11 +81,11 @@ def build_flow( metadata                 :dict = None,
     coupling_transform = CouplingTransform(coupling_layers)
 
     #FLOW --------------------------------------------------------------------------------------
-    flow = GWFlow(base_distribution = base, 
-                  transformation    = coupling_transform, 
-                  embedding_network = embedding_network, 
-                  metadata          = metadata
-                 ).float()
+    flow = Flow(base_distribution = base, 
+                transformation    = coupling_transform, 
+                embedding_network = embedding_network, 
+                prior_metadata = prior_metadata, 
+                configuration = configuration).float()
     
     """loading (eventual) weights"""
     if checkpoint_path is not None:
