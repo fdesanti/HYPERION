@@ -232,45 +232,46 @@ class WhitenNet:
             normalize              (bool): Whether to normalize the noise to have unit variance
             method                  (str): Method to use for whitening ('gwpy' or 'pycbc'). (Default: 'gwpy')
         """
-        fft_norm = self.n if method == 'gwpy' else self.fs
+        with torch.device(self.device):
+            fft_norm = self.n if method == 'gwpy' else self.fs
 
-        #define the output whitened strain tensordict
-        #we copy h so that it lies on the same device as the input
-        whitened = h.copy()
-        
-        for det in h.keys():
-            ht = h[det] #* tukey(self.n, alpha=0.01, device=self.device)
-            if noise:
-                ht += noise[det]
+            #define the output whitened strain tensordict
+            #we copy h so that it lies on the same device as the input
+            whitened = h.copy()
             
-            #compute the frequency domain signal (template) and (optionally) apply time shift
-            shift = time_shift[det] if time_shift is not None else 0
-            hf = rfft(ht, n=self.n, norm=fft_norm) * torch.exp(-2j * torch.pi * self.freqs * shift) 
-
-            #gwpy whitening method
-            if method == 'gwpy':
-                if not fduration:
-                    fduration = self.duration
-                nout  = (hf.size()[-1] - 1) * 2
-                ht    = irfft(hf*nout, n=nout)   #NOTE - for this ifft method see https://github.com/gwpy/gwpy/blob/main/gwpy/frequencyseries/frequencyseries.py
-                ntaps = int((fduration * self.fs))
-                fir   = fir_from_transfer(1/asd[det], ntaps=ntaps, window=window, ncorner=ncorner)
-
-                whitened[det] = convolve(ht, fir, window=window)
-            
-            else:
-                #whiten the signal by dividing wrt the ASD
-                hf_w = hf / asd[det]
+            for det in h.keys():
+                ht = h[det] #* tukey(self.n, alpha=0.01, device=self.device)
+                if noise:
+                    ht += noise[det]
                 
-                #convert back to the time domain
-                # we divide by the noise standard deviation to ensure to have unit variance
-                whitened[det] = irfft(hf_w, n=self.n, norm=fft_norm)
+                #compute the frequency domain signal (template) and (optionally) apply time shift
+                shift = time_shift[det] if time_shift is not None else 0
+                hf = rfft(ht, n=self.n, norm=fft_norm) * torch.exp(-2j * torch.pi * self.freqs * shift) 
+
+                #gwpy whitening method
+                if method == 'gwpy':
+                    if not fduration:
+                        fduration = self.duration
+                    nout  = (hf.size()[-1] - 1) * 2
+                    ht    = irfft(hf*nout, n=nout)   #NOTE - for this ifft method see https://github.com/gwpy/gwpy/blob/main/gwpy/frequencyseries/frequencyseries.py
+                    ntaps = int((fduration * self.fs))
+                    fir   = fir_from_transfer(1/asd[det], ntaps=ntaps, window=window, ncorner=ncorner)
+
+                    whitened[det] = convolve(ht, fir, window=window)
+                
+                else:
+                    #whiten the signal by dividing wrt the ASD
+                    hf_w = hf / asd[det]
+                    
+                    #convert back to the time domain
+                    # we divide by the noise standard deviation to ensure to have unit variance
+                    whitened[det] = irfft(hf_w, n=self.n, norm=fft_norm)
+                
+                if normalize:
+                    whitened[det] /= self.noise_std
             
-            if normalize:
-                whitened[det] /= self.noise_std
-        
-        if add_noise and not noise:
-            whitened = self.add_gaussian_noise(whitened, normalize)
+            if add_noise and not noise:
+                whitened = self.add_gaussian_noise(whitened, normalize)
         
         return whitened
     

@@ -167,7 +167,7 @@ class Trainer:
         
         checkpoints = {
             #'configuration': flow.configuration,
-            'metadata': flow.metadata,
+            'metadata': flow.metadata if hasattr(flow, 'metadata') else {},
             'model_state_dict': flow.state_dict(),
             #'optimizer_state_dict': self.optimizer.state_dict(),
             #'epoch': epoch,

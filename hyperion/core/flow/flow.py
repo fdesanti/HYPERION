@@ -140,6 +140,8 @@ class Flow(nn.Module):
         #take the start time
         start = time()
 
+        self.verbose = verbose
+
         #cast correctly
         num_samples = int(num_samples)
         batch_size  = int(batch_size)
@@ -233,7 +235,7 @@ class Flow(nn.Module):
                 total_mask *= ((processed_samples_dict[name]<=max_b) * (processed_samples_dict[name]>=min_b))
             
             except Exception as e:
-                log.error(f"Could not restrict samples for {name} to bounds: due to {e}")
+                if self.verbose: log.error(f"Could not restrict samples for {name} to bounds: due to {e}")
                 continue
 
         for name in self.inference_parameters:

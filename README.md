@@ -2,7 +2,7 @@
 
 ![Logo](docs/images/hyperion_logo.png)
 
-# `HYPERION` - HYPer-fast close EncounteR Inference from Observations with Normalizing-flows 
+# `HYPERION` - HYPER-fast Inference from Observations with Normalizing-flows 
 
 HYPERION is a pipeline based on [Normalizing Flows](https://arxiv.org/abs/1912.02762) for the detection and Parameter Estimation of gravitational waves from [Close Encounters](https://arxiv.org/abs/1909.02143)
 
@@ -47,11 +47,11 @@ sampler.plot_corner(injection_parameters = true_parameters)
 
 
 #The sampler class allows also to perform the Importance Sampling and computing Bayes Factors
-resampled_posterior = flow_sampler.reweight_posterior(posterior       = posterior,
-                                                      whitened_strain = whitened_strain,
-                                                      strain          = noisy_strain,
-                                                      psd             = psd,
-                                                      event_time      = t_gps)
+resampled_posterior = sampler.reweight_posterior(posterior       = posterior,
+                                                 whitened_strain = whitened_strain,
+                                                 strain          = noisy_strain,
+                                                 psd             = psd,
+                                                 event_time      = t_gps)
 
 print(f'The signal vs noise Bayes Factor is {sampler.BayesFactor:.2f}')
 ```
