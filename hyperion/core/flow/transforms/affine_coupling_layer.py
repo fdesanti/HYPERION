@@ -36,7 +36,7 @@ class AffineCouplingLayer(CouplingLayer):
         linear_dim                (int): Dimension of the linear layers
         s_network           (nn.Module): Network that computes the scale factor. (Default. None)
         t_network           (nn.Module): Network that computes the translation factor. (Default. None)
-        dropout_probability     (float): Dropout probability (Default. 0.2)
+        dropout                 (float): Dropout probability (Default. 0.0)
         volume_preserving        (bool): If True, the Jacobian is constrained to be 1. (Default. False)
 
     Caution:
@@ -52,7 +52,7 @@ class AffineCouplingLayer(CouplingLayer):
                  linear_dim          = 512,
                  s_network           = None,
                  t_network           = None,
-                 dropout_probability = 0.2,
+                 dropout             = 0.0,
                  volume_preserving   = False
                  ):
         super(AffineCouplingLayer, self).__init__(num_features, num_identity, num_transformed)
@@ -66,7 +66,7 @@ class AffineCouplingLayer(CouplingLayer):
             self.s_network = nn.Sequential(nn.LazyLinear(linear_dim), s_activation, 
                                            nn.LazyLinear(linear_dim), s_activation, 
                                            nn.LazyLinear(linear_dim), s_activation, 
-                                           nn.Dropout(dropout_probability), 
+                                           nn.Dropout(dropout), 
                                            nn.LazyLinear(self.num_transformed), s_activation)
         if t_network is not None:
             self.t_network = t_network
@@ -75,7 +75,7 @@ class AffineCouplingLayer(CouplingLayer):
             self.t_network = nn.Sequential(nn.LazyLinear(linear_dim), t_activation, 
                                            nn.LazyLinear(linear_dim), t_activation, 
                                            nn.LazyLinear(linear_dim), t_activation, 
-                                           nn.Dropout(dropout_probability), 
+                                           nn.Dropout(dropout), 
                                            nn.LazyLinear(self.num_transformed), t_activation)
             
 
