@@ -24,6 +24,7 @@ class Flow(nn.Module):
         embedding_network         (nn.Module): (optional) Embedding network for the strain data. (Default: None)
         metadata                       (dict): Metadata of the prior distribution.
         prior_metadata                 (dict): (optional) Prior metadata. If provided will be used to update the metadata
+        input_mask             (torch.Tensor): Mask to choose on which parameters are used to compute the loss. If None, a mask with all ones is created. (Default: None)
     """
 
     def __init__(self,
