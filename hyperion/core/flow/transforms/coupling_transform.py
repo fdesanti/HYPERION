@@ -86,7 +86,7 @@ class CouplingTransform(nn.Module):
             if isinstance(layer, Permutation) and input_mask is not None:
                 input_mask, _ = layer(input_mask)
             outputs, logabsdet = layer(outputs, embedded_strain, input_mask=input_mask)
-            print(outputs.shape, logabsdet.shape)
+    
             total_logabsdet += logabsdet
         return outputs, total_logabsdet
 

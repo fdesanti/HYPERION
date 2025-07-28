@@ -31,7 +31,9 @@ class Flow(nn.Module):
                  transformation,
                  embedding_network: nn.Module = None,
                  metadata         : dict = {}, 
-                 prior_metadata   : dict = None
+                 prior_metadata   : dict = None,
+                 input_mask        = None,
+                 
                  ):
         
         super(Flow, self).__init__()
@@ -39,6 +41,8 @@ class Flow(nn.Module):
         self.base_distribution = base_distribution
         self.transformation    = transformation
         self.metadata          = metadata
+
+        self.input_mask        = input_mask #TODO - if None create ones with len of parameters
 
         if prior_metadata is not None:
             assert isinstance(prior_metadata, dict), 'Please provide a dictionary with the prior metadata.'
@@ -106,9 +110,15 @@ class Flow(nn.Module):
             embedded_data = self.embedding_network(condition_data)
         else:
             embedded_data = None
-        
+
         #transform theta --> z
         transformed_samples, logabsdet = self.transformation(inputs, embedded_data)  #makes the forward pass 
+
+        #compute the input mask
+        batch_size, num_features = inputs.shape
+        if self.input_mask is not None:
+            input_mask = self.input_mask.unsqueeze(0).expand(batch_size, num_features).bool()
+            inputs = inputs[input_mask].view(batch_size, -1)  #flatten the inputs
         
         #compute the log probability of the base distribution
         log_prob = self.base_distribution.log_prob(transformed_samples, embedded_data)
