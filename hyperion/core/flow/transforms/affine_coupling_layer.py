@@ -79,7 +79,7 @@ class AffineCouplingLayer(CouplingLayer):
                                            nn.LazyLinear(self.num_transformed), t_activation)
             
 
-    def _coupling_transform(self, inputs, embedded_strain, inverse):
+    def _coupling_transform(self, inputs, embedded_strain, inverse, input_mask=None):
         #initialize the output
         outputs = torch.empty_like(inputs)                             #full of zeros of shape as input
         outputs[:, :self.num_identity] = inputs[:, :self.num_identity] #untransformed output
@@ -88,11 +88,15 @@ class AffineCouplingLayer(CouplingLayer):
             x = torch.cat([inputs[:, :self.num_identity], embedded_strain], dim=1)
         else:
             x = inputs[:, :self.num_identity]
+
+        if input_mask is not None:
+            input_mask = input_mask[:, :self.num_identity]
         
         #compute the scale
         s = self.s_network(x)
         if self.volume_preserving:
             s = s - s.mean(-1, keepdim=True) #assumes shape (batch, num_transformed)
+
 
         #compute the translation
         t = self.t_network(x)
@@ -100,9 +104,9 @@ class AffineCouplingLayer(CouplingLayer):
         #coupling transformation
         if inverse:
             outputs[:, self.num_identity:] = (inputs[:, self.num_identity:] - t) * torch.exp(-s)
-            logabsdet = -torch.sum(s, dim=(1))
+            logabsdet = -torch.sum(s*input_mask, dim=(1))
         else:
             outputs[:, self.num_identity:] = inputs[:, self.num_identity:] * torch.exp(s) + t
-            logabsdet = torch.sum(s, dim=(1))
+            logabsdet = torch.sum(s*input_mask, dim=(1))
 
         return outputs, logabsdet

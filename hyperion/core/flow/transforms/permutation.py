@@ -1,7 +1,41 @@
 import torch
 import torch.nn as nn
 
-class RandomPermutation(nn.Module):
+class Permutation(nn.Module):
+    """
+    Base class for permutations. 
+    """
+
+    def __init__(self):
+        super(Permutation, self).__init__()
+
+    def forward(self, inputs, embedded_strain=None, input_mask=None):
+        """
+        Applies the permutation to the input tensor.
+
+        Args:
+            inputs          (torch.Tensor): Input tensor.
+            embedded_strain (torch.Tensor): Optional additional input (unused in this implementation).
+
+        Returns:
+            tuple: (outputs, logabsdet), where ``outputs`` is the permuted tensor and ``logabsdet`` is a tensor of zeros (no volume change in this permutation).
+        """
+        raise NotImplementedError("Forward method must be implemented in subclasses.")
+    
+    def inverse(self, inputs, embedded_strain=None, input_mask=None):
+        """
+        Reverses the permutation applied to the input tensor.
+
+        Args:
+            inputs          (torch.Tensor): Input tensor.
+            embedded_strain (torch.Tensor): Optional additional input (unused in this implementation).
+
+        Returns:
+            tuple: (outputs, logabsdet), where ``outputs`` is the original tensor before permutation and ``logabsdet`` is a tensor of zeros (no volume change).
+        """
+        raise NotImplementedError("Inverse method must be implemented in subclasses.")
+
+class RandomPermutation(Permutation):
     """ 
     Randomly permutes the features of the input tensor.
 
@@ -17,7 +51,7 @@ class RandomPermutation(nn.Module):
         self.register_buffer("_permutation", torch.randperm(num_features) )
         
 
-    def forward(self, inputs, embedded_strain=None):
+    def forward(self, inputs, embedded_strain=None, input_mask=None):
         """
         Applies the random permutation to the input tensor.
 
@@ -35,7 +69,7 @@ class RandomPermutation(nn.Module):
         
         return outputs, logabsdet
     
-    def inverse(self, inputs, embedded_strain=None):
+    def inverse(self, inputs, embedded_strain=None, input_mask=None):
         """
         Reverses the random permutation applied to the input tensor.
 
@@ -53,7 +87,7 @@ class RandomPermutation(nn.Module):
         
         return outputs, logabsdet
     
-class CyclicPermutation(nn.Module):
+class CyclicPermutation(Permutation):
     """
     Cyclically shifts features along a specified dimension.
 
@@ -67,7 +101,7 @@ class CyclicPermutation(nn.Module):
         self.shift = shift
         self.dim = dim
 
-    def forward(self, inputs, embedded_strain=None):
+    def forward(self, inputs, embedded_strain=None, input_mask=None):
         """
         Applies the cyclic shift to the input tensor along the specified dimension.
 
@@ -83,7 +117,7 @@ class CyclicPermutation(nn.Module):
         logabsdet = inputs.new_zeros(batch_size)
         return outputs, logabsdet
 
-    def inverse(self, inputs, embedded_strain=None):
+    def inverse(self, inputs, embedded_strain=None, input_mask=None):
         """
         Reverses the cyclic shift applied to the input tensor.
 
