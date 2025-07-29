@@ -24,7 +24,6 @@ class Flow(nn.Module):
         embedding_network         (nn.Module): (optional) Embedding network for the strain data. (Default: None)
         metadata                       (dict): Metadata of the prior distribution.
         prior_metadata                 (dict): (optional) Prior metadata. If provided will be used to update the metadata
-        input_mask             (torch.Tensor): Mask to choose on which parameters are used to compute the loss. If None, a mask with all ones is created. (Default: None)
     """
 
     def __init__(self,
@@ -33,7 +32,6 @@ class Flow(nn.Module):
                  embedding_network: nn.Module = None,
                  metadata         : dict = {}, 
                  prior_metadata   : dict = None,
-                 input_mask        = None,
                  
                  ):
         
@@ -42,8 +40,6 @@ class Flow(nn.Module):
         self.base_distribution = base_distribution
         self.transformation    = transformation
         self.metadata          = metadata
-
-        self.input_mask        = input_mask #TODO - if None create ones with len of parameters
 
         if prior_metadata is not None:
             assert isinstance(prior_metadata, dict), 'Please provide a dictionary with the prior metadata.'
@@ -93,7 +89,7 @@ class Flow(nn.Module):
         return self._stds
     
     
-    def log_prob(self, inputs, condition_data=None):
+    def log_prob(self, inputs, condition_data=None, input_mask=None):
         r"""
         Computes the log probability of the input samples
 
@@ -104,6 +100,8 @@ class Flow(nn.Module):
         
             inputs         (torch.Tensor): Tensor of shape [N, P] where N is the number of samples and P is the number of parameters
             condition_data (torch.Tensor): (Optional) Data on which condition the flow. (Default: None)
+            input_mask     (torch.Tensor): Mask to choose on which parameters are used to compute the loss. If None, a mask with all ones is created. (Default: None)
+
         """
 
         # we set the embedding to None if the embedding network is not defined
@@ -117,8 +115,8 @@ class Flow(nn.Module):
 
         #compute the input mask
         batch_size, num_features = inputs.shape
-        if self.input_mask is not None:
-            input_mask = self.input_mask.unsqueeze(0).expand(batch_size, num_features).bool()
+        if input_mask is not None:
+            input_mask = input_mask.unsqueeze(0).expand(batch_size, num_features).bool()
             inputs = inputs[input_mask].view(batch_size, -1)  #flatten the inputs
         
         #compute the log probability of the base distribution
