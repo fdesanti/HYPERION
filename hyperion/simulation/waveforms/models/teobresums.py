@@ -19,6 +19,7 @@ Substitute ~/.bashrc with ~/.zprofile if you're on MacOS
 import torch 
 from importlib import import_module
 from ....core.utilities import HYPERION_Logger
+from ..waveform_utilities import spin_conversion
 
 log = HYPERION_Logger()
 
@@ -48,6 +49,7 @@ class  TEOBResumSDALI():
         - **interp_uniform_grid**: "yes"    Interpolate mode by mode on a uniform grid. Default = "no" (no interpolation)
         - **initial_frequency**  : .02      in Hz if use_geometric_units = 0, else in geometric units
         - **ecc_freq**           : 1        Use periastron (0), average (1) or apastron (2) frequency for initial condition computation
+        - **use_spins**          : '2'      0 = nonspinning (deprecated), 1 = spin-aligned, 2 = precessing
         - **use_mode_lm**        : [(2,1),(2,2),(3,3),(4,2)]  List of modes to use/output through EOBRunPy.
         - **ode_tmax**           : 20e4
         - **ode_tstep_opt**      : "adaptive" Fixing uniform or adaptive
@@ -77,6 +79,9 @@ class  TEOBResumSDALI():
         'initial_frequency'  : .02,         # in Hz if use_geometric_units = 0, else in geometric units
         'ecc_freq'           : 1,           # Use periastron (0), average (1) or apastron (2) frequency for initial condition computation. Default = 1
         
+        #spins
+        'use_spins'          : '2',         # 0 = nonspinning (deprecated), 1 = spin-aligned, 2 = precessing
+
         # Modes
         'use_mode_lm'        : modes_to_k(modes), # List of modes to use/output through EOBRunPy.
 
@@ -134,6 +139,30 @@ class  TEOBResumSDALI():
         #check luminosity distance  
         if 'luminosity_distance' in parameters.keys():
             parameters['distance'] = parameters.pop('luminosity_distance')
+
+        #check spins
+        if all(p in parameters.keys() for p in ['a_1', 'a_2', 'tilt_1', 'tilt_2', 'phi_12', 'theta_jn', 'phi_jl']):
+            
+            inclination, chi1x, chi1y, chi1z, chi2x, chi2y, chi2z = spin_conversion(
+                theta_jn = parameters.pop('theta_jn'),
+                phi_jl   = parameters.pop('phi_jl'),
+                tilt_1   = parameters.pop('tilt_1'),
+                tilt_2   = parameters.pop('tilt_2'),
+                phi_12   = parameters.pop('phi_12'),
+                a_1      = parameters.pop('a_1'),
+                a_2      = parameters.pop('a_2'),
+                M        = parameters['M'],
+                q        = parameters['q'],
+                phase    = parameters.get('phase', 0),
+                reference_frequency = parameters.get('reference_frequency', 5)
+            )
+            parameters['inclination'] = inclination
+            parameters['chi1x'] = chi1x
+            parameters['chi1y'] = chi1y
+            parameters['chi1z'] = chi1z
+            parameters['chi2x'] = chi2x 
+            parameters['chi2y'] = chi2y
+            parameters['chi2z'] = chi2z
         
         return parameters
     
