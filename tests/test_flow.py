@@ -15,7 +15,7 @@ def _test_flow(coupling):
     #build the flow
     base_dist = MultivariateNormalBase(dim=2)
     coupling_layers = []
-    for _ in range(4):
+    for _ in range(2):
         coupling_layers.append(coupling_layer_dict[coupling](num_features=2))
         coupling_layers.append(RandomPermutation(num_features=2))
 
@@ -44,10 +44,11 @@ def _test_flow(coupling):
         assert log_prob.dtype == torch.float32
 
         #test the flow sampling
-        samples = flow.sample(10).flatten()
+        samples = flow.sample(10).tensor()
         assert samples.shape == (10, 2)
 
 def test_unconditional_flow():
+    """Test flow with different coupling layers."""
     couplings = list(coupling_layer_dict.keys())
     for coupling in couplings:
         _test_flow(coupling)

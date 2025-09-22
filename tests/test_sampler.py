@@ -10,7 +10,7 @@ from hyperion.core.neural_networks import EmbeddingNetworkAttention
 
 
 def test_sampler():
-    """Test unconditional flow training."""
+    """Test GWFlow"""
 
     #set the prior
     prior = MultivariatePrior(dict(x=UniformPrior(-1, 1), y=UniformPrior(-1, 1)))
@@ -40,7 +40,12 @@ def test_sampler():
     posterior = sampler.sample_posterior(strain=data)
     bilby_posterior = sampler.to_bilby()
     sampler.plot_corner()
-    
+
+    # Regression Test
+    data2 = torch.randn((1, channels, duration*fs))
+    posterior2 = sampler.sample_posterior(strain=data2)
+
+    assert not torch.allclose(posterior.tensor(), posterior2.tensor())
 
 
 if __name__ == '__main__':
