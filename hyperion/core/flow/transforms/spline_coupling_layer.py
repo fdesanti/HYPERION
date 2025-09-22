@@ -20,7 +20,7 @@ class SplineCouplingLayer(CouplingLayer):
         tail_bound          (float): Tail bound of the spline (Default. 2.0)
         linear_dim            (int): Dimension of the linear layers (Default. 512)
         activation      (nn.Module): Activation function (Default. nn.ELU())
-        dropout_probability (float): Dropout probability (Default. 0.2)
+        dropout             (float): Dropout probability (Default. 0.0)
     """
     def __init__(self,
                  num_features,
@@ -30,7 +30,7 @@ class SplineCouplingLayer(CouplingLayer):
                  tail_bound          =  2.0,
                  linear_dim          =  512,
                  activation          =  nn.ELU(),
-                 dropout_probability = 0.2
+                 dropout             = 0.0
                  ):
         super(SplineCouplingLayer, self).__init__(num_features, num_identity, num_transformed)
         
@@ -40,17 +40,17 @@ class SplineCouplingLayer(CouplingLayer):
         
         self.h_network = nn.Sequential(nn.LazyLinear(linear_dim), activation, 
                                        nn.LazyLinear(linear_dim), activation,
-                                       nn.Dropout(dropout_probability), 
+                                       nn.Dropout(dropout), 
                                        nn.LazyLinear(self.num_transformed*num_bins))
         
         self.w_network = nn.Sequential(nn.LazyLinear(linear_dim), activation,
                                        nn.LazyLinear(linear_dim), activation,
-                                       nn.Dropout(dropout_probability), 
+                                       nn.Dropout(dropout), 
                                        nn.LazyLinear(self.num_transformed*num_bins))
         
         self.d_network = nn.Sequential(nn.LazyLinear(linear_dim), activation,
                                        nn.LazyLinear(linear_dim), activation,
-                                       nn.Dropout(dropout_probability), 
+                                       nn.Dropout(dropout), 
                                        nn.LazyLinear(self.num_transformed*(num_bins-1)))
         
         self.scaling_factor = torch.sqrt(torch.tensor(self.linear_dim).float())
