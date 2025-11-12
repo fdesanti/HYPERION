@@ -1,4 +1,5 @@
 import torch
+
 from .EFB_T_PN import PN_Expansion
 from ..waveform_utilities import pc_to_Msun, Msun_to_sec
 
@@ -65,7 +66,13 @@ class EffectiveFlyByTemplate():
     @property
     def f_source(self):
         return 1/self.duration
-
+    
+    @property
+    def times_array(self):
+        if not hasattr(self, '_times_array'):
+            self._times_array = torch.linspace(-self.duration/2, self.duration/2, self.duration * self.fs, dtype=torch.float64, device=self.device)
+        return self._times_array
+    
     #================================================================
     #==============  Define EFB-T related quantities   ==============
     #================================================================
@@ -83,13 +90,13 @@ class EffectiveFlyByTemplate():
         fblock_4 = 1 + (73/24)*(self.e0**2) + (37/96)*(self.e0**4)
         return 1/Msun_to_sec(1/(fblock_1*fblock_2*fblock_3*fblock_4))
     
-    def _phase(self, times_array):
+    def _phase(self):
         """
         Phase of the first body at each time.
         """
-        sqrt_epst = torch.sqrt(self.eps(times_array))        
+        sqrt_epst = torch.sqrt(self.eps())        
         #print('ecc_anomlay', (self.ecc(times_array))[0])
-        return self.ecc_anomaly(times_array)/(torch.log((1+sqrt_epst)/self.ecc(times_array))-sqrt_epst)
+        return self.ecc_anomaly()/(torch.log((1+sqrt_epst)/self.ecc())-sqrt_epst)
         
     def t_edge(self, l_=torch.pi):
         """
@@ -108,19 +115,19 @@ class EffectiveFlyByTemplate():
         lblock_2 = 2*torch.pi*self.Frr
         return (lblock_1/lblock_2) + self.t0_p
     
-    def ecc_anomaly(self, times_array):
+    def ecc_anomaly(self):
         """
         Eccentric anomaly of the first body at each time.
         """
         block1 = self.n0/(2*torch.pi*self.Frr)      
-        block2 = torch.subtract(torch.exp(2*torch.pi*self.Frr*times_array), 1)
+        block2 = torch.subtract(torch.exp(2*torch.pi*self.Frr*self.times_array), 1)
         #print(self.Frr[0])
         #print('ecc_anomaly', (block2.max()))
 
         return block1*block2
 
     # How orbital parameters change with time during pericenter passage
-    def ecc(self, times_array):
+    def ecc(self):
         """
         Eccentricity of the orbit at each time.
         """
@@ -130,33 +137,33 @@ class EffectiveFlyByTemplate():
         block2 = 1 + (121/304)*self.e0**2
         
         #print((block1*block2)[0])
-        return self.e0 - block1*block2*self.ecc_anomaly(times_array)
+        return self.e0 - block1*block2*self.ecc_anomaly()
 
 
-    def eps(self, times_array):
+    def eps(self):
         """
         High eccentricity parameter at each time.
         
         .. math::
             \epsilon = 1 - e(t)^2
         """
-        return 1-torch.pow(self.ecc(times_array), 2)
+        return 1-torch.pow(self.ecc(), 2)
 
-    def semi_lat_rect(self, times_array):
+    def semi_lat_rect(self):
         """
         Semi latus rectum of the orbit at each time.
         """
         block1 = 12.8*self.eta/torch.pow(self.p_0, 2.5)
         block2 = 1 + 0.875*torch.pow(self.e0, 2)
-        return self.M*self.p_0*(1 - block1*block2*self.ecc_anomaly(times_array))
+        return self.M*self.p_0*(1 - block1*block2*self.ecc_anomaly())
            
 
-    def get_hp_and_hc(self, times_array):
+    def get_hp_and_hc(self):
         """
         Returns the plus and cross polarization of the EFB-T template
         """
         # Amplitude factors
-        ampl = -(self.eta*(self.M**2))/(self.semi_lat_rect(times_array)*self.distance)
+        ampl = -(self.eta*(self.M**2))/(self.semi_lat_rect()*self.distance)
         
         #hp and hc from the PN expansion
         hp, hc = self.PN(self.phase, self.incl, self.pol, self.eps_factor)
@@ -170,6 +177,7 @@ class EffectiveFlyByTemplate():
         total mass M and mass ratio q.
         If parameters contains luminosity_distance as a key we convert it to distance.
         """
+
         #check masses 
         if all(p in parameters.keys() for p in ['m1', 'm2']):
             m2, m1 = [parameters['m1'], parameters['m2']]
@@ -188,6 +196,14 @@ class EffectiveFlyByTemplate():
             parameters['M']   = Mchirp * eta**(-3/5)
             parameters['eta'] = eta
 
+        elif all(p in parameters.keys() for p in ['M', 'q']):
+            q = parameters['q']
+            eta = q / (1+q)**2
+            parameters['eta'] = eta
+
+        else:
+            raise ValueError("Parameters must contain either (m1, m2), (M, q), or (Mchirp, q) to compute M and eta.")
+        
         #check luminosity distance  
         if 'luminosity_distance' in parameters.keys():
             parameters['distance'] = parameters.pop('luminosity_distance')
@@ -238,10 +254,16 @@ class EffectiveFlyByTemplate():
             You can provide the same polarization angle by setting the same ``seed`` value when defining the *intrinsics* and *extrinsics* prior for this parameter.
     """
         #define the times array       
-        times_array = torch.linspace(-self.duration/2, self.duration/2, self.duration * self.fs, dtype=torch.float64, device=self.device) #+ t0_p
-    
+        #times_array = torch.linspace(-self.duration/2, self.duration/2, self.duration * self.fs, dtype=torch.float64, device=self.device) #+ t0_p
+
         #check parameters consistency
         waveform_parameters = self._check_parameters(waveform_parameters)
+
+        #broadcast to tensors if needed
+        if isinstance(waveform_parameters, dict):
+            for key in waveform_parameters.keys():
+                if not isinstance(waveform_parameters[key], torch.Tensor):
+                    waveform_parameters[key] = torch.tensor(waveform_parameters[key], device=self.device)
 
         #extract parameters
         self.M    = waveform_parameters['M'].view(-1, 1)
@@ -261,11 +283,11 @@ class EffectiveFlyByTemplate():
         self.n0   = self._n0()
         self.Frr  = self._Frr()
         
-        self.eps_factor = self.eps(times_array)
-        self.phase = self._phase(times_array) #set up phase array by passing times_array (see related func below)
+        self.eps_factor = self.eps()
+        self.phase = self._phase() #set up phase array by passing times_array (see related func below)
         
         #compute the plus and cross polarizations
-        hp, hc = self.get_hp_and_hc(times_array)
+        hp, hc = self.get_hp_and_hc()
         
         #set output      
         return hp, hc, self.t0_p
