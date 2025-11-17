@@ -38,6 +38,7 @@ class ASD_Sampler():
         self.noise_points = duration*fs
 
         self.f = rfftfreq(fs*duration, d=1/fs, device = device)
+        self.time_array = torch.linspace(-duration/2, duration/2, steps=self.noise_points, device=device)
         
         f = self.f.clone()
         if fmin is not None:
@@ -47,7 +48,7 @@ class ASD_Sampler():
         
         #reference ASD from interpolation
         #self.reference_asd = torch.from_numpy(np.interp(self.f.cpu().numpy(), asd_f, asd)).to(device)
-        asd_interp = interp1d(asd_f, asd, kind='cubic', fill_value='extrapolate')
+        asd_interp = interp1d(asd_f, asd, kind='linear', fill_value='extrapolate')
         self.reference_asd = torch.from_numpy(asd_interp(f.cpu().numpy())).to(device)
         
         #other attributes
@@ -78,17 +79,17 @@ class ASD_Sampler():
     @property
     def asd_std(self):
         if not hasattr(self, '_asd_std'):
-            self._asd_std = self.reference_asd * self.df ** 0.5
+            self._asd_std = (self.reference_asd * self.df ** 0.5).abs()
         return self._asd_std
 
 
-    def sample(self, batch_size, noise=False, use_reference_asd=False):
+    def sample(self, batch_size=1, time_domain_noise=False, use_reference_asd=False):
         """
         Sample a new ASD from the reference one by generating random amplitude and phase for each frequency bin.
 
         Args:
             batch_size         (int): Batch size for output sampled ASDs
-            noise             (bool): If True, return the noise timeseries generated from the sampled ASD. (Default: False)
+            time_domain_noise (bool): If True, return the noise timeseries generated from the sampled ASD. (Default: False)
             use_reference_asd (bool): If True, return the reference ASD. (Default: False)
 
         Returns:
@@ -122,8 +123,8 @@ class ASD_Sampler():
         
         #out_asd = torch.stack([self.reference_asd for _ in range(batch_size)])
         #out_asd = torch.mean(out_asd, axis = 0)
-        if noise:
-            noise_from_asd = irfft(out_asd, n=self.noise_points)
+        if time_domain_noise:
+            noise_from_asd = irfft(out_asd, norm=self.fs)
             #import matplotlib.pyplot as plt
             #plt.loglog(self.f.cpu(), abs(out_asd[0].cpu().numpy()))
             #plt.plot(noise_from_asd[0].cpu().numpy())

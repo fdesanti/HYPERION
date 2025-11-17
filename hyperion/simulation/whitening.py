@@ -212,7 +212,7 @@ class WhitenNet:
 
         return h
     
-    def whiten(self, h, asd, time_shift=None, add_noise=True, noise=None,
+    def whiten(self, h, asd, time_shift=None, add_noise=False, noise=None,
                fduration=None, window='hann', ncorner=0, normalize=True, method='gwpy'):
         """
         Whiten the input signal and (optionally) add Gaussian noise.
@@ -224,7 +224,7 @@ class WhitenNet:
             h          (dict, TensorDict): Input signal(s) to whiten
             asd        (dict, TensorDict): ASD of the noise
             time_shift (dict, TensorDict): time shift for each detector to apply to the signal
-            add_noise              (bool): Whether to add Gaussian noise to the whitened signal. If True, white noise is added. (Default: True)
+            add_noise              (bool): Whether to add Gaussian noise to the whitened signal. If True, white noise is added. (Default: False)
             noise      (dict, TensorDict): Gaussian noise to add to the signal. Mutually exclusive with add_noise
             fduration             (float): Duration of the filter to use for the whitening (only for method='gwpy')
             window                  (str): Window function to use for the FIR filter (only for method='gwpy')
