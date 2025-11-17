@@ -47,7 +47,7 @@ class ASD_Sampler():
         
         #reference ASD from interpolation
         #self.reference_asd = torch.from_numpy(np.interp(self.f.cpu().numpy(), asd_f, asd)).to(device)
-        asd_interp = interp1d(asd_f, asd, kind='cubic', fill_value='extrapolate')
+        asd_interp = interp1d(asd_f, asd, kind='linear', fill_value='extrapolate')
         self.reference_asd = torch.from_numpy(asd_interp(f.cpu().numpy())).to(device)
         
         #other attributes
