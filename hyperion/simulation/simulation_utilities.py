@@ -87,7 +87,7 @@ def matched_filter_snr(frequency_domain_template, frequency_domain_strain, psd, 
     
     .. math::
     
-        \rho^2 = \dfrac{\langle \tilde{h}|\tilde{s}\rangle}{\sqrt{\langle \tilde{h}|\tilde{h}\rangle}}
+        \rho = \dfrac{\langle \tilde{h}|\tilde{s}\rangle}{\sqrt{\langle \tilde{h}|\tilde{h}\rangle}}
 
     Args:
         frequency_domain_template (torch.Tensor): Frequency domain template signal
@@ -104,8 +104,8 @@ def matched_filter_snr(frequency_domain_template, frequency_domain_strain, psd, 
                                            frequency_domain_template, 
                                            psd, duration)
     
-    snr_square = torch.abs(rho / torch.sqrt(rho_opt))
-    return torch.sqrt(snr_square)
+    snr = torch.abs(rho / torch.sqrt(rho_opt))
+    return snr
 
 
 def network_optimal_snr(frequency_domain_strain, psd, duration):
@@ -122,11 +122,11 @@ def network_optimal_snr(frequency_domain_strain, psd, duration):
         duration                           (float): Duration of the signal
     """
     
-    snr = 0
+    snr_2 = 0
     for det in frequency_domain_strain.keys():
-        snr += optimal_snr(frequency_domain_strain[det], psd[det], duration)**2
+        snr_2 += optimal_snr(frequency_domain_strain[det], psd[det], duration)**2
        
-    return torch.sqrt(snr)
+    return torch.sqrt(snr_2)
         
 
 def rescale_to_network_snr(h, new_snr, old_snr=None, **kwargs):
